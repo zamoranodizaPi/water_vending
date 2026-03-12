@@ -1,0 +1,28 @@
+hardware:
+  fill_valve: 17
+  rinse_valve: 27
+  flow_sensor: 22
+  door_sensor: 23
+  interior_light: 24
+  uv_lamp: 5
+  ozone_machine: 6
+
+buttons:
+  full: 16
+  half: 20
+  gallon: 21
+  ok: 12
+  rinse: 25
+  emergency_stop: 26
+
+prices:
+  full: 30
+  half: 18
+  gallon: 10
+
+liters:
+  full: 20.0
+  half: 10.0
+  gallon: 3.785
+
+pulse_window_ms: 350

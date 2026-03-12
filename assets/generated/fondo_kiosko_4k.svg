@@ -1,0 +1,17 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='3840' height='2160' viewBox='0 0 3840 2160'>
+  <defs>
+    <linearGradient id='bg' x1='0' y1='0' x2='0' y2='1'>
+      <stop offset='0%' stop-color='#d9f3ff'/>
+      <stop offset='100%' stop-color='#00479d'/>
+    </linearGradient>
+  </defs>
+  <rect width='3840' height='2160' fill='url(#bg)'/>
+  <g fill='none' stroke='#ffffff' stroke-width='8' opacity='0.45'>
+    <path d='M100 1900 Q900 1500 1700 1900'/>
+    <path d='M2140 1900 Q2940 1500 3740 1900'/>
+    <circle cx='450' cy='400' r='140'/>
+    <circle cx='950' cy='470' r='110'/>
+    <circle cx='1450' cy='420' r='90'/>
+    <circle cx='3200' cy='420' r='120'/>
+  </g>
+</svg>

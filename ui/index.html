@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lupita Agua Purificada</title>
+  <link rel="stylesheet" href="/ui/styles.css" />
+</head>
+<body>
+  <main class="screen">
+    <header>
+      <img class="logo" src="/assets/logo_principal.svg" alt="Logo Lupita Agua Purificada" />
+      <div>
+        <h1>Lupita Agua Purificada</h1>
+        <div class="subtitle">Interfaz kiosko para operación por botonera física</div>
+      </div>
+    </header>
+
+    <section class="panel">
+      <h2>Botones físicos habilitados</h2>
+      <div class="buttons-grid">
+        <button class="btn size">Garrafón completo</button>
+        <button class="btn size">Medio garrafón</button>
+        <button class="btn size">Galón</button>
+        <button class="btn ok">Inicio / OK</button>
+        <button class="btn rinse">Enjuague</button>
+        <button class="btn stop">Paro de emergencia</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Estado de máquina</h2>
+      <div class="state">
+        <span id="state" class="badge">Estado: IDLE</span>
+        <span id="credit" class="badge">Crédito: $0</span>
+        <span id="size" class="badge">Selección: ninguna</span>
+      </div>
+      <div class="icons">
+        <img src="/assets/generated/garrafon_full_hd.svg" alt="Garrafón completo">
+        <img src="/assets/generated/garrafon_half_hd.svg" alt="Medio garrafón">
+        <img src="/assets/generated/garrafon_gallon_hd.svg" alt="Galón">
+      </div>
+    </section>
+  </main>
+  <script src="/ui/app.js"></script>
+</body>
+</html>
