@@ -1,0 +1,3 @@
+PyQt5==5.15.11
+gpiozero==2.0.1
+pyserial==3.5

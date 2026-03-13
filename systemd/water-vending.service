@@ -1,0 +1,15 @@
+[Unit]
+Description=Water Vending Machine UI
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/water_vending
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/water_vending/.venv/bin/python /opt/water_vending/main.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

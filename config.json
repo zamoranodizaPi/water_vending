@@ -1,0 +1,10 @@
+{
+  "product_name": "Garrafón de agua",
+  "price_per_product": 20.0,
+  "valve_open_seconds": 8.0,
+  "relay_gpio_pin": 17,
+  "serial_port": "/dev/ttyUSB0",
+  "serial_baudrate": 9600,
+  "fullscreen": true,
+  "logo_path": "assets/images/logo.png"
+}
