@@ -2,13 +2,14 @@ from datetime import datetime
 from threading import Lock, Thread
 import time
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
     QLabel,
     QMainWindow,
     QMessageBox,
     QProgressBar,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -27,6 +28,8 @@ class MainWindow(QMainWindow):
     ui_error = pyqtSignal(str)
     ui_process_finished = pyqtSignal(float, str)
     ui_progress = pyqtSignal(int)
+    ui_progress_visible = pyqtSignal(bool)
+    ui_show_thank_you = pyqtSignal()
 
     def __init__(self, config: AppConfig, db: SalesDatabase, valve: ValveController):
         super().__init__()
@@ -52,6 +55,8 @@ class MainWindow(QMainWindow):
         self.ui_error.connect(self._show_error)
         self.ui_process_finished.connect(self._on_process_finished)
         self.ui_progress.connect(self.progress_bar.setValue)
+        self.ui_progress_visible.connect(self.progress_bar.setVisible)
+        self.ui_show_thank_you.connect(self._show_thank_you_screen)
 
         self.gpio = GPIOInputs(
             coin_pin=self.config.coin_pulse_gpio_pin,
@@ -69,32 +74,53 @@ class MainWindow(QMainWindow):
         )
 
     def _build_ui(self) -> None:
-        self.setWindowTitle("Water Vending")
+        self.setWindowTitle("Agua Purificada Lupita")
+        self.setStyleSheet(
+            """
+            QMainWindow {
+                background-color: #dff3ff;
+            }
+            QLabel {
+                color: #003d8f;
+            }
+            """
+        )
 
-        central = QWidget(self)
-        layout = QVBoxLayout(central)
-        layout.setContentsMargins(40, 20, 40, 20)
-        layout.setSpacing(16)
+        self.stack = QStackedWidget(self)
+
+        main_page = QWidget(self)
+        layout = QVBoxLayout(main_page)
+        layout.setContentsMargins(50, 28, 50, 28)
+        layout.setSpacing(22)
 
         self.logo = QLabel("", self)
-        self.logo.setAlignment(Qt.AlignRight)
+        self.logo.setAlignment(Qt.AlignCenter)
         self._load_logo()
 
-        self.title_label = QLabel("Sistema de llenado de agua", self)
+        self.title_label = QLabel("Agua Purificada Lupita", self)
         self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setStyleSheet("font-size: 34px; font-weight: bold;")
+        self.title_label.setStyleSheet("font-size: 54px; font-weight: 800; color: #0057b8;")
 
-        self.credit_label = QLabel("Crédito: $0.00", self)
+        self.prices_label = QLabel(
+            f"{self.config.product_full_name}: ${self.config.price_full:.0f}    |    "
+            f"{self.config.product_half_name}: ${self.config.price_half:.0f}    |    "
+            f"{self.config.product_gallon_name}: ${self.config.price_gallon:.0f}",
+            self,
+        )
+        self.prices_label.setAlignment(Qt.AlignCenter)
+        self.prices_label.setStyleSheet("font-size: 34px; font-weight: 700; color: #007ad6;")
+
+        self.credit_label = QLabel("Crédito disponible: $0.00", self)
         self.credit_label.setAlignment(Qt.AlignCenter)
-        self.credit_label.setStyleSheet("font-size: 28px;")
+        self.credit_label.setStyleSheet("font-size: 42px; font-weight: 700;")
 
-        self.selection_label = QLabel("Selección: Ninguna", self)
+        self.selection_label = QLabel("Selección actual: Ninguna", self)
         self.selection_label.setAlignment(Qt.AlignCenter)
-        self.selection_label.setStyleSheet("font-size: 26px;")
+        self.selection_label.setStyleSheet("font-size: 38px; font-weight: 700;")
 
         self.rinse_label = QLabel("Enjuague: No", self)
         self.rinse_label.setAlignment(Qt.AlignCenter)
-        self.rinse_label.setStyleSheet("font-size: 24px;")
+        self.rinse_label.setStyleSheet("font-size: 34px; font-weight: 700;")
 
         self.state_label = QLabel(
             "Inserta crédito (GPIO12), selecciona producto (GPIO16/20/21), activa enjuague (GPIO25) y presiona OK (GPIO24)",
@@ -102,30 +128,58 @@ class MainWindow(QMainWindow):
         )
         self.state_label.setWordWrap(True)
         self.state_label.setAlignment(Qt.AlignCenter)
-        self.state_label.setStyleSheet("font-size: 22px; color: #333;")
+        self.state_label.setStyleSheet("font-size: 30px; color: #004f97; font-weight: 600;")
 
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
-        self.progress_bar.setStyleSheet("QProgressBar {font-size: 18px; height: 34px;}")
+        self.progress_bar.setVisible(False)
+        self.progress_bar.setStyleSheet(
+            """
+            QProgressBar {
+                border: 3px solid #0057b8;
+                border-radius: 12px;
+                text-align: center;
+                font-size: 28px;
+                min-height: 52px;
+                background: #ffffff;
+                color: #003d8f;
+            }
+            QProgressBar::chunk {
+                background-color: #0096ff;
+                border-radius: 9px;
+            }
+            """
+        )
 
-        layout.addWidget(self.logo)
-        layout.addWidget(self.title_label)
-        layout.addWidget(self.credit_label)
-        layout.addWidget(self.selection_label)
-        layout.addWidget(self.rinse_label)
-        layout.addWidget(self.state_label)
-        layout.addWidget(self.progress_bar)
-        layout.addStretch()
+        layout.addWidget(self.logo, 4)
+        layout.addWidget(self.title_label, 2)
+        layout.addWidget(self.prices_label, 1)
+        layout.addWidget(self.credit_label, 1)
+        layout.addWidget(self.selection_label, 1)
+        layout.addWidget(self.rinse_label, 1)
+        layout.addWidget(self.state_label, 2)
+        layout.addWidget(self.progress_bar, 1)
 
-        self.setCentralWidget(central)
+        self.thank_you_label = QLabel("Gracias por su compra!!!", self)
+        self.thank_you_label.setAlignment(Qt.AlignCenter)
+        self.thank_you_label.setStyleSheet(
+            "font-size: 94px; font-weight: 900; color: #0057b8; background-color: #dff3ff;"
+        )
+
+        self.stack.addWidget(main_page)
+        self.stack.addWidget(self.thank_you_label)
+        self.stack.setCurrentIndex(0)
+
+        self.setCentralWidget(self.stack)
 
     def _load_logo(self) -> None:
         pixmap = QPixmap(self.config.logo_path)
         if pixmap.isNull():
-            self.logo.setText("[LOGO]")
+            self.logo.setText("[Logo Lupita]")
+            self.logo.setStyleSheet("font-size: 44px; font-weight: 700; color: #0057b8;")
             return
-        self.logo.setPixmap(pixmap.scaledToHeight(90, Qt.SmoothTransformation))
+        self.logo.setPixmap(pixmap.scaledToHeight(360, Qt.SmoothTransformation))
 
     def _on_coin_pulse(self) -> None:
         with self._lock:
@@ -172,11 +226,7 @@ class MainWindow(QMainWindow):
                 product = self.selected_product
                 price = self.selected_price
                 self.ui_state_changed.emit("Iniciando llenado...")
-                Thread(
-                    target=self._run_fill_only_cycle,
-                    args=(fill_seconds, product, price),
-                    daemon=True,
-                ).start()
+                Thread(target=self._run_fill_only_cycle, args=(fill_seconds, product, price), daemon=True).start()
                 return
 
             if not self.selected_product:
@@ -190,22 +240,17 @@ class MainWindow(QMainWindow):
                 return
 
             self.in_process = True
-            fill_seconds = self.selected_fill_seconds
-            product = self.selected_product
-            price = self.selected_price
 
-        Thread(target=self._run_rinse_then_wait_cycle, args=(fill_seconds, product, price), daemon=True).start()
+        Thread(target=self._run_rinse_then_wait_cycle, daemon=True).start()
 
-    def _run_rinse_then_wait_cycle(self, fill_seconds: float, product: str, price: float) -> None:
+    def _run_rinse_then_wait_cycle(self) -> None:
         try:
             self.ui_state_changed.emit("Enjuagando garrafón...")
-            self._animate_progress(self.config.rinse_seconds)
             self.valve.activate_rinse_for(self.config.rinse_seconds)
             with self._lock:
                 self.in_process = False
                 self.awaiting_fill_confirmation = True
             self.ui_state_changed.emit("Voltea el garrafón y presiona OK para iniciar llenado")
-            self.ui_progress.emit(0)
         except ValveControllerError as exc:
             with self._lock:
                 self.in_process = False
@@ -213,14 +258,19 @@ class MainWindow(QMainWindow):
             self.ui_error.emit(str(exc))
 
     def _run_fill_only_cycle(self, fill_seconds: float, product: str, price: float) -> None:
+        progress_worker = Thread(target=self._animate_progress, args=(fill_seconds,), daemon=True)
         try:
+            self.ui_progress.emit(0)
+            self.ui_progress_visible.emit(True)
             self.ui_state_changed.emit("Llenando...")
-            self._animate_progress(fill_seconds)
+            progress_worker.start()
             self.valve.activate_fill_for(fill_seconds)
+            progress_worker.join()
             self.ui_process_finished.emit(price, product)
         except ValveControllerError as exc:
             with self._lock:
                 self.in_process = False
+            self.ui_progress_visible.emit(False)
             self.ui_error.emit(str(exc))
 
     def _animate_progress(self, total_seconds: float) -> None:
@@ -255,7 +305,18 @@ class MainWindow(QMainWindow):
         self.ui_selected_product.emit("Ninguna")
         self.ui_rinse_changed.emit(False)
         self.ui_progress.emit(0)
-        self.ui_state_changed.emit("Proceso completado. Listo para nueva venta")
+        self.ui_progress_visible.emit(False)
+        self.ui_show_thank_you.emit()
+
+    def _show_thank_you_screen(self) -> None:
+        self.stack.setCurrentIndex(1)
+        QTimer.singleShot(2000, self._return_to_main_screen)
+
+    def _return_to_main_screen(self) -> None:
+        self.stack.setCurrentIndex(0)
+        self.ui_state_changed.emit(
+            "Inserta crédito (GPIO12), selecciona producto (GPIO16/20/21), activa enjuague (GPIO25) y presiona OK (GPIO24)"
+        )
 
     def _refresh_credit(self, current_credit: float) -> None:
         self.credit_label.setText(f"Crédito disponible: ${current_credit:.2f}")

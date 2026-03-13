@@ -10,8 +10,8 @@
   "product_full_name": "Garrafón completo",
   "product_half_name": "Medio garrafón",
   "product_gallon_name": "1 galón",
-  "price_full": 20.0,
-  "price_half": 10.0,
+  "price_full": 12.0,
+  "price_half": 8.0,
   "price_gallon": 5.0,
   "fill_seconds_full": 20.0,
   "fill_seconds_half": 10.0,
@@ -19,5 +19,5 @@
   "rinse_seconds": 2.0,
   "coin_pulse_value": 1.0,
   "fullscreen": true,
-  "logo_path": "assets/images/logo.png"
+  "logo_path": "assets/images/lupita_logo.png"
 }

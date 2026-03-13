@@ -38,6 +38,11 @@ water_vending/
 - GPIO 25: selección de enjuague (toggle)
 - GPIO 24: botón OK
 
+## Precios en pantalla inicial
+- Garrafón completo: **$12**
+- Medio garrafón: **$8**
+- 1 galón: **$5**
+
 ## Flujo operativo
 1. El monedero agrega crédito por pulsos en GPIO 12.
 2. El operador selecciona producto (GPIO 16/20/21).
@@ -48,7 +53,11 @@ water_vending/
    - Garrafón completo: 20s
    - Medio garrafón: 10s
    - 1 galón: 5s
-7. Se registra la venta en SQLite y la UI vuelve al estado inicial.
+7. Se muestra progreso de llenado en barra azul.
+8. Al finalizar aparece “Gracias por su compra!!!” durante 2 segundos y vuelve a la pantalla principal.
+
+## Imagen de logo
+Coloca la imagen del logo en `assets/images/lupita_logo.png` (ruta configurada por defecto en `config.json`).
 
 ## Instalación rápida (Raspberry Pi OS)
 

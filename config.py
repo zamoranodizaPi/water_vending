@@ -22,8 +22,8 @@ class AppConfig:
     product_full_name: str = "Garrafón completo"
     product_half_name: str = "Medio garrafón"
     product_gallon_name: str = "1 galón"
-    price_full: float = 20.0
-    price_half: float = 10.0
+    price_full: float = 12.0
+    price_half: float = 8.0
     price_gallon: float = 5.0
     fill_seconds_full: float = 20.0
     fill_seconds_half: float = 10.0
@@ -32,7 +32,7 @@ class AppConfig:
     coin_pulse_value: float = 1.0
 
     fullscreen: bool = True
-    logo_path: str = "assets/images/logo.png"
+    logo_path: str = "assets/images/lupita_logo.png"
 
 
 def _sanitize(raw: Dict[str, Any]) -> Dict[str, Any]:
