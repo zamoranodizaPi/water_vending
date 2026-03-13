@@ -44,7 +44,7 @@ def main() -> int:
     if config.fullscreen:
         window.showFullScreen()
     else:
-        window.resize(1024, 600)
+        window.resize(800, 480)
         window.show()
 
     return app.exec_()

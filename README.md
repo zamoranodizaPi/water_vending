@@ -56,6 +56,9 @@ water_vending/
 7. Se muestra progreso de llenado en barra azul.
 8. Al finalizar aparece “Gracias por su compra!!!” durante 2 segundos y vuelve a la pantalla principal.
 
+## Resolución objetivo
+Interfaz ajustada para pantalla táctil de **800 x 480**.
+
 ## Imágenes de interfaz
 Coloca las imágenes en:
 - `assets/images/logo.png`
