@@ -13,11 +13,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class CoinAcceptor:
-    """Reads coin values from serial input.
+    """Reads coin events from serial.
 
-    Expected input examples per line:
-    - "1.0"  -> adds 1.0 currency unit
-    - "COIN:5" -> adds 5.0 currency units
+    Modes:
+    - serial_value: each line is a numeric value or `COIN:<value>`
+    - pulse: each line represents one pulse; amount = coin_pulse_value
     """
 
     def __init__(
@@ -26,11 +26,15 @@ class CoinAcceptor:
         baudrate: int,
         on_credit: Callable[[float], None],
         on_error: Optional[Callable[[str], None]] = None,
+        input_mode: str = "serial_value",
+        coin_pulse_value: float = 1.0,
     ):
         self.port = port
         self.baudrate = baudrate
         self.on_credit = on_credit
         self.on_error = on_error
+        self.input_mode = input_mode
+        self.coin_pulse_value = coin_pulse_value
 
         self._serial: Optional[serial.Serial] = None
         self._thread: Optional[threading.Thread] = None
@@ -82,8 +86,10 @@ class CoinAcceptor:
         if self._serial and self._serial.is_open:
             self._serial.close()
 
-    @staticmethod
-    def _parse_amount(payload: str) -> float:
+    def _parse_amount(self, payload: str) -> float:
+        if self.input_mode == "pulse":
+            return self.coin_pulse_value
+
         if payload.upper().startswith("COIN:"):
             return float(payload.split(":", 1)[1])
         return float(payload)

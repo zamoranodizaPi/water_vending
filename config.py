@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict
 
@@ -17,6 +17,8 @@ class AppConfig:
     relay_gpio_pin: int = 17
     serial_port: str = "/dev/ttyUSB0"
     serial_baudrate: int = 9600
+    coin_input_mode: str = "serial_value"  # serial_value | pulse
+    coin_pulse_value: float = 1.0
     fullscreen: bool = True
     logo_path: str = "assets/images/logo.png"
 

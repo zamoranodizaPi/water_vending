@@ -5,6 +5,8 @@
   "relay_gpio_pin": 17,
   "serial_port": "/dev/ttyUSB0",
   "serial_baudrate": 9600,
+  "coin_input_mode": "serial_value",
+  "coin_pulse_value": 1.0,
   "fullscreen": true,
   "logo_path": "assets/images/logo.png"
 }

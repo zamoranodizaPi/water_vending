@@ -41,9 +41,10 @@ sudo apt update
 sudo apt install -y python3 python3-pip python3-venv libqt5gui5 libqt5widgets5
 ```
 
-2. Crear entorno virtual e instalar Python deps:
+2. Clonar e instalar Python deps:
 
 ```bash
+git clone <tu-repo> /opt/water_vending
 cd /opt/water_vending
 python3 -m venv .venv
 source .venv/bin/activate
@@ -57,6 +58,8 @@ pip install -r requirements.txt
 - `valve_open_seconds`
 - `relay_gpio_pin`
 - `serial_port`
+- `coin_input_mode`: `serial_value` o `pulse`
+- `coin_pulse_value`: valor de cada pulso (si usas `pulse`)
 
 4. Ejecutar manualmente:
 
@@ -64,6 +67,17 @@ pip install -r requirements.txt
 source .venv/bin/activate
 python main.py
 ```
+
+## Funcionamiento de pago y despacho
+
+- El crédito aumenta automáticamente con cada evento del monedero.
+- Cuando el crédito alcanza el precio configurado, el sistema **despacha automáticamente**.
+- El despachado activa el relay por `valve_open_seconds`.
+- Cada venta queda registrada en SQLite con:
+  - `timestamp`
+  - `product`
+  - `price`
+  - `payment_received`
 
 ## Autostart con systemd
 
@@ -90,9 +104,6 @@ sudo systemctl status water-vending.service
 journalctl -u water-vending.service -f
 ```
 
-## Notas de hardware
+## Futuro: aceptador de billetes
 
-- Relay conectado al pin definido en `relay_gpio_pin`.
-- Aceptador de monedas por USB serial (`/dev/ttyUSB0` típicamente).
-- El parser serial acepta líneas como `1.0` o `COIN:5`.
-- Preparado para integrar un aceptador de billetes agregando otro lector serial similar.
+La arquitectura permite añadir un lector de billetes como otro módulo de `hardware/` que emita crédito al mismo flujo de la UI.

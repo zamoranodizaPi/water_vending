@@ -4,14 +4,13 @@ import datetime as dt
 import logging
 import threading
 
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMainWindow,
     QMessageBox,
-    QPushButton,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -29,6 +28,7 @@ LOGGER = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow):
     credit_added = pyqtSignal(float)
+    dispense_finished = pyqtSignal(float)
     hardware_error = pyqtSignal(str)
 
     def __init__(self, config: AppConfig, db: SalesDatabase, valve: ValveController):
@@ -39,8 +39,10 @@ class MainWindow(QMainWindow):
 
         self.credit = 0.0
         self.dispensing = False
+        self._lock = threading.Lock()
 
         self.credit_added.connect(self._on_credit_added)
+        self.dispense_finished.connect(self._on_dispense_finished)
         self.hardware_error.connect(self._on_hardware_error)
 
         self.coin_acceptor = CoinAcceptor(
@@ -48,6 +50,8 @@ class MainWindow(QMainWindow):
             baudrate=config.serial_baudrate,
             on_credit=lambda amount: self.credit_added.emit(amount),
             on_error=lambda message: self.hardware_error.emit(message),
+            input_mode=config.coin_input_mode,
+            coin_pulse_value=config.coin_pulse_value,
         )
 
         self.setWindowTitle("Water Vending")
@@ -67,7 +71,6 @@ class MainWindow(QMainWindow):
         self.logo_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self._load_logo()
         top_bar.addWidget(self.logo_label)
-
         root_layout.addLayout(top_bar)
 
         self.stack = QStackedWidget()
@@ -81,17 +84,9 @@ class MainWindow(QMainWindow):
         self.credit_label = QLabel()
         self.credit_label.setStyleSheet("font-size: 32px; font-weight: bold;")
         footer.addWidget(self.credit_label)
-
-        footer.addStretch(1)
-
-        self.buy_button = QPushButton("Despachar")
-        self.buy_button.setStyleSheet("font-size: 28px; padding: 14px 28px;")
-        self.buy_button.clicked.connect(self.try_dispense)
-        footer.addWidget(self.buy_button)
-
         root_layout.addLayout(footer)
-        self._refresh_credit_label()
 
+        self._refresh_credit_label()
         self.setStyleSheet("background-color: #f5f8fc;")
 
     def _load_logo(self) -> None:
@@ -113,48 +108,53 @@ class MainWindow(QMainWindow):
         )
 
     def _on_credit_added(self, amount: float) -> None:
-        self.credit += amount
+        with self._lock:
+            self.credit += amount
+            should_dispense = (not self.dispensing) and self.credit >= self.config.price_per_product
+
         self._refresh_credit_label()
+        if should_dispense:
+            self._start_dispense()
 
-    def try_dispense(self) -> None:
-        if self.dispensing:
-            return
-
-        if self.credit < self.config.price_per_product:
-            QMessageBox.information(self, "Pago pendiente", "Saldo insuficiente.")
-            return
-
+    def _start_dispense(self) -> None:
         self.dispensing = True
         self.stack.setCurrentWidget(self.dispensing_screen)
-        self.buy_button.setEnabled(False)
-
         thread = threading.Thread(target=self._dispense_cycle, daemon=True)
         thread.start()
 
     def _dispense_cycle(self) -> None:
         try:
             self.valve.open_for(self.config.valve_open_seconds)
-            paid = self.credit
-            self.credit -= self.config.price_per_product
+            self.dispense_finished.emit(self.config.price_per_product)
+        except ValveControllerError as exc:
+            self.hardware_error.emit(str(exc))
+            self.dispense_finished.emit(0.0)
+        except Exception as exc:
+            self.hardware_error.emit(f"Unexpected dispensing error: {exc}")
+            self.dispense_finished.emit(0.0)
+
+    def _on_dispense_finished(self, charged_amount: float) -> None:
+        paid_snapshot = 0.0
+        with self._lock:
+            if charged_amount > 0:
+                paid_snapshot = self.credit
+                self.credit = max(0.0, self.credit - charged_amount)
+            self.dispensing = False
+
+        if charged_amount > 0:
             timestamp = dt.datetime.now().isoformat(timespec="seconds")
             self.db.log_sale(
                 timestamp=timestamp,
                 product=self.config.product_name,
                 price=self.config.price_per_product,
-                payment_received=paid,
+                payment_received=paid_snapshot,
             )
-        except ValveControllerError as exc:
-            self.hardware_error.emit(str(exc))
-        except Exception as exc:
-            self.hardware_error.emit(f"Unexpected dispensing error: {exc}")
-        finally:
-            QTimer.singleShot(0, self._finish_dispense)
 
-    def _finish_dispense(self) -> None:
-        self.dispensing = False
-        self.buy_button.setEnabled(True)
         self.stack.setCurrentWidget(self.idle_screen)
         self._refresh_credit_label()
+
+        if self.credit >= self.config.price_per_product and not self.dispensing:
+            self._start_dispense()
 
     def _on_hardware_error(self, message: str) -> None:
         LOGGER.error(message)
