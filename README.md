@@ -59,9 +59,9 @@ water_vending/
 ## Imágenes de interfaz
 Coloca las imágenes en:
 - `assets/images/logo.png`
-- `assets/images/fondo.png`
+- `assets/images/background.png`
 
-La UI usa `logo.png` en la esquina superior derecha y `fondo.png` como fondo principal.
+La UI usa `logo.png` en la esquina superior derecha y `background.png` como fondo principal.
 
 ## Instalación rápida (Raspberry Pi OS)
 

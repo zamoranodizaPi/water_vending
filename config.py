@@ -33,7 +33,7 @@ class AppConfig:
 
     fullscreen: bool = True
     logo_path: str = "assets/images/logo.png"
-    background_path: str = "assets/images/fondo.png"
+    background_path: str = "assets/images/background.png"
 
 
 def _sanitize(raw: Dict[str, Any]) -> Dict[str, Any]:

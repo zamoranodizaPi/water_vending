@@ -3,7 +3,7 @@ from threading import Lock, Thread
 import time
 
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPalette, QBrush, QPixmap
 from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -37,6 +37,7 @@ class MainWindow(QMainWindow):
         self.config = config
         self.db = db
         self.valve = valve
+        self._background_pixmap = QPixmap()
 
         self.credit = 0.0
         self.selected_product = ""
@@ -79,19 +80,11 @@ class MainWindow(QMainWindow):
 
         self.stack = QStackedWidget(self)
 
-        main_page = QWidget(self)
-        main_page.setStyleSheet(
-            f"""
-            QWidget {{
-                background-image: url({self.config.background_path});
-                background-repeat: no-repeat;
-                background-position: center;
-                color: #003d8f;
-            }}
-            """
-        )
+        self.main_page = QWidget(self)
+        self._load_background_pixmap()
+        self._apply_background(self.main_page)
 
-        layout = QVBoxLayout(main_page)
+        layout = QVBoxLayout(self.main_page)
         layout.setContentsMargins(36, 24, 36, 24)
         layout.setSpacing(20)
 
@@ -113,19 +106,19 @@ class MainWindow(QMainWindow):
             self,
         )
         self.prices_label.setAlignment(Qt.AlignCenter)
-        self.prices_label.setStyleSheet("font-size: 34px; font-weight: 700; color: #007ad6; background: rgba(255,255,255,0.55);")
+        self.prices_label.setStyleSheet("font-size: 34px; font-weight: 700; color: #007ad6; background: transparent;")
 
         self.credit_label = QLabel("Crédito disponible: $0.00", self)
         self.credit_label.setAlignment(Qt.AlignCenter)
-        self.credit_label.setStyleSheet("font-size: 40px; font-weight: 700; background: rgba(255,255,255,0.50);")
+        self.credit_label.setStyleSheet("font-size: 40px; font-weight: 700; background: transparent;")
 
         self.selection_label = QLabel("Selección actual: Ninguna", self)
         self.selection_label.setAlignment(Qt.AlignCenter)
-        self.selection_label.setStyleSheet("font-size: 36px; font-weight: 700; background: rgba(255,255,255,0.50);")
+        self.selection_label.setStyleSheet("font-size: 36px; font-weight: 700; background: transparent;")
 
         self.rinse_label = QLabel("Enjuague: No", self)
         self.rinse_label.setAlignment(Qt.AlignCenter)
-        self.rinse_label.setStyleSheet("font-size: 32px; font-weight: 700; background: rgba(255,255,255,0.50);")
+        self.rinse_label.setStyleSheet("font-size: 32px; font-weight: 700; background: transparent;")
 
         self.state_label = QLabel(
             "Inserta crédito (GPIO12), selecciona producto (GPIO16/20/21), enjuague opcional (GPIO25) y presiona OK (GPIO24)",
@@ -133,7 +126,7 @@ class MainWindow(QMainWindow):
         )
         self.state_label.setWordWrap(True)
         self.state_label.setAlignment(Qt.AlignCenter)
-        self.state_label.setStyleSheet("font-size: 30px; color: #004f97; font-weight: 700; background: rgba(255,255,255,0.60);")
+        self.state_label.setStyleSheet("font-size: 30px; color: #004f97; font-weight: 700; background: transparent;")
 
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setRange(0, 100)
@@ -147,7 +140,7 @@ class MainWindow(QMainWindow):
                 text-align: center;
                 font-size: 26px;
                 min-height: 48px;
-                background: #ffffff;
+                background: transparent;
                 color: #003d8f;
             }
             QProgressBar::chunk {
@@ -167,18 +160,37 @@ class MainWindow(QMainWindow):
         layout.addStretch()
         layout.addWidget(self.progress_bar)
 
+        self.thank_you_page = QWidget(self)
+        self._apply_background(self.thank_you_page)
+        thank_you_layout = QVBoxLayout(self.thank_you_page)
         self.thank_you_label = QLabel("Gracias por su compra!!!", self)
         self.thank_you_label.setAlignment(Qt.AlignCenter)
-        self.thank_you_label.setStyleSheet(
-            "font-size: 92px; font-weight: 900; color: #0057b8;"
-            f"background-image: url({self.config.background_path}); background-position: center;"
-        )
+        self.thank_you_label.setStyleSheet("font-size: 92px; font-weight: 900; color: #0057b8; background: transparent;")
+        thank_you_layout.addWidget(self.thank_you_label)
 
-        self.stack.addWidget(main_page)
-        self.stack.addWidget(self.thank_you_label)
+        self.stack.addWidget(self.main_page)
+        self.stack.addWidget(self.thank_you_page)
         self.stack.setCurrentIndex(0)
 
         self.setCentralWidget(self.stack)
+
+    def _load_background_pixmap(self) -> None:
+        self._background_pixmap = QPixmap(self.config.background_path)
+
+    def _apply_background(self, widget: QWidget) -> None:
+        if self._background_pixmap.isNull():
+            widget.setStyleSheet("background: #dff3ff;")
+            return
+        palette = widget.palette()
+        scaled = self._background_pixmap.scaled(widget.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+        palette.setBrush(QPalette.Window, QBrush(scaled))
+        widget.setAutoFillBackground(True)
+        widget.setPalette(palette)
+
+    def resizeEvent(self, event):  # type: ignore[override]
+        self._apply_background(self.main_page)
+        self._apply_background(self.thank_you_page)
+        super().resizeEvent(event)
 
     def _load_logo(self) -> None:
         pixmap = QPixmap(self.config.logo_path)
