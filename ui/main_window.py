@@ -5,6 +5,7 @@ import time
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
+    QHBoxLayout,
     QLabel,
     QMainWindow,
     QMessageBox,
@@ -75,31 +76,35 @@ class MainWindow(QMainWindow):
 
     def _build_ui(self) -> None:
         self.setWindowTitle("Agua Purificada Lupita")
-        self.setStyleSheet(
-            """
-            QMainWindow {
-                background-color: #dff3ff;
-            }
-            QLabel {
-                color: #003d8f;
-            }
-            """
-        )
 
         self.stack = QStackedWidget(self)
 
         main_page = QWidget(self)
-        layout = QVBoxLayout(main_page)
-        layout.setContentsMargins(50, 28, 50, 28)
-        layout.setSpacing(22)
+        main_page.setStyleSheet(
+            f"""
+            QWidget {{
+                background-image: url({self.config.background_path});
+                background-repeat: no-repeat;
+                background-position: center;
+                color: #003d8f;
+            }}
+            """
+        )
 
+        layout = QVBoxLayout(main_page)
+        layout.setContentsMargins(36, 24, 36, 24)
+        layout.setSpacing(20)
+
+        top_row = QHBoxLayout()
+        top_row.addStretch()
         self.logo = QLabel("", self)
-        self.logo.setAlignment(Qt.AlignCenter)
+        self.logo.setAlignment(Qt.AlignRight | Qt.AlignTop)
         self._load_logo()
+        top_row.addWidget(self.logo)
 
         self.title_label = QLabel("Agua Purificada Lupita", self)
         self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setStyleSheet("font-size: 54px; font-weight: 800; color: #0057b8;")
+        self.title_label.setStyleSheet("font-size: 56px; font-weight: 800; color: #0057b8; background: transparent;")
 
         self.prices_label = QLabel(
             f"{self.config.product_full_name}: ${self.config.price_full:.0f}    |    "
@@ -108,27 +113,27 @@ class MainWindow(QMainWindow):
             self,
         )
         self.prices_label.setAlignment(Qt.AlignCenter)
-        self.prices_label.setStyleSheet("font-size: 34px; font-weight: 700; color: #007ad6;")
+        self.prices_label.setStyleSheet("font-size: 34px; font-weight: 700; color: #007ad6; background: rgba(255,255,255,0.55);")
 
         self.credit_label = QLabel("Crédito disponible: $0.00", self)
         self.credit_label.setAlignment(Qt.AlignCenter)
-        self.credit_label.setStyleSheet("font-size: 42px; font-weight: 700;")
+        self.credit_label.setStyleSheet("font-size: 40px; font-weight: 700; background: rgba(255,255,255,0.50);")
 
         self.selection_label = QLabel("Selección actual: Ninguna", self)
         self.selection_label.setAlignment(Qt.AlignCenter)
-        self.selection_label.setStyleSheet("font-size: 38px; font-weight: 700;")
+        self.selection_label.setStyleSheet("font-size: 36px; font-weight: 700; background: rgba(255,255,255,0.50);")
 
         self.rinse_label = QLabel("Enjuague: No", self)
         self.rinse_label.setAlignment(Qt.AlignCenter)
-        self.rinse_label.setStyleSheet("font-size: 34px; font-weight: 700;")
+        self.rinse_label.setStyleSheet("font-size: 32px; font-weight: 700; background: rgba(255,255,255,0.50);")
 
         self.state_label = QLabel(
-            "Inserta crédito (GPIO12), selecciona producto (GPIO16/20/21), activa enjuague (GPIO25) y presiona OK (GPIO24)",
+            "Inserta crédito (GPIO12), selecciona producto (GPIO16/20/21), enjuague opcional (GPIO25) y presiona OK (GPIO24)",
             self,
         )
         self.state_label.setWordWrap(True)
         self.state_label.setAlignment(Qt.AlignCenter)
-        self.state_label.setStyleSheet("font-size: 30px; color: #004f97; font-weight: 600;")
+        self.state_label.setStyleSheet("font-size: 30px; color: #004f97; font-weight: 700; background: rgba(255,255,255,0.60);")
 
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setRange(0, 100)
@@ -140,8 +145,8 @@ class MainWindow(QMainWindow):
                 border: 3px solid #0057b8;
                 border-radius: 12px;
                 text-align: center;
-                font-size: 28px;
-                min-height: 52px;
+                font-size: 26px;
+                min-height: 48px;
                 background: #ffffff;
                 color: #003d8f;
             }
@@ -152,19 +157,21 @@ class MainWindow(QMainWindow):
             """
         )
 
-        layout.addWidget(self.logo, 4)
-        layout.addWidget(self.title_label, 2)
-        layout.addWidget(self.prices_label, 1)
-        layout.addWidget(self.credit_label, 1)
-        layout.addWidget(self.selection_label, 1)
-        layout.addWidget(self.rinse_label, 1)
-        layout.addWidget(self.state_label, 2)
-        layout.addWidget(self.progress_bar, 1)
+        layout.addLayout(top_row)
+        layout.addWidget(self.title_label)
+        layout.addWidget(self.prices_label)
+        layout.addWidget(self.credit_label)
+        layout.addWidget(self.selection_label)
+        layout.addWidget(self.rinse_label)
+        layout.addWidget(self.state_label)
+        layout.addStretch()
+        layout.addWidget(self.progress_bar)
 
         self.thank_you_label = QLabel("Gracias por su compra!!!", self)
         self.thank_you_label.setAlignment(Qt.AlignCenter)
         self.thank_you_label.setStyleSheet(
-            "font-size: 94px; font-weight: 900; color: #0057b8; background-color: #dff3ff;"
+            "font-size: 92px; font-weight: 900; color: #0057b8;"
+            f"background-image: url({self.config.background_path}); background-position: center;"
         )
 
         self.stack.addWidget(main_page)
@@ -176,10 +183,10 @@ class MainWindow(QMainWindow):
     def _load_logo(self) -> None:
         pixmap = QPixmap(self.config.logo_path)
         if pixmap.isNull():
-            self.logo.setText("[Logo Lupita]")
-            self.logo.setStyleSheet("font-size: 44px; font-weight: 700; color: #0057b8;")
+            self.logo.setText("[logo.png]")
+            self.logo.setStyleSheet("font-size: 24px; font-weight: 700; color: #0057b8;")
             return
-        self.logo.setPixmap(pixmap.scaledToHeight(360, Qt.SmoothTransformation))
+        self.logo.setPixmap(pixmap.scaledToHeight(140, Qt.SmoothTransformation))
 
     def _on_coin_pulse(self) -> None:
         with self._lock:
@@ -235,13 +242,18 @@ class MainWindow(QMainWindow):
             if self.credit < self.selected_price:
                 self.ui_state_changed.emit("Crédito insuficiente para la selección actual")
                 return
-            if not self.rinse_selected:
-                self.ui_state_changed.emit("Activa enjuague (GPIO25) antes de presionar OK")
-                return
 
             self.in_process = True
+            rinse_selected = self.rinse_selected
+            fill_seconds = self.selected_fill_seconds
+            product = self.selected_product
+            price = self.selected_price
 
-        Thread(target=self._run_rinse_then_wait_cycle, daemon=True).start()
+        if rinse_selected:
+            Thread(target=self._run_rinse_then_wait_cycle, daemon=True).start()
+        else:
+            self.ui_state_changed.emit("Iniciando llenado...")
+            Thread(target=self._run_fill_only_cycle, args=(fill_seconds, product, price), daemon=True).start()
 
     def _run_rinse_then_wait_cycle(self) -> None:
         try:
@@ -315,7 +327,7 @@ class MainWindow(QMainWindow):
     def _return_to_main_screen(self) -> None:
         self.stack.setCurrentIndex(0)
         self.ui_state_changed.emit(
-            "Inserta crédito (GPIO12), selecciona producto (GPIO16/20/21), activa enjuague (GPIO25) y presiona OK (GPIO24)"
+            "Inserta crédito (GPIO12), selecciona producto (GPIO16/20/21), enjuague opcional (GPIO25) y presiona OK (GPIO24)"
         )
 
     def _refresh_credit(self, current_credit: float) -> None:

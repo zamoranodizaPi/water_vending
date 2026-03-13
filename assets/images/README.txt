@@ -1,2 +1,3 @@
-Coloca aquí el archivo del logo como:
-assets/images/lupita_logo.png
+Coloca aquí las imágenes solicitadas:
+- assets/images/logo.png
+- assets/images/fondo.png

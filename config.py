@@ -32,7 +32,8 @@ class AppConfig:
     coin_pulse_value: float = 1.0
 
     fullscreen: bool = True
-    logo_path: str = "assets/images/lupita_logo.png"
+    logo_path: str = "assets/images/logo.png"
+    background_path: str = "assets/images/fondo.png"
 
 
 def _sanitize(raw: Dict[str, Any]) -> Dict[str, Any]:

@@ -46,18 +46,22 @@ water_vending/
 ## Flujo operativo
 1. El monedero agrega crédito por pulsos en GPIO 12.
 2. El operador selecciona producto (GPIO 16/20/21).
-3. Activa enjuague (GPIO 25).
-4. Presiona OK (GPIO 24) para ejecutar enjuague por 2 segundos (GPIO 27).
-5. Se indica en pantalla “voltear garrafón y presionar OK”.
-6. Al presionar OK de nuevo inicia llenado (GPIO 17):
+3. (Opcional) Activa enjuague (GPIO 25).
+4. Si enjuague está activo, al presionar OK (GPIO 24) se ejecuta enjuague por 2 segundos (GPIO 27) y luego se pide confirmar llenado con OK.
+5. Si enjuague NO está activo, al presionar OK inicia llenado directo (GPIO 17).
+6. Tiempos de llenado:
    - Garrafón completo: 20s
    - Medio garrafón: 10s
    - 1 galón: 5s
 7. Se muestra progreso de llenado en barra azul.
 8. Al finalizar aparece “Gracias por su compra!!!” durante 2 segundos y vuelve a la pantalla principal.
 
-## Imagen de logo
-Coloca la imagen del logo en `assets/images/lupita_logo.png` (ruta configurada por defecto en `config.json`).
+## Imágenes de interfaz
+Coloca las imágenes en:
+- `assets/images/logo.png`
+- `assets/images/fondo.png`
+
+La UI usa `logo.png` en la esquina superior derecha y `fondo.png` como fondo principal.
 
 ## Instalación rápida (Raspberry Pi OS)
 
