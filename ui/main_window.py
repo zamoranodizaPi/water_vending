@@ -20,6 +20,8 @@ from database.sales_db import SalesDatabase
 from hardware.gpio_inputs import GPIOInputs
 from hardware.valve_controller import ValveController, ValveControllerError
 
+DARK_BLUE = "#003366"
+
 
 class MainWindow(QMainWindow):
     ui_credit_updated = pyqtSignal(float)
@@ -29,8 +31,8 @@ class MainWindow(QMainWindow):
     ui_error = pyqtSignal(str)
     ui_process_finished = pyqtSignal(float, str)
     ui_progress = pyqtSignal(int)
-    ui_progress_visible = pyqtSignal(bool)
     ui_show_thank_you = pyqtSignal()
+    ui_fill_mode = pyqtSignal(bool)
 
     def __init__(self, config: AppConfig, db: SalesDatabase, valve: ValveController):
         super().__init__()
@@ -57,8 +59,8 @@ class MainWindow(QMainWindow):
         self.ui_error.connect(self._show_error)
         self.ui_process_finished.connect(self._on_process_finished)
         self.ui_progress.connect(self.progress_bar.setValue)
-        self.ui_progress_visible.connect(self.progress_bar.setVisible)
         self.ui_show_thank_you.connect(self._show_thank_you_screen)
+        self.ui_fill_mode.connect(self._set_fill_mode)
 
         self.gpio = GPIOInputs(
             coin_pin=self.config.coin_pulse_gpio_pin,
@@ -85,9 +87,14 @@ class MainWindow(QMainWindow):
         self._load_background_pixmap()
         self._apply_background(self.main_page)
 
-        layout = QVBoxLayout(self.main_page)
-        layout.setContentsMargins(20, 12, 20, 12)
-        layout.setSpacing(10)
+        root_layout = QVBoxLayout(self.main_page)
+        root_layout.setContentsMargins(12, 8, 12, 8)
+        root_layout.setSpacing(8)
+
+        self.info_panel = QWidget(self.main_page)
+        info_layout = QVBoxLayout(self.info_panel)
+        info_layout.setContentsMargins(0, 0, 0, 0)
+        info_layout.setSpacing(8)
 
         top_row = QHBoxLayout()
         top_row.addStretch()
@@ -98,7 +105,6 @@ class MainWindow(QMainWindow):
 
         self.title_label = QLabel("Agua Purificada Lupita", self)
         self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setStyleSheet("font-size: 40px; font-weight: 800; color: #ffeb3b; background: transparent;")
 
         self.prices_label = QLabel(
             f"{self.config.product_full_name}: ${self.config.price_full:.0f}    |    "
@@ -107,19 +113,15 @@ class MainWindow(QMainWindow):
             self,
         )
         self.prices_label.setAlignment(Qt.AlignCenter)
-        self.prices_label.setStyleSheet("font-size: 24px; font-weight: 700; color: #fff9c4; background: transparent;")
 
         self.credit_label = QLabel("Crédito disponible: $0.00", self)
         self.credit_label.setAlignment(Qt.AlignCenter)
-        self.credit_label.setStyleSheet("font-size: 30px; font-weight: 700; color: #ffffff; background: transparent;")
 
         self.selection_label = QLabel("Selección actual: Ninguna", self)
         self.selection_label.setAlignment(Qt.AlignCenter)
-        self.selection_label.setStyleSheet("font-size: 28px; font-weight: 700; color: #ffffff; background: transparent;")
 
         self.rinse_label = QLabel("Enjuague: No", self)
         self.rinse_label.setAlignment(Qt.AlignCenter)
-        self.rinse_label.setStyleSheet("font-size: 24px; font-weight: 700; color: #ffffff; background: transparent;")
 
         self.state_label = QLabel(
             "Inserta crédito (GPIO12), selecciona producto (GPIO16/20/21), enjuague opcional (GPIO25) y presiona OK (GPIO24)",
@@ -127,46 +129,31 @@ class MainWindow(QMainWindow):
         )
         self.state_label.setWordWrap(True)
         self.state_label.setAlignment(Qt.AlignCenter)
-        self.state_label.setStyleSheet("font-size: 22px; color: #fff9c4; font-weight: 700; background: transparent;")
+
+        info_layout.addLayout(top_row)
+        info_layout.addWidget(self.title_label)
+        info_layout.addWidget(self.prices_label)
+        info_layout.addWidget(self.credit_label)
+        info_layout.addWidget(self.selection_label)
+        info_layout.addWidget(self.rinse_label)
+        info_layout.addWidget(self.state_label)
 
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
+        self.progress_bar.setFormat("Llenando")
         self.progress_bar.setVisible(False)
-        self.progress_bar.setStyleSheet(
-            """
-            QProgressBar {
-                border: 3px solid #0057b8;
-                border-radius: 12px;
-                text-align: center;
-                font-size: 20px;
-                min-height: 32px;
-                background: transparent;
-                color: #003d8f;
-            }
-            QProgressBar::chunk {
-                background-color: #0096ff;
-                border-radius: 9px;
-            }
-            """
-        )
+        self.progress_bar.setAlignment(Qt.AlignCenter)
 
-        layout.addLayout(top_row)
-        layout.addWidget(self.title_label)
-        layout.addWidget(self.prices_label)
-        layout.addWidget(self.credit_label)
-        layout.addWidget(self.selection_label)
-        layout.addWidget(self.rinse_label)
-        layout.addWidget(self.state_label)
-        layout.addStretch()
-        layout.addWidget(self.progress_bar)
+        root_layout.addWidget(self.info_panel)
+        root_layout.addStretch()
+        root_layout.addWidget(self.progress_bar, alignment=Qt.AlignHCenter)
 
         self.thank_you_page = QWidget(self)
         self._apply_background(self.thank_you_page)
         thank_you_layout = QVBoxLayout(self.thank_you_page)
         self.thank_you_label = QLabel("Gracias por su compra!!!", self)
         self.thank_you_label.setAlignment(Qt.AlignCenter)
-        self.thank_you_label.setStyleSheet("font-size: 64px; font-weight: 900; color: #ffeb3b; background: transparent;")
         thank_you_layout.addWidget(self.thank_you_label)
 
         self.stack.addWidget(self.main_page)
@@ -174,6 +161,7 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentIndex(0)
 
         self.setCentralWidget(self.stack)
+        self._apply_responsive_styles()
 
     def _load_background_pixmap(self) -> None:
         self._background_pixmap = QPixmap(self.config.background_path)
@@ -188,18 +176,95 @@ class MainWindow(QMainWindow):
         widget.setAutoFillBackground(True)
         widget.setPalette(palette)
 
+    def _apply_responsive_styles(self) -> None:
+        width = max(800, self.width())
+        height = max(480, self.height())
+        scale = min(width / 800.0, height / 480.0)
+
+        title_size = int(34 * scale)
+        prices_size = int(20 * scale)
+        info_size = int(24 * scale)
+        status_size = int(18 * scale)
+        thanks_size = int(56 * scale)
+        progress_font = int(18 * scale)
+        progress_height = int(36 * scale)
+        base_bar_width = int(300 * scale)
+        fill_bar_width = int(600 * scale)
+
+        self._base_progress_width = base_bar_width
+        self._fill_progress_width = fill_bar_width
+
+        self.title_label.setStyleSheet(
+            f"font-size: {title_size}px; font-weight: 800; color: {DARK_BLUE}; background: transparent;"
+        )
+        self.prices_label.setStyleSheet(
+            f"font-size: {prices_size}px; font-weight: 700; color: {DARK_BLUE}; background: transparent;"
+        )
+        self.credit_label.setStyleSheet(
+            f"font-size: {info_size}px; font-weight: 700; color: {DARK_BLUE}; background: transparent;"
+        )
+        self.selection_label.setStyleSheet(
+            f"font-size: {info_size}px; font-weight: 700; color: {DARK_BLUE}; background: transparent;"
+        )
+        self.rinse_label.setStyleSheet(
+            f"font-size: {info_size}px; font-weight: 700; color: {DARK_BLUE}; background: transparent;"
+        )
+        self.state_label.setStyleSheet(
+            f"font-size: {status_size}px; font-weight: 700; color: {DARK_BLUE}; background: transparent;"
+        )
+        self.thank_you_label.setStyleSheet(
+            f"font-size: {thanks_size}px; font-weight: 900; color: {DARK_BLUE}; background: transparent;"
+        )
+        self.progress_bar.setStyleSheet(
+            f"""
+            QProgressBar {{
+                border: 3px solid {DARK_BLUE};
+                border-radius: 12px;
+                text-align: center;
+                font-size: {progress_font}px;
+                min-height: {progress_height}px;
+                background: transparent;
+                color: {DARK_BLUE};
+                font-weight: 700;
+            }}
+            QProgressBar::chunk {{
+                background-color: #0096ff;
+                border-radius: 9px;
+            }}
+            """
+        )
+        logo_pixmap = QPixmap(self.config.logo_path)
+        if not logo_pixmap.isNull():
+            self.logo.setPixmap(logo_pixmap.scaledToHeight(int(88 * scale), Qt.SmoothTransformation))
+
+        if self.progress_bar.isVisible():
+            self.progress_bar.setFixedWidth(self._fill_progress_width)
+        else:
+            self.progress_bar.setFixedWidth(self._base_progress_width)
+
     def resizeEvent(self, event):  # type: ignore[override]
         self._apply_background(self.main_page)
         self._apply_background(self.thank_you_page)
+        self._apply_responsive_styles()
         super().resizeEvent(event)
+
+    def _set_fill_mode(self, active: bool) -> None:
+        self.info_panel.setVisible(not active)
+        self.progress_bar.setVisible(active)
+        if active:
+            self.progress_bar.setFixedWidth(self._fill_progress_width)
+            self.progress_bar.setFormat("Llenando")
+        else:
+            self.progress_bar.setFixedWidth(self._base_progress_width)
+            self.progress_bar.setFormat("Llenando")
 
     def _load_logo(self) -> None:
         pixmap = QPixmap(self.config.logo_path)
         if pixmap.isNull():
             self.logo.setText("[logo.png]")
-            self.logo.setStyleSheet("font-size: 18px; font-weight: 700; color: #ffeb3b;")
+            self.logo.setStyleSheet(f"font-size: 18px; font-weight: 700; color: {DARK_BLUE};")
             return
-        self.logo.setPixmap(pixmap.scaledToHeight(90, Qt.SmoothTransformation))
+        self.logo.setPixmap(pixmap.scaledToHeight(88, Qt.SmoothTransformation))
 
     def _on_coin_pulse(self) -> None:
         with self._lock:
@@ -286,8 +351,7 @@ class MainWindow(QMainWindow):
         progress_worker = Thread(target=self._animate_progress, args=(fill_seconds,), daemon=True)
         try:
             self.ui_progress.emit(0)
-            self.ui_progress_visible.emit(True)
-            self.ui_state_changed.emit("Llenando...")
+            self.ui_fill_mode.emit(True)
             progress_worker.start()
             self.valve.activate_fill_for(fill_seconds)
             progress_worker.join()
@@ -295,7 +359,7 @@ class MainWindow(QMainWindow):
         except ValveControllerError as exc:
             with self._lock:
                 self.in_process = False
-            self.ui_progress_visible.emit(False)
+            self.ui_fill_mode.emit(False)
             self.ui_error.emit(str(exc))
 
     def _animate_progress(self, total_seconds: float) -> None:
@@ -330,7 +394,7 @@ class MainWindow(QMainWindow):
         self.ui_selected_product.emit("Ninguna")
         self.ui_rinse_changed.emit(False)
         self.ui_progress.emit(0)
-        self.ui_progress_visible.emit(False)
+        self.ui_fill_mode.emit(False)
         self.ui_show_thank_you.emit()
 
     def _show_thank_you_screen(self) -> None:

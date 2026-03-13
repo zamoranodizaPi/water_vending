@@ -53,11 +53,11 @@ water_vending/
    - Garrafón completo: 20s
    - Medio garrafón: 10s
    - 1 galón: 5s
-7. Se muestra progreso de llenado en barra azul.
+7. Durante el llenado se muestra únicamente la barra de progreso (ancho doble) con texto "Llenando".
 8. Al finalizar aparece “Gracias por su compra!!!” durante 2 segundos y vuelve a la pantalla principal.
 
 ## Resolución objetivo
-Interfaz ajustada para pantalla táctil de **800 x 480**.
+Interfaz adaptativa: escala automáticamente para la resolución de pantalla en uso (base recomendada 800 x 480).
 
 ## Imágenes de interfaz
 Coloca las imágenes en:
