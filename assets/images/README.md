@@ -4,5 +4,7 @@ Place production image assets here:
 - garrafon_half.png
 - gallon.png
 - coins.png
+- garrafonbocaabajo.png
+- garrafonbocaarriba.png
 
 The UI falls back to text placeholders if these files are missing.

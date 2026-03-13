@@ -1,78 +1,69 @@
-"""Payment screen with live credit and coin animation."""
+"""Instruction and message screens for preparation steps."""
 from __future__ import annotations
 
-from PyQt5.QtCore import QPoint, QPropertyAnimation, pyqtSignal, Qt
+from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
 
-class PaymentScreen(QWidget):
-    confirm_pressed = pyqtSignal()
-    back_pressed = pyqtSignal()
+class PromptScreen(QWidget):
+    ok_pressed = pyqtSignal()
 
-    def __init__(self, coin_image):
+    def __init__(self):
         super().__init__()
-        self.coin_image = coin_image
-        self._animation = None
         self._build_ui()
 
     def _build_ui(self):
         root = QVBoxLayout(self)
+        root.setContentsMargins(20, 20, 20, 20)
+        root.setSpacing(16)
 
-        self.title = QLabel("Insert coins")
+        self.title = QLabel("Instrucción")
         self.title.setAlignment(Qt.AlignCenter)
-        self.title.setStyleSheet("font-size: 34px; font-weight: bold;")
+        self.title.setStyleSheet("font-size:48px; font-weight:800; color:#0f766e;")
 
-        self.selection = QLabel("No product selected")
-        self.selection.setAlignment(Qt.AlignCenter)
-        self.selection.setStyleSheet("font-size: 24px;")
+        self.image = QLabel()
+        self.image.setAlignment(Qt.AlignCenter)
+        self.image.setFixedHeight(300)
 
-        self.credit = QLabel("Credit: $0.00")
-        self.credit.setAlignment(Qt.AlignCenter)
-        self.credit.setStyleSheet("font-size: 38px; color:#00695c; font-weight: bold;")
+        self.subtitle = QLabel("")
+        self.subtitle.setAlignment(Qt.AlignCenter)
+        self.subtitle.setStyleSheet("font-size:30px; color:#0f172a;")
 
-        self.coin = QLabel(self)
-        self.coin.setAlignment(Qt.AlignCenter)
-        self.coin.setFixedSize(150, 150)
-        pix = QPixmap(str(self.coin_image)).scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        if pix.isNull():
-            self.coin.setText("COIN")
-            self.coin.setStyleSheet("font-size: 28px; font-weight: bold; color:#f9a825;")
-        else:
-            self.coin.setPixmap(pix)
+        ok_btn = QPushButton("OK")
+        ok_btn.setMinimumHeight(90)
+        ok_btn.setStyleSheet("font-size:42px; font-weight:800; background:#06c167; color:white; border-radius:14px;")
+        ok_btn.clicked.connect(self.ok_pressed.emit)
 
-        self.ok_btn = QPushButton("OK")
-        self.ok_btn.setMinimumHeight(90)
-        self.ok_btn.setStyleSheet("font-size: 30px; font-weight:bold; background:#43a047; color:white;")
-        self.ok_btn.clicked.connect(self.confirm_pressed.emit)
-
-        back_btn = QPushButton("Back")
-        back_btn.setMinimumHeight(70)
-        back_btn.setStyleSheet("font-size: 22px;")
-        back_btn.clicked.connect(self.back_pressed.emit)
-
-        root.addWidget(self.title)
-        root.addWidget(self.selection)
-        root.addWidget(self.credit)
-        root.addWidget(self.coin, alignment=Qt.AlignCenter)
         root.addStretch()
-        root.addWidget(self.ok_btn)
-        root.addWidget(back_btn)
+        root.addWidget(self.title)
+        root.addWidget(self.image)
+        root.addWidget(self.subtitle)
+        root.addStretch()
+        root.addWidget(ok_btn)
 
-    def set_product(self, product):
-        self.selection.setText(
-            f"{product['name']} - {product['volume_l']}L - ${product['price']:.2f}"
-        )
+    def configure(self, title: str, image_path, subtitle: str):
+        self.title.setText(title)
+        pix = QPixmap(str(image_path)).scaled(360, 280, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        if pix.isNull():
+            self.image.setText("[Imagen no disponible]")
+            self.image.setStyleSheet("font-size:28px; color:#64748b;")
+        else:
+            self.image.setPixmap(pix)
+            self.image.setStyleSheet("")
+        self.subtitle.setText(subtitle)
 
-    def set_credit(self, amount: float):
-        self.credit.setText(f"Credit: ${amount:.2f}")
 
-    def animate_coin(self):
-        start = QPoint(self.coin.x(), self.coin.y())
-        end = QPoint(self.coin.x(), max(20, self.coin.y() - 35))
-        self._animation = QPropertyAnimation(self.coin, b"pos")
-        self._animation.setDuration(260)
-        self._animation.setStartValue(start)
-        self._animation.setKeyValueAt(0.5, end)
-        self._animation.setEndValue(start)
-        self._animation.start()
+class MessageScreen(QWidget):
+    def __init__(self):
+        super().__init__()
+        lay = QVBoxLayout(self)
+        self.message = QLabel("")
+        self.message.setAlignment(Qt.AlignCenter)
+        self.message.setStyleSheet("font-size:52px; font-weight:800; color:#075985;")
+        lay.addStretch()
+        lay.addWidget(self.message)
+        lay.addStretch()
+
+    def set_message(self, text: str):
+        self.message.setText(text)

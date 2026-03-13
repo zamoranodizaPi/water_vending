@@ -1,4 +1,4 @@
-"""Dispensing progress screen."""
+"""Progress screen used for rinse and filling operations."""
 from __future__ import annotations
 
 from PyQt5.QtCore import QTimer, pyqtSignal, Qt
@@ -19,27 +19,25 @@ class DispensingScreen(QWidget):
 
     def _build_ui(self):
         root = QVBoxLayout(self)
-        self.title = QLabel("Dispensing in progress")
+        self.title = QLabel("Proceso")
         self.title.setAlignment(Qt.AlignCenter)
-        self.title.setStyleSheet("font-size: 34px; font-weight: bold;")
-
-        self.message = QLabel("Please wait while your container is being filled")
-        self.message.setAlignment(Qt.AlignCenter)
-        self.message.setStyleSheet("font-size: 24px;")
+        self.title.setStyleSheet("font-size:54px; font-weight:800; color:#0f766e;")
 
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
-        self.progress.setFixedHeight(50)
-        self.progress.setStyleSheet("font-size: 24px;")
+        self.progress.setFixedHeight(52)
+        self.progress.setFixedWidth(380)
+        self.progress.setStyleSheet("font-size:26px;")
 
         root.addStretch()
         root.addWidget(self.title)
-        root.addWidget(self.message)
-        root.addWidget(self.progress)
+        root.addSpacing(30)
+        root.addWidget(self.progress, alignment=Qt.AlignCenter)
         root.addStretch()
 
-    def start(self, total_seconds: float):
+    def start(self, title: str, total_seconds: float):
+        self.title.setText(title)
         self._total_ms = max(500, int(total_seconds * 1000))
         self._elapsed_ms = 0
         self.progress.setValue(0)
