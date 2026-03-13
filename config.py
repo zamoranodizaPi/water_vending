@@ -1,24 +1,36 @@
-from __future__ import annotations
-
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict
-
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent / "config.json"
 
 
 @dataclass
 class AppConfig:
-    product_name: str = "Garrafón de agua"
-    price_per_product: float = 20.0
-    valve_open_seconds: float = 8.0
-    relay_gpio_pin: int = 17
-    serial_port: str = "/dev/ttyUSB0"
-    serial_baudrate: int = 9600
-    coin_input_mode: str = "serial_value"  # serial_value | pulse
+    # GPIO mapping
+    coin_pulse_gpio_pin: int = 12
+    select_full_gpio_pin: int = 16
+    select_half_gpio_pin: int = 20
+    select_gallon_gpio_pin: int = 21
+    fill_valve_gpio_pin: int = 17
+    rinse_valve_gpio_pin: int = 27
+    rinse_select_gpio_pin: int = 25
+    ok_button_gpio_pin: int = 24
+
+    # Business rules
+    product_full_name: str = "Garrafón completo"
+    product_half_name: str = "Medio garrafón"
+    product_gallon_name: str = "1 galón"
+    price_full: float = 20.0
+    price_half: float = 10.0
+    price_gallon: float = 5.0
+    fill_seconds_full: float = 20.0
+    fill_seconds_half: float = 10.0
+    fill_seconds_gallon: float = 5.0
+    rinse_seconds: float = 2.0
     coin_pulse_value: float = 1.0
+
     fullscreen: bool = True
     logo_path: str = "assets/images/logo.png"
 
@@ -38,9 +50,9 @@ def load_config(path: Path | str = DEFAULT_CONFIG_PATH) -> AppConfig:
         return config
 
     with config_path.open("r", encoding="utf-8") as file:
-        raw = json.load(file)
+        data = json.load(file)
 
-    return AppConfig(**_sanitize(raw))
+    return AppConfig(**_sanitize(data))
 
 
 def save_config(config: AppConfig, path: Path | str = DEFAULT_CONFIG_PATH) -> None:

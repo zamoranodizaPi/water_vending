@@ -1,49 +1,38 @@
-from __future__ import annotations
-
 import time
-from typing import Optional
+
+from gpiozero import OutputDevice
 
 
 class ValveControllerError(Exception):
-    """Raised when the valve cannot be controlled."""
+    """Raised when a valve cannot be controlled."""
 
 
 class ValveController:
-    def __init__(self, relay_gpio_pin: int):
-        self.relay_gpio_pin = relay_gpio_pin
-        self._relay: Optional[object] = None
-        self._init_relay()
+    def __init__(self, fill_gpio_pin: int, rinse_gpio_pin: int):
+        self.fill_gpio_pin = fill_gpio_pin
+        self.rinse_gpio_pin = rinse_gpio_pin
+        self.fill_valve = OutputDevice(pin=self.fill_gpio_pin, active_high=True, initial_value=False)
+        self.rinse_valve = OutputDevice(pin=self.rinse_gpio_pin, active_high=True, initial_value=False)
 
-    def _init_relay(self) -> None:
-        try:
-            from gpiozero import OutputDevice  # type: ignore
+    def activate_fill_for(self, seconds: float) -> None:
+        self._activate_for(self.fill_valve, seconds)
 
-            self._relay = OutputDevice(pin=self.relay_gpio_pin, active_high=True, initial_value=False)
-        except Exception as exc:
-            raise ValveControllerError(
-                f"Unable to initialize relay on GPIO {self.relay_gpio_pin}: {exc}"
-            ) from exc
+    def activate_rinse_for(self, seconds: float) -> None:
+        self._activate_for(self.rinse_valve, seconds)
 
-    def open_for(self, seconds: float) -> None:
-        if self._relay is None:
-            raise ValveControllerError("Relay was not initialized")
-
-        try:
-            self._relay.on()
-            time.sleep(max(0.0, seconds))
-        except Exception as exc:
-            raise ValveControllerError(f"Error while opening valve: {exc}") from exc
-        finally:
-            try:
-                self._relay.off()
-            except Exception:
-                pass
-
-    def close(self) -> None:
-        if self._relay is None:
+    def _activate_for(self, device: OutputDevice, seconds: float) -> None:
+        if seconds <= 0:
             return
         try:
-            self._relay.off()
-            self._relay.close()  # type: ignore[attr-defined]
-        except Exception:
-            pass
+            device.on()
+            time.sleep(seconds)
+        except Exception as exc:
+            raise ValveControllerError(f"Error while activating valve: {exc}") from exc
+        finally:
+            device.off()
+
+    def close(self) -> None:
+        self.fill_valve.off()
+        self.rinse_valve.off()
+        self.fill_valve.close()
+        self.rinse_valve.close()

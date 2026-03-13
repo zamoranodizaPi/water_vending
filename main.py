@@ -34,7 +34,7 @@ def main() -> int:
 
     config = load_config()
     db = SalesDatabase("database/sales.db")
-    valve = ValveController(config.relay_gpio_pin)
+    valve = ValveController(config.fill_valve_gpio_pin, config.rinse_valve_gpio_pin)
 
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(True)

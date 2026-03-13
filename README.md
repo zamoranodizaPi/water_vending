@@ -1,14 +1,12 @@
-# Raspberry Pi Water Vending Machine
+# Water Vending (Raspberry Pi)
 
-Software de máquina expendedora de agua para Raspberry Pi con pantalla táctil en modo kiosko.
+Aplicación para máquina de llenado de agua en Raspberry Pi con interfaz táctil en PyQt5 y control por GPIO.
 
-## Stack técnico
-
+## Stack
 - Python 3
-- PyQt5 (interfaz táctil)
-- gpiozero (control de relay)
-- PySerial (aceptador de monedas)
-- SQLite (registro de ventas)
+- PyQt5
+- gpiozero
+- SQLite
 
 ## Estructura
 
@@ -22,111 +20,59 @@ water_vending/
 │   ├── main_window.py
 │   └── screens.py
 ├── hardware/
-│   ├── valve_controller.py
-│   └── coin_acceptor.py
+│   ├── gpio_inputs.py
+│   └── valve_controller.py
 ├── database/
 │   └── sales_db.py
-├── assets/
-│   └── images/
 └── systemd/
     └── water-vending.service
 ```
 
-## Instalación en Raspberry Pi OS
+## Mapeo GPIO
+- GPIO 12: pulsos del monedero
+- GPIO 16: selección garrafón completo
+- GPIO 20: selección medio garrafón
+- GPIO 21: selección 1 galón
+- GPIO 17: válvula de llenado
+- GPIO 27: válvula de enjuague
+- GPIO 25: selección de enjuague (toggle)
+- GPIO 24: botón OK
 
-1. Instalar dependencias del sistema:
+## Flujo operativo
+1. El monedero agrega crédito por pulsos en GPIO 12.
+2. El operador selecciona producto (GPIO 16/20/21).
+3. Activa enjuague (GPIO 25).
+4. Presiona OK (GPIO 24) para ejecutar enjuague por 2 segundos (GPIO 27).
+5. Se indica en pantalla “voltear garrafón y presionar OK”.
+6. Al presionar OK de nuevo inicia llenado (GPIO 17):
+   - Garrafón completo: 20s
+   - Medio garrafón: 10s
+   - 1 galón: 5s
+7. Se registra la venta en SQLite y la UI vuelve al estado inicial.
+
+## Instalación rápida (Raspberry Pi OS)
 
 ```bash
 sudo apt update
-sudo apt install -y python3 python3-pip python3-venv libqt5gui5 libqt5widgets5
-```
-
-2. Clonar e instalar Python deps:
-
-```bash
-git clone <tu-repo> /opt/water_vending
-cd /opt/water_vending
+sudo apt install -y python3-venv python3-pip python3-pyqt5
+cd /workspace/water_vending
 python3 -m venv .venv
 source .venv/bin/activate
-pip install --upgrade pip
 pip install -r requirements.txt
-```
-
-3. Configurar parámetros en `config.json`:
-
-- `price_per_product`
-- `valve_open_seconds`
-- `relay_gpio_pin`
-- `serial_port`
-- `coin_input_mode`: `serial_value` o `pulse`
-- `coin_pulse_value`: valor de cada pulso (si usas `pulse`)
-
-4. Ejecutar manualmente:
-
-```bash
-source .venv/bin/activate
 python main.py
 ```
 
-## Funcionamiento de pago y despacho
+## Configuración
+Editar `config.json` para precios, tiempos y pines.
 
-- El crédito aumenta automáticamente con cada evento del monedero.
-- Cuando el crédito alcanza el precio configurado, el sistema **despacha automáticamente**.
-- El despachado activa el relay por `valve_open_seconds`.
-- Cada venta queda registrada en SQLite con:
-  - `timestamp`
-  - `product`
-  - `price`
-  - `payment_received`
+## Autostart (systemd)
+Archivo de ejemplo: `systemd/water-vending.service`
 
-## Autostart con systemd
-
-1. Copiar el servicio:
-
-```bash
-sudo cp systemd/water-vending.service /etc/systemd/system/water-vending.service
-```
-
-2. Ajustar rutas/usuario en el archivo de servicio según tu instalación.
-
-3. Habilitar y arrancar:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable water-vending.service
-sudo systemctl start water-vending.service
-```
-
-4. Ver estado y logs:
-
-```bash
-sudo systemctl status water-vending.service
-journalctl -u water-vending.service -f
-```
-
-## Futuro: aceptador de billetes
-
-La arquitectura permite añadir un lector de billetes como otro módulo de `hardware/` que emita crédito al mismo flujo de la UI.
-
-
-## Solución a error `ModuleNotFoundError: No module named PyQt5`
-
-Si ves ese error al ejecutar `python main.py`, instala PyQt5 en tu entorno y/o en Raspberry Pi OS:
-
+## Troubleshooting
+Si aparece `No module named PyQt5`:
 ```bash
 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-Si el wheel de PyQt5 falla en Raspberry Pi, usa paquete del sistema:
-
-```bash
-sudo apt update
+# o
 sudo apt install -y python3-pyqt5
-```
-
-Verificación rápida:
-
-```bash
-python3 -c "from PyQt5.QtWidgets import QApplication; print('PyQt5 OK')"
 ```
