@@ -3,12 +3,9 @@ from __future__ import annotations
 import logging
 import sys
 
-from PyQt5.QtWidgets import QApplication
-
 from config import load_config
 from database.sales_db import SalesDatabase
 from hardware.valve_controller import ValveController
-from ui.main_window import MainWindow
 
 
 logging.basicConfig(
@@ -18,6 +15,23 @@ logging.basicConfig(
 
 
 def main() -> int:
+    try:
+        from PyQt5.QtWidgets import QApplication
+        from ui.main_window import MainWindow
+    except ModuleNotFoundError as exc:
+        if exc.name and exc.name.startswith("PyQt5"):
+            print(
+                "ERROR: No se encontró PyQt5.\n"
+                "Instala dependencias con:\n"
+                "  source .venv/bin/activate\n"
+                "  pip install -r requirements.txt\n"
+                "En Raspberry Pi OS también puedes instalar:\n"
+                "  sudo apt install -y python3-pyqt5",
+                file=sys.stderr,
+            )
+            return 1
+        raise
+
     config = load_config()
     db = SalesDatabase("database/sales.db")
     valve = ValveController(config.relay_gpio_pin)

@@ -107,3 +107,26 @@ journalctl -u water-vending.service -f
 ## Futuro: aceptador de billetes
 
 La arquitectura permite añadir un lector de billetes como otro módulo de `hardware/` que emita crédito al mismo flujo de la UI.
+
+
+## Solución a error `ModuleNotFoundError: No module named PyQt5`
+
+Si ves ese error al ejecutar `python main.py`, instala PyQt5 en tu entorno y/o en Raspberry Pi OS:
+
+```bash
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Si el wheel de PyQt5 falla en Raspberry Pi, usa paquete del sistema:
+
+```bash
+sudo apt update
+sudo apt install -y python3-pyqt5
+```
+
+Verificación rápida:
+
+```bash
+python3 -c "from PyQt5.QtWidgets import QApplication; print('PyQt5 OK')"
+```
