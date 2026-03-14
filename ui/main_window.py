@@ -38,14 +38,14 @@ class MainWindow(QMainWindow):
         self.current_product = None
         self.credit = 0.0
         self.flow_step = None
-        self.wants_rinse = False
+        self.current_fill_percent = 0
 
         self.products = {p["id"]: p for p in settings.PRODUCTS}
         self.sales_db = SalesDB(settings.DB_PATH)
         self.gpio = GPIOController()
         self._setup_hardware()
         self._setup_ui()
-        self._refresh_product_enablement()
+        self._refresh_product_enablement(initial=True)
 
     def _setup_hardware(self):
         pins = settings.PINS
@@ -68,6 +68,13 @@ class MainWindow(QMainWindow):
         self.select_half.when_pressed = lambda: self._select_by_gpio("half_garrafon")
         self.select_gallon.when_pressed = lambda: self._select_by_gpio("gallon")
 
+        self.ok_input = self.gpio.setup_input(pins["ok_input"], "ok input", pull_up=True)
+        self.rinse_input = self.gpio.setup_input(pins["rinse_input"], "rinse input", pull_up=True)
+        self.emergency_input = self.gpio.setup_input(pins["emergency_stop"], "emergency stop", pull_up=True)
+        self.ok_input.when_pressed = self._on_ok_home
+        self.rinse_input.when_pressed = self._toggle_rinse_option
+        self.emergency_input.when_pressed = self._on_emergency_stop
+
         self.aux = AuxiliaryOutputs(self.gpio, courtesy, ozone, uv)
         self.valves = ValveController(self.gpio, self.water_valve, self.rinse_valve, self.aux)
 
@@ -80,9 +87,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.stack)
 
         self.product_screen = ProductScreen(settings.PRODUCTS, settings.LOGO_IMAGE)
-        self.prompt_screen = PromptScreen()
-        self.progress_screen = DispensingScreen()
-        self.message_screen = MessageScreen()
+        self.prompt_screen = PromptScreen(settings.LOGO_IMAGE)
+        self.progress_screen = DispensingScreen(settings.LOGO_IMAGE)
+        self.message_screen = MessageScreen(settings.LOGO_IMAGE)
 
         self.stack.addWidget(self.product_screen)
         self.stack.addWidget(self.prompt_screen)
@@ -91,10 +98,11 @@ class MainWindow(QMainWindow):
 
         self.product_screen.product_selected.connect(self._set_selected_product)
         self.product_screen.ok_pressed.connect(self._on_ok_home)
-        self.product_screen.rinse_pressed.connect(self._on_rinse_home)
-        self.prompt_screen.ok_pressed.connect(self._on_prompt_ok)
+        self.product_screen.rinse_pressed.connect(self._toggle_rinse_option)
+        self.prompt_screen.ok_pressed.clicked.connect(self._on_prompt_ok)
         self.progress_screen.progress_changed.connect(self._on_progress_changed)
         self.progress_screen.completed.connect(self._on_progress_completed)
+        self.progress_screen.emergency_pressed.connect(self._on_emergency_stop)
 
         self.interactions = InteractionFilter(self)
         self.interactions.interacted.connect(self._touch_interaction)
@@ -127,65 +135,81 @@ class MainWindow(QMainWindow):
         self._touch_interaction()
         self.credit += settings.COIN_VALUE
         self.product_screen.set_credit(self.credit)
-        self.product_screen.set_status("Moneda recibida")
-        QTimer.singleShot(700, lambda: self.product_screen.set_status(""))
         self._refresh_product_enablement()
 
-    def _refresh_product_enablement(self):
+    def _refresh_product_enablement(self, initial: bool = False):
+        min_price = min(p["price"] for p in settings.PRODUCTS)
+        if self.credit < min_price:
+            self.product_screen.pulse_credit_attention()
+
         for product in settings.PRODUCTS:
+            was_enabled = self.product_screen.cards[product["id"]].isEnabled()
             enabled = self.credit >= product["price"]
             self.product_screen.set_product_enabled(product["id"], enabled)
+            if enabled and (not was_enabled) and (not initial):
+                self.product_screen.cards[product["id"]].pulse_attention(3)
 
         has_any = any(self.credit >= p["price"] for p in settings.PRODUCTS)
-        self.product_screen.set_ok_enabled(has_any and self.current_product is not None)
+        self.product_screen.set_ok_enabled(has_any)
 
         if self.current_product and self.current_product["id"] == "gallon":
             self.product_screen.set_rinse_enabled(False)
+            self.product_screen.set_rinse_checked(False)
         else:
-            self.product_screen.set_rinse_enabled(self.current_product is not None)
+            self.product_screen.set_rinse_enabled(True)
+
+    def _show_credit_insufficient(self):
+        current_text = f"Crédito Disponible: ${self.credit:.0f}"
+        self.product_screen.show_credit_warning("Credito Insuficiente")
+        QTimer.singleShot(3000, lambda: self.product_screen.set_credit(self.credit) if current_text else None)
 
     def _select_by_gpio(self, product_id: str):
         self._touch_interaction()
         product = self.products[product_id]
         if self.credit < product["price"]:
-            self._show_temporary_status("Crédito Insuficiente")
+            self._show_credit_insufficient()
             return
         self._set_selected_product(product_id)
 
     def _set_selected_product(self, product_id: str):
-        self.current_product = self.products[product_id]
+        product = self.products[product_id]
+        if self.credit < product["price"]:
+            self._show_credit_insufficient()
+            return
+        self.current_product = product
         self.product_screen.set_selected(product_id)
         self._refresh_product_enablement()
 
-    def _show_temporary_status(self, text: str, ms: int = 1000):
-        self.product_screen.set_status(text)
-        QTimer.singleShot(ms, lambda: self.product_screen.set_status(""))
+    def _toggle_rinse_option(self):
+        if self.current_product and self.current_product["id"] == "gallon":
+            self.product_screen.set_rinse_checked(False)
+            return
+        self.product_screen.set_rinse_checked(not self.product_screen.is_rinse_checked())
 
     def _on_ok_home(self):
-        if not self.current_product or self.credit < self.current_product["price"]:
-            self._show_temporary_status("Crédito Insuficiente")
-            return
-        self.wants_rinse = False
-        self._show_upright_prompt()
-
-    def _on_rinse_home(self):
+        self._touch_interaction()
         if not self.current_product:
-            self._show_temporary_status("Seleccione producto")
+            if any(self.credit >= p["price"] for p in settings.PRODUCTS):
+                self.product_screen.blink_enabled_products()
+            else:
+                self._show_credit_insufficient()
             return
-        if self.current_product["id"] == "gallon":
-            self._show_temporary_status("Enjuague no disponible para galón")
-            return
+
         if self.credit < self.current_product["price"]:
-            self._show_temporary_status("Crédito Insuficiente")
+            self._show_credit_insufficient()
             return
-        self.wants_rinse = True
-        self.flow_step = "await_rinse_position"
-        self.prompt_screen.configure(
-            "Coloque Garrafón Boca Abajo",
-            settings.UPSIDE_DOWN_IMAGE,
-            "Presione OK Cuando Termine",
-        )
-        self.stack.setCurrentWidget(self.prompt_screen)
+
+        if self.product_screen.is_rinse_checked() and self.current_product["id"] != "gallon":
+            self.flow_step = "await_rinse_position"
+            self.prompt_screen.configure(
+                "Coloque Garrafón Boca Abajo",
+                settings.UPSIDE_DOWN_IMAGE,
+                "Presione OK Cuando Termine",
+            )
+            self.stack.setCurrentWidget(self.prompt_screen)
+            return
+
+        self._show_upright_prompt()
 
     def _show_upright_prompt(self):
         self.flow_step = "await_fill_position"
@@ -202,35 +226,57 @@ class MainWindow(QMainWindow):
             try:
                 self.valves.rinse_start()
             except GPIOControllerError as exc:
-                self._show_temporary_status(str(exc))
+                logger.error(str(exc))
                 self._reset_to_home()
                 return
             self.stack.setCurrentWidget(self.progress_screen)
-            self.progress_screen.start("Enjuagando", settings.RINSE_SECONDS)
+            self.progress_screen.start(
+                "Enjuagando",
+                settings.RINSE_SECONDS,
+                gif_path=settings.RINSING_GIF,
+                emergency_enabled=False,
+            )
         elif self.flow_step == "await_fill_position":
             self._start_filling()
 
     def _start_filling(self):
         self.flow_step = "filling"
+        self.current_fill_percent = 0
         self.stack.setCurrentWidget(self.progress_screen)
         total_s = self.current_product["volume_l"] * settings.FILL_SECONDS_PER_LITER
         try:
             self.valves.start_dispense()
-            self.progress_screen.start("Llenando", total_s)
+            self.progress_screen.start(
+                "Llenando",
+                total_s,
+                gif_path=settings.FILLING_GIF,
+                emergency_enabled=True,
+            )
         except GPIOControllerError as exc:
-            self._show_temporary_status(str(exc))
+            logger.error(str(exc))
             self._reset_to_home()
 
     def _on_progress_changed(self, progress: int):
+        self.current_fill_percent = progress
         if self.flow_step == "filling":
             self.valves.update_progress(progress)
+
+    def _on_emergency_stop(self):
+        if self.flow_step != "filling":
+            return
+        self.progress_screen.stop_now()
+        try:
+            self.valves.finish_dispense()
+        except GPIOControllerError as exc:
+            logger.error(str(exc))
+        self._complete_sale(emergency=True)
 
     def _on_progress_completed(self):
         if self.flow_step == "rinsing":
             try:
                 self.valves.rinse_stop()
             except GPIOControllerError as exc:
-                self._show_temporary_status(str(exc))
+                logger.error(str(exc))
                 self._reset_to_home()
                 return
             self._show_upright_prompt()
@@ -241,39 +287,48 @@ class MainWindow(QMainWindow):
                 self.valves.finish_dispense()
             except GPIOControllerError as exc:
                 logger.error(str(exc))
-            self._complete_sale()
+            self._complete_sale(emergency=False)
 
-    def _complete_sale(self):
+    def _complete_sale(self, emergency: bool = False):
+        if emergency:
+            served_liters = round((self.current_fill_percent / 100.0) * self.current_product["volume_l"], 2)
+            price_to_charge = round(served_liters * settings.EMERGENCY_RATE_PER_LITER, 2)
+        else:
+            served_liters = self.current_product["volume_l"]
+            price_to_charge = self.current_product["price"]
+
         sale = {
             "timestamp": datetime.now().isoformat(timespec="seconds"),
             "product": self.current_product["name"],
-            "volume": self.current_product["volume_l"],
-            "price": self.current_product["price"],
+            "volume": served_liters,
+            "price": price_to_charge,
             "payment_received": self.credit,
         }
         self.sales_db.log_sale(sale)
 
-        change = self.credit - self.current_product["price"]
-        self.credit = max(0.0, change)
-        self.product_screen.set_credit(self.credit)
+        change = max(0.0, round(self.credit - price_to_charge, 2))
 
         if change > 0:
-            self.message_screen.set_message("Recoja su cambio")
+            self.message_screen.set_message("Recoja su cambio", settings.CHANGE_GIF)
             self.stack.setCurrentWidget(self.message_screen)
+            self.credit = 0.0
+            self.product_screen.set_credit(self.credit)
             QTimer.singleShot(3000, self._show_thanks)
         else:
+            self.credit = 0.0
+            self.product_screen.set_credit(self.credit)
             self._show_thanks()
 
     def _show_thanks(self):
-        self.message_screen.set_message("Tome Su Producto\nGracias por su Compra!!!")
+        self.message_screen.set_message("Tome Su Producto\nGracias por su Compra!!!", settings.THANKS_GIF)
         self.stack.setCurrentWidget(self.message_screen)
         QTimer.singleShot(3000, self._reset_to_home)
 
     def _reset_to_home(self):
         self.current_product = None
-        self.wants_rinse = False
         self.flow_step = None
+        self.current_fill_percent = 0
         self.product_screen.set_selected(None)
-        self.product_screen.set_status("")
+        self.product_screen.set_rinse_checked(False)
         self._refresh_product_enablement()
         self.stack.setCurrentWidget(self.product_screen)

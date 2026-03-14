@@ -22,17 +22,21 @@ PINS = {
     "select_full": 21,
     "select_half": 20,
     "select_gallon": 16,
+    "ok_input": 23,
+    "rinse_input": 24,
+    "emergency_stop": 25,
 }
 
 COIN_VALUE = 1.0
 FILL_SECONDS_PER_LITER = 1.6
 RINSE_SECONDS = 3
+EMERGENCY_RATE_PER_LITER = 1.0
 
 PRODUCTS = [
     {
         "id": "full_garrafon",
         "name": "Garrafón Completo",
-        "volume_l": 20.0,
+        "volume_l": 19.0,
         "price": 12.0,
         "image": ASSETS_DIR / "garrafon_full.png",
     },
@@ -56,3 +60,7 @@ LOGO_IMAGE = ASSETS_DIR / "logo.png"
 COIN_IMAGE = ASSETS_DIR / "coins.png"
 UPSIDE_DOWN_IMAGE = ASSETS_DIR / "garrafonbocaabajo.png"
 UPRIGHT_IMAGE = ASSETS_DIR / "garrafonbocaarriba.png"
+FILLING_GIF = ASSETS_DIR / "garrafonllenando.gif"
+RINSING_GIF = ASSETS_DIR / "garrafonenjuagando.gif"
+CHANGE_GIF = ASSETS_DIR / "recojasucambio.gif"
+THANKS_GIF = ASSETS_DIR / "agradecimiento.gif"
