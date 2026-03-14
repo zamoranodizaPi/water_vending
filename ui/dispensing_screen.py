@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from PyQt5.QtCore import QTimer, pyqtSignal, Qt
 from PyQt5.QtGui import QMovie, QPixmap
-from PyQt5.QtWidgets import QLabel, QProgressBar, QVBoxLayout, QWidget, QPushButton, QHBoxLayout
+from PyQt5.QtWidgets import QLabel, QProgressBar, QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QSizePolicy
 
 
 class DispensingScreen(QWidget):
@@ -26,8 +26,10 @@ class DispensingScreen(QWidget):
 
         header = QHBoxLayout()
         title1 = QLabel("Agua Purificada ")
+        title1.setAlignment(Qt.AlignCenter)
         title1.setStyleSheet("font-size:41px; font-weight:800; color:#0e7490;")
         title2 = QLabel("Lupita")
+        title2.setAlignment(Qt.AlignCenter)
         title2.setStyleSheet("font-size:45px; font-family:'Brush Script MT'; color:#ec4899;")
         logo = QLabel()
         logo.setFixedSize(120, 90)
@@ -64,8 +66,11 @@ class DispensingScreen(QWidget):
             "QProgressBar::chunk{background:#ec4899; border-radius:12px;}"
         )
 
-        self.emergency_btn = QPushButton("PARO EMERGENCIA")
+        self.emergency_btn = QPushButton("Paro")
         self.emergency_btn.setMinimumHeight(66)
+        self.emergency_btn.setMinimumWidth(280)
+        self.emergency_btn.setMaximumWidth(420)
+        self.emergency_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.emergency_btn.setStyleSheet("font-size:27px; font-weight:800; background:#ef4444; color:white; border-radius:12px;")
         self.emergency_btn.clicked.connect(self.emergency_pressed.emit)
         self.emergency_btn.setVisible(False)
@@ -75,7 +80,7 @@ class DispensingScreen(QWidget):
         root.addWidget(self.animation)
         root.addWidget(self.progress, alignment=Qt.AlignCenter)
         root.addSpacing(14)
-        root.addWidget(self.emergency_btn)
+        root.addWidget(self.emergency_btn, alignment=Qt.AlignCenter)
         root.addStretch()
 
     def start(self, title: str, total_seconds: float, gif_path=None, emergency_enabled: bool = False):
