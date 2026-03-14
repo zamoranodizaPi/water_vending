@@ -1,10 +1,10 @@
 """Main screen with adaptive product selection and touch-first controls."""
 from __future__ import annotations
 
-from PyQt5.QtCore import QTimer, pyqtSignal, Qt
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import QEasingCurve, QPropertyAnimation, QSequentialAnimationGroup, QTimer, pyqtSignal, Qt
 from PyQt5.QtWidgets import (
     QFrame,
+    QGraphicsOpacityEffect,
     QGridLayout,
     QHBoxLayout,
     QLabel,
@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PyQt5.QtGui import QPixmap
 
 
 class ProductCard(QPushButton):
@@ -19,7 +20,7 @@ class ProductCard(QPushButton):
         super().__init__()
         self.product = product
         self.setCheckable(True)
-        self.setMinimumHeight(250)
+        self.setMinimumHeight(225)
         self._default_style = (
             "QPushButton {border:3px solid #d5d9de; border-radius:18px; background:#f7f8fa;}"
             "QPushButton:checked {border:4px solid #11b5d6; background:#dff5f8;}"
@@ -33,47 +34,63 @@ class ProductCard(QPushButton):
         self.setStyleSheet(self._default_style)
 
         lay = QVBoxLayout(self)
-        lay.setSpacing(6)
+        lay.setSpacing(5)
         image = QLabel()
         image.setAlignment(Qt.AlignCenter)
-        image.setFixedHeight(130)
-        pix = QPixmap(str(product["image"])).scaled(140, 130, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        image.setFixedHeight(118)
+        pix = QPixmap(str(product["image"])).scaled(126, 118, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             image.setText(product["name"])
-            image.setStyleSheet("font-size:16px; color:#5b6470;")
+            image.setStyleSheet("font-size:14px; color:#5b6470;")
         else:
             image.setPixmap(pix)
 
         name = QLabel(product["name"])
         name.setAlignment(Qt.AlignCenter)
-        name.setStyleSheet("font-size:24px; font-weight:700; color:#1f2937;")
+        name.setStyleSheet("font-size:22px; font-weight:700; color:#1f2937;")
 
         volume = QLabel(f"{product['volume_l']}L")
         volume.setAlignment(Qt.AlignCenter)
-        volume.setStyleSheet("font-size:20px; color:#4b5563;")
+        volume.setStyleSheet("font-size:18px; color:#4b5563;")
 
         price = QLabel(f"${product['price']:.0f}")
         price.setAlignment(Qt.AlignCenter)
-        price.setStyleSheet("font-size:36px; font-weight:800; color:#0ea5c6;")
+        price.setStyleSheet("font-size:32px; font-weight:800; color:#0ea5c6;")
 
         lay.addWidget(image)
         lay.addWidget(name)
         lay.addWidget(volume)
         lay.addWidget(price)
 
+        self._opacity = QGraphicsOpacityEffect(self)
+        self._opacity.setOpacity(1.0)
+        self.setGraphicsEffect(self._opacity)
+
     def pulse_attention(self, flashes: int = 3):
-        total_steps = flashes * 2
-        state = {"step": 0}
+        self.setStyleSheet(self._highlight_style)
+        group = QSequentialAnimationGroup(self)
+        for _ in range(flashes):
+            fade_out = QPropertyAnimation(self._opacity, b"opacity")
+            fade_out.setDuration(240)
+            fade_out.setStartValue(1.0)
+            fade_out.setEndValue(0.55)
+            fade_out.setEasingCurve(QEasingCurve.InOutQuad)
 
-        def _toggle():
-            if state["step"] >= total_steps:
-                self.setStyleSheet(self._default_style)
-                return
-            self.setStyleSheet(self._highlight_style if state["step"] % 2 == 0 else self._default_style)
-            state["step"] += 1
-            QTimer.singleShot(170, _toggle)
+            fade_in = QPropertyAnimation(self._opacity, b"opacity")
+            fade_in.setDuration(240)
+            fade_in.setStartValue(0.55)
+            fade_in.setEndValue(1.0)
+            fade_in.setEasingCurve(QEasingCurve.InOutQuad)
 
-        _toggle()
+            group.addAnimation(fade_out)
+            group.addAnimation(fade_in)
+
+        def _done():
+            self._opacity.setOpacity(1.0)
+            self.setStyleSheet(self._default_style)
+
+        group.finished.connect(_done)
+        group.start()
 
 
 class ProductScreen(QWidget):
@@ -86,45 +103,52 @@ class ProductScreen(QWidget):
         self.products = products
         self.logo_path = logo_path
         self.cards = {}
-        self._credit_base_style = "font-size:42px; font-weight:800; color:white;"
-        self._credit_warning_style = "font-size:42px; font-weight:800; color:#ef4444;"
+        self._credit_base_style = "font-size:38px; font-weight:800; color:white;"
+        self._credit_warning_style = "font-size:38px; font-weight:800; color:#ef4444;"
+        self._rinse_locked = False
         self._build_ui()
 
     def _build_ui(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(20, 14, 20, 14)
-        root.setSpacing(12)
+        root.setContentsMargins(18, 12, 18, 12)
+        root.setSpacing(10)
 
         title_row = QHBoxLayout()
         title1 = QLabel("Agua Purificada ")
-        title1.setStyleSheet("font-size:52px; font-weight:800; color:#0e7490;")
+        title1.setStyleSheet("font-size:47px; font-weight:800; color:#0e7490;")
         title2 = QLabel("Lupita")
-        title2.setStyleSheet("font-size:56px; font-weight:700; font-family:'Brush Script MT'; color:#ec4899;")
+        title2.setStyleSheet("font-size:50px; font-weight:700; font-family:'Brush Script MT'; color:#ec4899;")
         title_container = QHBoxLayout()
         title_container.addWidget(title1)
         title_container.addWidget(title2)
 
         logo = QLabel()
-        logo.setFixedSize(132, 99)
+        logo.setFixedSize(120, 90)
         logo.setAlignment(Qt.AlignCenter)
-        pix = QPixmap(str(self.logo_path)).scaled(121, 88, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(self.logo_path)).scaled(110, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             logo.setText("Lupita")
-            logo.setStyleSheet("font-size:22px; color:#0e7490;")
+            logo.setStyleSheet("font-size:20px; color:#0e7490;")
         else:
             logo.setPixmap(pix)
         title_row.addStretch()
         title_row.addLayout(title_container)
-        title_row.addSpacing(20)
+        title_row.addSpacing(18)
         title_row.addWidget(logo)
         title_row.addStretch()
         root.addLayout(title_row)
+
+        self.alert_label = QLabel("")
+        self.alert_label.setAlignment(Qt.AlignCenter)
+        self.alert_label.setVisible(False)
+        self.alert_label.setStyleSheet("font-size:34px; font-weight:900; color:#dc2626;")
+        root.addWidget(self.alert_label)
 
         self.credit_box = QFrame()
         self.credit_box.setStyleSheet("QFrame{background:#06b6d4; border:3px solid #2563eb; border-radius:18px;}")
         c_lay = QHBoxLayout(self.credit_box)
         coin = QLabel("💰")
-        coin.setStyleSheet("font-size:48px; background:white; border-radius:12px; padding:8px;")
+        coin.setStyleSheet("font-size:42px; background:white; border-radius:12px; padding:8px;")
         self.credit_label = QLabel("Crédito Disponible: $0")
         self.credit_label.setStyleSheet(self._credit_base_style)
         c_lay.addWidget(coin)
@@ -133,7 +157,7 @@ class ProductScreen(QWidget):
         root.addWidget(self.credit_box)
 
         grid = QGridLayout()
-        grid.setHorizontalSpacing(16)
+        grid.setHorizontalSpacing(12)
         for idx, product in enumerate(self.products):
             card = ProductCard(product)
             card.clicked.connect(lambda _, pid=product["id"]: self.product_selected.emit(pid))
@@ -143,19 +167,18 @@ class ProductScreen(QWidget):
 
         btn_row = QHBoxLayout()
         self.ok_btn = QPushButton("OK")
-        self.ok_btn.setMinimumHeight(85)
-        self.ok_btn.setStyleSheet("font-size:42px; font-weight:800; background:#10b981; color:white; border-radius:16px;")
+        self.ok_btn.setMinimumHeight(76)
+        self.ok_btn.setStyleSheet("font-size:38px; font-weight:800; background:#10b981; color:white; border-radius:16px;")
         self.ok_btn.clicked.connect(self.ok_pressed.emit)
 
         self.rinse_btn = QPushButton("☐ Enjuague Opcional")
         self.rinse_btn.setCheckable(True)
-        self.rinse_btn.setMinimumHeight(85)
+        self.rinse_btn.setMinimumHeight(76)
         self.rinse_btn.setStyleSheet(
-            "QPushButton{font-size:32px; font-weight:700; background:#38bdf8; color:white; border-radius:16px;}"
+            "QPushButton{font-size:29px; font-weight:700; background:#38bdf8; color:white; border-radius:16px;}"
             "QPushButton:checked{background:#22c55e; color:white;}"
         )
-        self.rinse_btn.toggled.connect(self._on_rinse_toggled)
-        self.rinse_btn.clicked.connect(self.rinse_pressed.emit)
+        self.rinse_btn.clicked.connect(self._on_rinse_clicked)
 
         btn_row.addWidget(self.ok_btn)
         btn_row.addWidget(self.rinse_btn)
@@ -165,11 +188,18 @@ class ProductScreen(QWidget):
             "Instrucciones:\n1. Inserta crédito • 2. Selecciona tu producto • 3. Presiona OK para llenar • 4. Enjuague es opcional"
         )
         instr.setAlignment(Qt.AlignCenter)
-        instr.setStyleSheet("font-size:24px; color:#334155; background:#e2e8f0; border-radius:12px; padding:10px;")
+        instr.setStyleSheet("font-size:21px; color:#334155; background:#e2e8f0; border-radius:12px; padding:10px;")
         root.addWidget(instr)
 
-    def _on_rinse_toggled(self, checked: bool):
-        self.rinse_btn.setText("☑ Enjuague Opcional" if checked else "☐ Enjuague Opcional")
+    def _on_rinse_clicked(self):
+        if self._rinse_locked:
+            self.rinse_btn.setChecked(True)
+            return
+        if self.rinse_btn.isChecked():
+            self.rinse_btn.setText("☑ Enjuague Opcional")
+            self.rinse_pressed.emit()
+        else:
+            self.rinse_btn.setText("☐ Enjuague Opcional")
 
     def set_credit(self, credit: float):
         self.credit_label.setStyleSheet(self._credit_base_style)
@@ -178,6 +208,11 @@ class ProductScreen(QWidget):
     def show_credit_warning(self, text: str):
         self.credit_label.setStyleSheet(self._credit_warning_style)
         self.credit_label.setText(text)
+
+    def show_alert(self, text: str, ms: int = 3000):
+        self.alert_label.setText(text)
+        self.alert_label.setVisible(True)
+        QTimer.singleShot(ms, lambda: self.alert_label.setVisible(False))
 
     def set_selected(self, product_id: str | None):
         for pid, card in self.cards.items():
@@ -194,13 +229,17 @@ class ProductScreen(QWidget):
 
     def set_rinse_checked(self, checked: bool):
         self.rinse_btn.setChecked(checked)
+        self.rinse_btn.setText("☑ Enjuague Opcional" if checked else "☐ Enjuague Opcional")
+
+    def lock_rinse_selection(self, locked: bool):
+        self._rinse_locked = locked
 
     def is_rinse_checked(self) -> bool:
         return self.rinse_btn.isChecked()
 
     def pulse_credit_attention(self):
         state = {"step": 0}
-        big_style = "QFrame{background:#06b6d4; border:3px solid #2563eb; border-radius:20px; padding:12px;}"
+        big_style = "QFrame{background:#06b6d4; border:3px solid #2563eb; border-radius:20px; padding:10px;}"
         normal_style = "QFrame{background:#06b6d4; border:3px solid #2563eb; border-radius:18px;}"
 
         def _tick():
@@ -209,7 +248,7 @@ class ProductScreen(QWidget):
                 return
             self.credit_box.setStyleSheet(big_style if state["step"] % 2 == 0 else normal_style)
             state["step"] += 1
-            QTimer.singleShot(170, _tick)
+            QTimer.singleShot(180, _tick)
 
         _tick()
 

@@ -155,13 +155,14 @@ class MainWindow(QMainWindow):
         if self.current_product and self.current_product["id"] == "gallon":
             self.product_screen.set_rinse_enabled(False)
             self.product_screen.set_rinse_checked(False)
+            self.product_screen.lock_rinse_selection(False)
         else:
             self.product_screen.set_rinse_enabled(True)
 
     def _show_credit_insufficient(self):
-        current_text = f"Crédito Disponible: ${self.credit:.0f}"
+        self.product_screen.show_alert("Credito Insuficiente", ms=3000)
         self.product_screen.show_credit_warning("Credito Insuficiente")
-        QTimer.singleShot(3000, lambda: self.product_screen.set_credit(self.credit) if current_text else None)
+        QTimer.singleShot(3000, lambda: self.product_screen.set_credit(self.credit))
 
     def _select_by_gpio(self, product_id: str):
         self._touch_interaction()
@@ -183,14 +184,20 @@ class MainWindow(QMainWindow):
     def _toggle_rinse_option(self):
         if self.current_product and self.current_product["id"] == "gallon":
             self.product_screen.set_rinse_checked(False)
+            self.product_screen.lock_rinse_selection(False)
             return
-        self.product_screen.set_rinse_checked(not self.product_screen.is_rinse_checked())
+        if self.product_screen.is_rinse_checked():
+            self.product_screen.lock_rinse_selection(True)
+            return
+        self.product_screen.set_rinse_checked(True)
+        self.product_screen.lock_rinse_selection(True)
 
     def _on_ok_home(self):
         self._touch_interaction()
         if not self.current_product:
             if any(self.credit >= p["price"] for p in settings.PRODUCTS):
                 self.product_screen.blink_enabled_products()
+                self.product_screen.show_alert("Seleccione un producto", ms=2500)
             else:
                 self._show_credit_insufficient()
             return
@@ -330,5 +337,6 @@ class MainWindow(QMainWindow):
         self.current_fill_percent = 0
         self.product_screen.set_selected(None)
         self.product_screen.set_rinse_checked(False)
+        self.product_screen.lock_rinse_selection(False)
         self._refresh_product_enablement()
         self.stack.setCurrentWidget(self.product_screen)

@@ -11,30 +11,30 @@ class BrandedScreen(QWidget):
         super().__init__()
         self.logo_path = logo_path
         self.root = QVBoxLayout(self)
-        self.root.setContentsMargins(20, 12, 20, 12)
-        self.root.setSpacing(10)
+        self.root.setContentsMargins(18, 10, 18, 10)
+        self.root.setSpacing(9)
         self._build_header()
 
     def _build_header(self):
         row = QHBoxLayout()
         title1 = QLabel("Agua Purificada ")
-        title1.setStyleSheet("font-size:46px; font-weight:800; color:#0e7490;")
+        title1.setStyleSheet("font-size:41px; font-weight:800; color:#0e7490;")
         title2 = QLabel("Lupita")
-        title2.setStyleSheet("font-size:50px; font-family:'Brush Script MT'; color:#ec4899;")
+        title2.setStyleSheet("font-size:45px; font-family:'Brush Script MT'; color:#ec4899;")
         logo = QLabel()
-        logo.setFixedSize(132, 99)
+        logo.setFixedSize(120, 90)
         logo.setAlignment(Qt.AlignCenter)
-        pix = QPixmap(str(self.logo_path)).scaled(121, 88, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(self.logo_path)).scaled(110, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             logo.setText("Lupita")
-            logo.setStyleSheet("font-size:20px; color:#0e7490;")
+            logo.setStyleSheet("font-size:18px; color:#0e7490;")
         else:
             logo.setPixmap(pix)
 
         row.addStretch()
         row.addWidget(title1)
         row.addWidget(title2)
-        row.addSpacing(16)
+        row.addSpacing(14)
         row.addWidget(logo)
         row.addStretch()
         self.root.addLayout(row)
@@ -50,18 +50,18 @@ class PromptScreen(BrandedScreen):
     def _build_ui(self):
         self.title = QLabel("Instrucción")
         self.title.setAlignment(Qt.AlignCenter)
-        self.title.setStyleSheet("font-size:48px; font-weight:800; color:#0f766e;")
+        self.title.setStyleSheet("font-size:43px; font-weight:800; color:#0f766e;")
 
         self.image = QLabel()
         self.image.setAlignment(Qt.AlignCenter)
-        self.image.setFixedHeight(290)
+        self.image.setFixedHeight(260)
 
         self.subtitle = QLabel("")
         self.subtitle.setAlignment(Qt.AlignCenter)
-        self.subtitle.setStyleSheet("font-size:30px; color:#0f172a;")
+        self.subtitle.setStyleSheet("font-size:27px; color:#0f172a;")
 
-        self.ok_pressed.setMinimumHeight(90)
-        self.ok_pressed.setStyleSheet("font-size:42px; font-weight:800; background:#10b981; color:white; border-radius:14px;")
+        self.ok_pressed.setMinimumHeight(82)
+        self.ok_pressed.setStyleSheet("font-size:38px; font-weight:800; background:#10b981; color:white; border-radius:14px;")
 
         self.root.addStretch()
         self.root.addWidget(self.title)
@@ -79,12 +79,12 @@ class PromptScreen(BrandedScreen):
                 self._movie.start()
             else:
                 self.image.setText("[Animación no disponible]")
-                self.image.setStyleSheet("font-size:28px; color:#64748b;")
+                self.image.setStyleSheet("font-size:25px; color:#64748b;")
         else:
-            pix = QPixmap(str(image_path)).scaled(360, 280, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pix = QPixmap(str(image_path)).scaled(330, 255, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             if pix.isNull():
                 self.image.setText("[Imagen no disponible]")
-                self.image.setStyleSheet("font-size:28px; color:#64748b;")
+                self.image.setStyleSheet("font-size:25px; color:#64748b;")
             else:
                 self.image.setPixmap(pix)
                 self.image.setStyleSheet("")
@@ -101,9 +101,9 @@ class MessageScreen(BrandedScreen):
 
     def _build_ui(self):
         self.message.setAlignment(Qt.AlignCenter)
-        self.message.setStyleSheet("font-size:52px; font-weight:800; color:#075985;")
+        self.message.setStyleSheet("font-size:47px; font-weight:800; color:#075985;")
         self.animation.setAlignment(Qt.AlignCenter)
-        self.animation.setFixedHeight(230)
+        self.animation.setFixedHeight(207)
 
         self.root.addStretch()
         self.root.addWidget(self.message)
@@ -120,4 +120,4 @@ class MessageScreen(BrandedScreen):
                 self._movie.start()
             else:
                 self.animation.setText("[Animación no disponible]")
-                self.animation.setStyleSheet("font-size:24px; color:#64748b;")
+                self.animation.setStyleSheet("font-size:22px; color:#64748b;")
