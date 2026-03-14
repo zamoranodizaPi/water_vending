@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from PyQt5.QtCore import QTimer, pyqtSignal, Qt
 from PyQt5.QtGui import QMovie, QPixmap
-from PyQt5.QtWidgets import QLabel, QProgressBar, QVBoxLayout, QWidget, QPushButton, QHBoxLayout
+from PyQt5.QtWidgets import QLabel, QProgressBar, QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QSizePolicy
 
 
 class DispensingScreen(QWidget):
@@ -22,17 +22,19 @@ class DispensingScreen(QWidget):
 
     def _build_ui(self, logo_path):
         root = QVBoxLayout(self)
-        root.setContentsMargins(18, 10, 18, 10)
+        root.setContentsMargins(12, 6, 12, 6)
 
         header = QHBoxLayout()
         title1 = QLabel("Agua Purificada ")
-        title1.setStyleSheet("font-size:41px; font-weight:800; color:#0e7490;")
+        title1.setAlignment(Qt.AlignCenter)
+        title1.setStyleSheet("font-size:42px; font-weight:800; color:#0e7490;")
         title2 = QLabel("Lupita")
-        title2.setStyleSheet("font-size:45px; font-family:'Brush Script MT'; color:#ec4899;")
+        title2.setAlignment(Qt.AlignCenter)
+        title2.setStyleSheet("font-size:46px; font-family:'Brush Script MT'; color:#ec4899;")
         logo = QLabel()
-        logo.setFixedSize(120, 90)
+        logo.setFixedSize(192, 144)
         logo.setAlignment(Qt.AlignCenter)
-        pix = QPixmap(str(logo_path)).scaled(110, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(logo_path)).scaled(176, 132, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             logo.setText("Lupita")
             logo.setStyleSheet("font-size:18px; color:#0e7490;")
@@ -48,25 +50,28 @@ class DispensingScreen(QWidget):
 
         self.title = QLabel("Proceso")
         self.title.setAlignment(Qt.AlignCenter)
-        self.title.setStyleSheet("font-size:48px; font-weight:800; color:#0f766e;")
+        self.title.setStyleSheet("font-size:40px; font-weight:800; color:#0f766e;")
 
         self.animation = QLabel()
         self.animation.setAlignment(Qt.AlignCenter)
-        self.animation.setFixedHeight(170)
+        self.animation.setFixedHeight(130)
 
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
-        self.progress.setFixedHeight(70)
-        self.progress.setFixedWidth(520)
+        self.progress.setFixedHeight(56)
+        self.progress.setFixedWidth(430)
         self.progress.setStyleSheet(
-            "QProgressBar{font-size:27px; border:4px solid #2563eb; border-radius:16px; text-align:center; background:#dbeafe;}"
+            "QProgressBar{font-size:24px; border:4px solid #2563eb; border-radius:16px; text-align:center; background:#dbeafe;}"
             "QProgressBar::chunk{background:#ec4899; border-radius:12px;}"
         )
 
-        self.emergency_btn = QPushButton("PARO EMERGENCIA")
-        self.emergency_btn.setMinimumHeight(66)
-        self.emergency_btn.setStyleSheet("font-size:27px; font-weight:800; background:#ef4444; color:white; border-radius:12px;")
+        self.emergency_btn = QPushButton("Paro")
+        self.emergency_btn.setMinimumHeight(53)
+        self.emergency_btn.setMinimumWidth(227)
+        self.emergency_btn.setMaximumWidth(340)
+        self.emergency_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.emergency_btn.setStyleSheet("font-size:24px; font-weight:800; background:#ef4444; color:white; border-radius:12px;")
         self.emergency_btn.clicked.connect(self.emergency_pressed.emit)
         self.emergency_btn.setVisible(False)
 
@@ -74,8 +79,8 @@ class DispensingScreen(QWidget):
         root.addWidget(self.title)
         root.addWidget(self.animation)
         root.addWidget(self.progress, alignment=Qt.AlignCenter)
-        root.addSpacing(14)
-        root.addWidget(self.emergency_btn)
+        root.addSpacing(12)
+        root.addWidget(self.emergency_btn, alignment=Qt.AlignCenter)
         root.addStretch()
 
     def start(self, title: str, total_seconds: float, gif_path=None, emergency_enabled: bool = False):

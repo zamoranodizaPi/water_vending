@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QMovie, QPixmap
-from PyQt5.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget, QHBoxLayout
+from PyQt5.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy
 
 
 class BrandedScreen(QWidget):
@@ -11,20 +11,22 @@ class BrandedScreen(QWidget):
         super().__init__()
         self.logo_path = logo_path
         self.root = QVBoxLayout(self)
-        self.root.setContentsMargins(18, 10, 18, 10)
-        self.root.setSpacing(9)
+        self.root.setContentsMargins(12, 6, 12, 6)
+        self.root.setSpacing(6)
         self._build_header()
 
     def _build_header(self):
         row = QHBoxLayout()
         title1 = QLabel("Agua Purificada ")
-        title1.setStyleSheet("font-size:41px; font-weight:800; color:#0e7490;")
+        title1.setAlignment(Qt.AlignCenter)
+        title1.setStyleSheet("font-size:42px; font-weight:800; color:#0e7490;")
         title2 = QLabel("Lupita")
-        title2.setStyleSheet("font-size:45px; font-family:'Brush Script MT'; color:#ec4899;")
+        title2.setAlignment(Qt.AlignCenter)
+        title2.setStyleSheet("font-size:46px; font-family:'Brush Script MT'; color:#ec4899;")
         logo = QLabel()
-        logo.setFixedSize(120, 90)
+        logo.setFixedSize(192, 144)
         logo.setAlignment(Qt.AlignCenter)
-        pix = QPixmap(str(self.logo_path)).scaled(110, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(self.logo_path)).scaled(176, 132, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             logo.setText("Lupita")
             logo.setStyleSheet("font-size:18px; color:#0e7490;")
@@ -50,25 +52,28 @@ class PromptScreen(BrandedScreen):
     def _build_ui(self):
         self.title = QLabel("Instrucción")
         self.title.setAlignment(Qt.AlignCenter)
-        self.title.setStyleSheet("font-size:43px; font-weight:800; color:#0f766e;")
+        self.title.setStyleSheet("font-size:36px; font-weight:800; color:#0f766e;")
 
         self.image = QLabel()
         self.image.setAlignment(Qt.AlignCenter)
-        self.image.setFixedHeight(260)
+        self.image.setFixedHeight(198)
 
         self.subtitle = QLabel("")
         self.subtitle.setAlignment(Qt.AlignCenter)
-        self.subtitle.setStyleSheet("font-size:27px; color:#0f172a;")
+        self.subtitle.setStyleSheet("font-size:23px; color:#0f172a;")
 
-        self.ok_pressed.setMinimumHeight(82)
-        self.ok_pressed.setStyleSheet("font-size:38px; font-weight:800; background:#10b981; color:white; border-radius:14px;")
+        self.ok_pressed.setMinimumHeight(67)
+        self.ok_pressed.setMinimumWidth(259)
+        self.ok_pressed.setMaximumWidth(373)
+        self.ok_pressed.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.ok_pressed.setStyleSheet("font-size:34px; font-weight:800; background:#10b981; color:white; border-radius:12px;")
 
         self.root.addStretch()
         self.root.addWidget(self.title)
         self.root.addWidget(self.image)
         self.root.addWidget(self.subtitle)
         self.root.addStretch()
-        self.root.addWidget(self.ok_pressed)
+        self.root.addWidget(self.ok_pressed, alignment=Qt.AlignCenter)
 
     def configure(self, title: str, image_path, subtitle: str):
         self.title.setText(title)
@@ -101,9 +106,9 @@ class MessageScreen(BrandedScreen):
 
     def _build_ui(self):
         self.message.setAlignment(Qt.AlignCenter)
-        self.message.setStyleSheet("font-size:47px; font-weight:800; color:#075985;")
+        self.message.setStyleSheet("font-size:40px; font-weight:800; color:#075985;")
         self.animation.setAlignment(Qt.AlignCenter)
-        self.animation.setFixedHeight(207)
+        self.animation.setFixedHeight(180)
 
         self.root.addStretch()
         self.root.addWidget(self.message)
