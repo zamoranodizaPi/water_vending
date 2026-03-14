@@ -1,2 +1,2 @@
-PyQt5==5.15.11
-gpiozero==2.0.1
+PyQt5>=5.15
+gpiozero>=2.0

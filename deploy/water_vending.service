@@ -1,0 +1,15 @@
+[Unit]
+Description=Purified Water Vending Kiosk
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/water_vending
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /home/pi/water_vending/app.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

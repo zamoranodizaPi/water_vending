@@ -1,38 +1,35 @@
-import time
+"""Manages valve and disinfection outputs during dispensing."""
+from __future__ import annotations
 
-from gpiozero import OutputDevice
-
-
-class ValveControllerError(Exception):
-    """Raised when a valve cannot be controlled."""
+from hardware.auxiliary_outputs import AuxiliaryOutputs
+from hardware.gpio_controller import GPIOController
 
 
 class ValveController:
-    def __init__(self, fill_gpio_pin: int, rinse_gpio_pin: int):
-        self.fill_gpio_pin = fill_gpio_pin
-        self.rinse_gpio_pin = rinse_gpio_pin
-        self.fill_valve = OutputDevice(pin=self.fill_gpio_pin, active_high=True, initial_value=False)
-        self.rinse_valve = OutputDevice(pin=self.rinse_gpio_pin, active_high=True, initial_value=False)
+    def __init__(self, gpio: GPIOController, water_valve, rinse_valve, aux: AuxiliaryOutputs):
+        self.gpio = gpio
+        self.water_valve = water_valve
+        self.rinse_valve = rinse_valve
+        self.aux = aux
+        self.ozone_activated = False
 
-    def activate_fill_for(self, seconds: float) -> None:
-        self._activate_for(self.fill_valve, seconds)
+    def start_dispense(self):
+        self.ozone_activated = False
+        self.aux.uv_on()
+        self.gpio.safe_on(self.water_valve, "water valve")
 
-    def activate_rinse_for(self, seconds: float) -> None:
-        self._activate_for(self.rinse_valve, seconds)
+    def update_progress(self, progress: int):
+        if progress >= 75 and not self.ozone_activated:
+            self.aux.ozone_on()
+            self.ozone_activated = True
 
-    def _activate_for(self, device: OutputDevice, seconds: float) -> None:
-        if seconds <= 0:
-            return
-        try:
-            device.on()
-            time.sleep(seconds)
-        except Exception as exc:
-            raise ValveControllerError(f"Error while activating valve: {exc}") from exc
-        finally:
-            device.off()
+    def finish_dispense(self):
+        self.gpio.safe_off(self.water_valve, "water valve")
+        self.aux.uv_off()
+        self.aux.ozone_off()
 
-    def close(self) -> None:
-        self.fill_valve.off()
-        self.rinse_valve.off()
-        self.fill_valve.close()
-        self.rinse_valve.close()
+    def rinse_start(self):
+        self.gpio.safe_on(self.rinse_valve, "rinse valve")
+
+    def rinse_stop(self):
+        self.gpio.safe_off(self.rinse_valve, "rinse valve")
