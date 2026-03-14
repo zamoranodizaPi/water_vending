@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from datetime import datetime
 
 from PyQt5.QtCore import QObject, QEvent, QTimer, pyqtSignal
@@ -99,6 +100,7 @@ class MainWindow(QMainWindow):
         self.product_screen.product_selected.connect(self._set_selected_product)
         self.product_screen.ok_pressed.connect(self._on_ok_home)
         self.product_screen.rinse_pressed.connect(self._toggle_rinse_option)
+        self.product_screen.disabled_control_touched.connect(self._on_disabled_control_touched)
         self.prompt_screen.ok_pressed.clicked.connect(self._on_prompt_ok)
         self.progress_screen.progress_changed.connect(self._on_progress_changed)
         self.progress_screen.completed.connect(self._on_progress_completed)
@@ -167,6 +169,12 @@ class MainWindow(QMainWindow):
         self.product_screen.show_alert("Credito Insuficiente", ms=3000)
         self.product_screen.show_credit_warning("Credito Insuficiente")
         QTimer.singleShot(3000, lambda: self.product_screen.set_credit(self.credit))
+
+    def _on_disabled_control_touched(self, _control_name: str):
+        has_any = any(self.credit >= p["price"] for p in settings.PRODUCTS)
+        if not has_any:
+            self._show_credit_insufficient()
+
 
     def _select_by_gpio(self, product_id: str):
         self._touch_interaction()
@@ -303,7 +311,8 @@ class MainWindow(QMainWindow):
     def _complete_sale(self, emergency: bool = False):
         if emergency:
             served_liters = round((self.current_fill_percent / 100.0) * self.current_product["volume_l"], 2)
-            price_to_charge = round(served_liters * settings.EMERGENCY_RATE_PER_LITER, 2)
+            raw_charge = served_liters * settings.EMERGENCY_RATE_PER_LITER
+            price_to_charge = float(math.ceil(raw_charge)) if raw_charge > 0 else 0.0
         else:
             served_liters = self.current_product["volume_l"]
             price_to_charge = self.current_product["price"]
