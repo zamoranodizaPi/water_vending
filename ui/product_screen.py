@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QWidget,
+    QSizePolicy,
 )
 from PyQt5.QtGui import QPixmap
 
@@ -115,8 +116,10 @@ class ProductScreen(QWidget):
 
         title_row = QHBoxLayout()
         title1 = QLabel("Agua Purificada ")
+        title1.setAlignment(Qt.AlignCenter)
         title1.setStyleSheet("font-size:47px; font-weight:800; color:#0e7490;")
         title2 = QLabel("Lupita")
+        title2.setAlignment(Qt.AlignCenter)
         title2.setStyleSheet("font-size:50px; font-weight:700; font-family:'Brush Script MT'; color:#ec4899;")
         title_container = QHBoxLayout()
         title_container.addWidget(title1)
@@ -168,20 +171,29 @@ class ProductScreen(QWidget):
         btn_row = QHBoxLayout()
         self.ok_btn = QPushButton("OK")
         self.ok_btn.setMinimumHeight(76)
+        self.ok_btn.setMinimumWidth(300)
+        self.ok_btn.setMaximumWidth(420)
+        self.ok_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.ok_btn.setStyleSheet("font-size:38px; font-weight:800; background:#10b981; color:white; border-radius:16px;")
         self.ok_btn.clicked.connect(self.ok_pressed.emit)
 
         self.rinse_btn = QPushButton("☐ Enjuague Opcional")
         self.rinse_btn.setCheckable(True)
         self.rinse_btn.setMinimumHeight(76)
+        self.rinse_btn.setMinimumWidth(300)
+        self.rinse_btn.setMaximumWidth(420)
+        self.rinse_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.rinse_btn.setStyleSheet(
             "QPushButton{font-size:29px; font-weight:700; background:#38bdf8; color:white; border-radius:16px;}"
             "QPushButton:checked{background:#22c55e; color:white;}"
         )
         self.rinse_btn.clicked.connect(self._on_rinse_clicked)
 
+        btn_row.addStretch()
         btn_row.addWidget(self.ok_btn)
+        btn_row.addSpacing(16)
         btn_row.addWidget(self.rinse_btn)
+        btn_row.addStretch()
         root.addLayout(btn_row)
 
         instr = QLabel(
