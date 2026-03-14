@@ -22,19 +22,19 @@ class DispensingScreen(QWidget):
 
     def _build_ui(self, logo_path):
         root = QVBoxLayout(self)
-        root.setContentsMargins(16, 9, 16, 9)
+        root.setContentsMargins(12, 6, 12, 6)
 
         header = QHBoxLayout()
         title1 = QLabel("Agua Purificada ")
         title1.setAlignment(Qt.AlignCenter)
-        title1.setStyleSheet("font-size:41px; font-weight:800; color:#0e7490;")
+        title1.setStyleSheet("font-size:34px; font-weight:800; color:#0e7490;")
         title2 = QLabel("Lupita")
         title2.setAlignment(Qt.AlignCenter)
-        title2.setStyleSheet("font-size:45px; font-family:'Brush Script MT'; color:#ec4899;")
+        title2.setStyleSheet("font-size:38px; font-family:'Brush Script MT'; color:#ec4899;")
         logo = QLabel()
-        logo.setFixedSize(120, 90)
+        logo.setFixedSize(96, 72)
         logo.setAlignment(Qt.AlignCenter)
-        pix = QPixmap(str(logo_path)).scaled(110, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(logo_path)).scaled(88, 66, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             logo.setText("Lupita")
             logo.setStyleSheet("font-size:18px; color:#0e7490;")
@@ -50,19 +50,19 @@ class DispensingScreen(QWidget):
 
         self.title = QLabel("Proceso")
         self.title.setAlignment(Qt.AlignCenter)
-        self.title.setStyleSheet("font-size:48px; font-weight:800; color:#0f766e;")
+        self.title.setStyleSheet("font-size:40px; font-weight:800; color:#0f766e;")
 
         self.animation = QLabel()
         self.animation.setAlignment(Qt.AlignCenter)
-        self.animation.setFixedHeight(153)
+        self.animation.setFixedHeight(130)
 
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
-        self.progress.setFixedHeight(63)
-        self.progress.setFixedWidth(468)
+        self.progress.setFixedHeight(56)
+        self.progress.setFixedWidth(430)
         self.progress.setStyleSheet(
-            "QProgressBar{font-size:27px; border:4px solid #2563eb; border-radius:16px; text-align:center; background:#dbeafe;}"
+            "QProgressBar{font-size:24px; border:4px solid #2563eb; border-radius:16px; text-align:center; background:#dbeafe;}"
             "QProgressBar::chunk{background:#ec4899; border-radius:12px;}"
         )
 
@@ -71,7 +71,7 @@ class DispensingScreen(QWidget):
         self.emergency_btn.setMinimumWidth(227)
         self.emergency_btn.setMaximumWidth(340)
         self.emergency_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.emergency_btn.setStyleSheet("font-size:27px; font-weight:800; background:#ef4444; color:white; border-radius:12px;")
+        self.emergency_btn.setStyleSheet("font-size:24px; font-weight:800; background:#ef4444; color:white; border-radius:12px;")
         self.emergency_btn.clicked.connect(self.emergency_pressed.emit)
         self.emergency_btn.setVisible(False)
 
