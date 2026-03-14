@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QMovie, QPixmap
-from PyQt5.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget, QHBoxLayout
+from PyQt5.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy
 
 
 class BrandedScreen(QWidget):
@@ -11,15 +11,17 @@ class BrandedScreen(QWidget):
         super().__init__()
         self.logo_path = logo_path
         self.root = QVBoxLayout(self)
-        self.root.setContentsMargins(18, 10, 18, 10)
-        self.root.setSpacing(9)
+        self.root.setContentsMargins(16, 9, 16, 9)
+        self.root.setSpacing(8)
         self._build_header()
 
     def _build_header(self):
         row = QHBoxLayout()
         title1 = QLabel("Agua Purificada ")
+        title1.setAlignment(Qt.AlignCenter)
         title1.setStyleSheet("font-size:41px; font-weight:800; color:#0e7490;")
         title2 = QLabel("Lupita")
+        title2.setAlignment(Qt.AlignCenter)
         title2.setStyleSheet("font-size:45px; font-family:'Brush Script MT'; color:#ec4899;")
         logo = QLabel()
         logo.setFixedSize(120, 90)
@@ -54,13 +56,16 @@ class PromptScreen(BrandedScreen):
 
         self.image = QLabel()
         self.image.setAlignment(Qt.AlignCenter)
-        self.image.setFixedHeight(260)
+        self.image.setFixedHeight(234)
 
         self.subtitle = QLabel("")
         self.subtitle.setAlignment(Qt.AlignCenter)
         self.subtitle.setStyleSheet("font-size:27px; color:#0f172a;")
 
-        self.ok_pressed.setMinimumHeight(82)
+        self.ok_pressed.setMinimumHeight(67)
+        self.ok_pressed.setMinimumWidth(259)
+        self.ok_pressed.setMaximumWidth(373)
+        self.ok_pressed.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.ok_pressed.setStyleSheet("font-size:38px; font-weight:800; background:#10b981; color:white; border-radius:14px;")
 
         self.root.addStretch()
@@ -68,7 +73,7 @@ class PromptScreen(BrandedScreen):
         self.root.addWidget(self.image)
         self.root.addWidget(self.subtitle)
         self.root.addStretch()
-        self.root.addWidget(self.ok_pressed)
+        self.root.addWidget(self.ok_pressed, alignment=Qt.AlignCenter)
 
     def configure(self, title: str, image_path, subtitle: str):
         self.title.setText(title)

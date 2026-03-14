@@ -86,7 +86,7 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
 
-        self.product_screen = ProductScreen(settings.PRODUCTS, settings.LOGO_IMAGE)
+        self.product_screen = ProductScreen(settings.PRODUCTS, settings.LOGO_IMAGE, settings.COIN_IMAGE)
         self.prompt_screen = PromptScreen(settings.LOGO_IMAGE)
         self.progress_screen = DispensingScreen(settings.LOGO_IMAGE)
         self.message_screen = MessageScreen(settings.LOGO_IMAGE)
@@ -117,6 +117,10 @@ class MainWindow(QMainWindow):
 
     def _touch_interaction(self):
         self._courtesy_on()
+        if self.stack.currentWidget() == self.product_screen:
+            min_price = min(p["price"] for p in settings.PRODUCTS)
+            if self.credit < min_price:
+                self.product_screen.show_alert("Ingrese credito", ms=3000)
 
     def _courtesy_on(self):
         try:
@@ -132,7 +136,7 @@ class MainWindow(QMainWindow):
             logger.error(str(exc))
 
     def _handle_coin(self):
-        self._touch_interaction()
+        self._courtesy_on()
         self.credit += settings.COIN_VALUE
         self.product_screen.set_credit(self.credit)
         self._refresh_product_enablement()
@@ -315,8 +319,19 @@ class MainWindow(QMainWindow):
 
         change = max(0.0, round(self.credit - price_to_charge, 2))
 
+        if emergency:
+            self.message_screen.set_message(
+                f"Paro activado\nDespachado: {served_liters:.2f} L\nTotal a cobrar: ${price_to_charge:.2f}"
+            )
+            self.stack.setCurrentWidget(self.message_screen)
+            QTimer.singleShot(3200, lambda: self._process_change(change))
+            return
+
+        self._process_change(change)
+
+    def _process_change(self, change: float):
         if change > 0:
-            self.message_screen.set_message("Recoja su cambio", settings.CHANGE_GIF)
+            self.message_screen.set_message(f"Recoja su cambio\nTotal a reembolsar: ${change:.2f}", settings.CHANGE_GIF)
             self.stack.setCurrentWidget(self.message_screen)
             self.credit = 0.0
             self.product_screen.set_credit(self.credit)
@@ -327,7 +342,7 @@ class MainWindow(QMainWindow):
             self._show_thanks()
 
     def _show_thanks(self):
-        self.message_screen.set_message("Tome Su Producto\nGracias por su Compra!!!", settings.THANKS_GIF)
+        self.message_screen.set_message("Gracias por su Compra!!!", settings.THANKS_GIF)
         self.stack.setCurrentWidget(self.message_screen)
         QTimer.singleShot(3000, self._reset_to_home)
 
