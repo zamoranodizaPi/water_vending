@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from PyQt5.QtCore import QEasingCurve, QPropertyAnimation, QSequentialAnimationGroup, QTimer, QRect, Qt, pyqtSignal
-from PyQt5.QtGui import QColor, QFont, QPainter, QPainterPath, QPen, QPixmap
+from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPen, QPixmap
 from PyQt5.QtWidgets import (
     QFrame,
     QGraphicsDropShadowEffect,
@@ -16,9 +16,9 @@ from PyQt5.QtWidgets import (
 )
 
 APP_FONT = "'Roboto','Open Sans','DejaVu Sans'"
-HEADER_HEIGHT = 78
-CARD_HEIGHT = 208
-BUTTON_HEIGHT = 58
+HEADER_HEIGHT = 80
+CARD_HEIGHT = 220
+BUTTON_HEIGHT = 60
 SECTION_NOTE_HEIGHT = 44
 
 
@@ -125,13 +125,14 @@ class ProductCard(QPushButton):
         self.setCheckable(True)
         self.setCursor(Qt.PointingHandCursor)
         self.setMinimumHeight(CARD_HEIGHT)
+        self.setMinimumWidth(180)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.setStyleSheet("QPushButton{background:transparent; border:none;}")
 
         self.shadow = QGraphicsDropShadowEffect(self)
-        self.shadow.setBlurRadius(18)
-        self.shadow.setOffset(0, 6)
-        self.shadow.setColor(QColor(13, 110, 253, 35))
+        self.shadow.setBlurRadius(14)
+        self.shadow.setOffset(5, 5)
+        self.shadow.setColor(QColor("#dbeafe"))
         self.setGraphicsEffect(self.shadow)
 
         self.shadow_anim = QPropertyAnimation(self.shadow, b"blurRadius", self)
@@ -148,8 +149,8 @@ class ProductCard(QPushButton):
         layout.addWidget(self.card_frame)
 
         body = QVBoxLayout(self.card_frame)
-        body.setContentsMargins(14, 14, 14, 14)
-        body.setSpacing(8)
+        body.setContentsMargins(16, 16, 16, 16)
+        body.setSpacing(9)
 
         self.icon_shell = QFrame()
         self.icon_shell.setFixedSize(118, 118)
@@ -163,7 +164,7 @@ class ProductCard(QPushButton):
         self.name.setAlignment(Qt.AlignCenter)
         self.name.setWordWrap(True)
         self.name.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:17px; font-weight:600; color:#1f2937; background:transparent;"
+            f"font-family:{APP_FONT}; font-size:18px; font-weight:600; color:#333333; background:transparent;"
         )
 
         self.volume = QLabel(f"{product['volume_l']} L")
@@ -175,7 +176,7 @@ class ProductCard(QPushButton):
         self.price = QLabel(f"${product['price']:.0f}")
         self.price.setAlignment(Qt.AlignCenter)
         self.price.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:29px; font-weight:800; color:#0d6efd; background:transparent;"
+            f"font-family:{APP_FONT}; font-size:30px; font-weight:800; color:#0d6efd; background:transparent;"
         )
 
         body.addWidget(self.icon_shell, 0, Qt.AlignCenter)
@@ -212,20 +213,20 @@ class ProductCard(QPushButton):
             shadow = QColor(0, 0, 0, 12)
             blur = 10
         elif self.isChecked():
-            bg = "#fffdf3"
-            border = "#ffc107"
-            shadow = QColor(255, 193, 7, 70)
-            blur = 28
+            bg = "#e7f1ff"
+            border = "#0d6efd"
+            shadow = QColor("#dbeafe")
+            blur = 22
         elif self._hovered:
-            bg = "#eef5ff"
-            border = "#72a7ff"
-            shadow = QColor(13, 110, 253, 60)
-            blur = 24
+            bg = "#f0f8ff"
+            border = "#8ab4ff"
+            shadow = QColor("#dbeafe")
+            blur = 18
         else:
             bg = "#ffffff"
             border = "#dbe4f0"
-            shadow = QColor(13, 110, 253, 35)
-            blur = 18
+            shadow = QColor("#dbeafe")
+            blur = 14
 
         self.card_frame.setStyleSheet(
             f"QFrame{{background:{bg}; border:3px solid {border}; border-radius:24px;}}"
@@ -250,21 +251,21 @@ class ProductCard(QPushButton):
         for _ in range(flashes):
             grow = QPropertyAnimation(self.shadow, b"blurRadius")
             grow.setDuration(170)
-            grow.setStartValue(18)
-            grow.setEndValue(28)
+            grow.setStartValue(14)
+            grow.setEndValue(22)
             grow.setEasingCurve(QEasingCurve.InOutQuad)
 
             settle = QPropertyAnimation(self.shadow, b"blurRadius")
             settle.setDuration(170)
-            settle.setStartValue(28)
-            settle.setEndValue(18)
+            settle.setStartValue(22)
+            settle.setEndValue(14)
             settle.setEasingCurve(QEasingCurve.InOutQuad)
 
             group.addAnimation(grow)
             group.addAnimation(settle)
 
-        self.card_frame.setStyleSheet("QFrame{background:#eefbf4; border:3px solid #22c55e; border-radius:24px;}")
-        self.shadow.setColor(QColor(34, 197, 94, 70))
+        self.card_frame.setStyleSheet("QFrame{background:#f0f8ff; border:3px solid #0d6efd; border-radius:24px;}")
+        self.shadow.setColor(QColor("#dbeafe"))
 
         def _done():
             self._hovered = False
@@ -309,14 +310,19 @@ class ProductScreen(QWidget):
     def _build_ui(self):
         self.setStyleSheet("QWidget{background:#f4f7fb;}")
         root = QVBoxLayout(self)
-        root.setContentsMargins(14, 10, 14, 10)
-        root.setSpacing(10)
+        root.setContentsMargins(20, 20, 20, 20)
+        root.setSpacing(22)
 
         self.header_frame = QFrame()
         self.header_frame.setFixedHeight(HEADER_HEIGHT)
         self.header_frame.setStyleSheet("QFrame{background:#0d6efd; border-radius:22px;}")
+        header_shadow = QGraphicsDropShadowEffect(self.header_frame)
+        header_shadow.setBlurRadius(12)
+        header_shadow.setOffset(0, 4)
+        header_shadow.setColor(QColor(13, 110, 253, 45))
+        self.header_frame.setGraphicsEffect(header_shadow)
         header = QHBoxLayout(self.header_frame)
-        header.setContentsMargins(16, 12, 16, 12)
+        header.setContentsMargins(18, 10, 18, 10)
         header.setSpacing(10)
 
         self.service_hotspot = TopLeftHotspot()
@@ -325,9 +331,9 @@ class ProductScreen(QWidget):
         self.service_hotspot.setStyleSheet("background:transparent;")
 
         self.logo = QLabel()
-        self.logo.setFixedSize(150, 54)
+        self.logo.setFixedSize(180, 70)
         self.logo.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-        pix = QPixmap(str(self.logo_path)).scaled(140, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(self.logo_path)).scaled(170, 70, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setText("Lupita")
             self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:white;")
@@ -337,7 +343,7 @@ class ProductScreen(QWidget):
         self.header_title = QLabel("Agua Purificada Lupita")
         self.header_title.setAlignment(Qt.AlignCenter)
         self.header_title.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:28px; font-weight:700; color:white; letter-spacing:0.4px;"
+            f"font-family:{APP_FONT}; font-size:29px; font-weight:700; color:white; letter-spacing:0.4px;"
         )
 
         header.addWidget(self.service_hotspot, 0, Qt.AlignVCenter)
@@ -347,7 +353,7 @@ class ProductScreen(QWidget):
         header.addStretch()
 
         spacer = QWidget()
-        spacer.setFixedWidth(150)
+        spacer.setFixedWidth(180)
         header.addWidget(spacer, 0, Qt.AlignVCenter)
         root.addWidget(self.header_frame)
 
@@ -358,20 +364,20 @@ class ProductScreen(QWidget):
         root.addWidget(self.section_label)
 
         self.credit_box = QFrame()
-        self.credit_box.setMinimumHeight(64)
+        self.credit_box.setMinimumHeight(68)
         self.credit_box.setStyleSheet("QFrame{background:#0a58ca; border:none; border-radius:20px;}")
         credit_layout = QHBoxLayout(self.credit_box)
-        credit_layout.setContentsMargins(14, 8, 14, 8)
-        credit_layout.setSpacing(10)
+        credit_layout.setContentsMargins(20, 10, 20, 10)
+        credit_layout.setSpacing(14)
 
         coin_wrap = QFrame()
-        coin_wrap.setFixedSize(44, 44)
+        coin_wrap.setFixedSize(48, 48)
         coin_wrap.setStyleSheet("QFrame{background:#ffd24d; border:none; border-radius:22px;}")
         coin_inner = QVBoxLayout(coin_wrap)
         coin_inner.setContentsMargins(0, 0, 0, 0)
         coin = QLabel()
         coin.setAlignment(Qt.AlignCenter)
-        coin_pix = QPixmap(str(self.coin_image_path)).scaled(24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        coin_pix = QPixmap(str(self.coin_image_path)).scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if coin_pix.isNull():
             coin.setText("$")
             coin.setStyleSheet(f"font-family:{APP_FONT}; font-size:20px; font-weight:800; color:#7c4a00;")
@@ -407,8 +413,8 @@ class ProductScreen(QWidget):
 
         grid = QGridLayout()
         grid.setContentsMargins(0, 0, 0, 0)
-        grid.setHorizontalSpacing(16)
-        grid.setVerticalSpacing(10)
+        grid.setHorizontalSpacing(25)
+        grid.setVerticalSpacing(20)
         for idx, product in enumerate(self.products):
             card = ProductCard(product)
             card.clicked.connect(lambda _, pid=product["id"]: self.product_selected.emit(pid))
@@ -422,12 +428,17 @@ class ProductScreen(QWidget):
 
         self.ok_btn = QPushButton("Seleccionar producto")
         self.ok_btn.setMinimumHeight(BUTTON_HEIGHT)
-        self.ok_btn.setMinimumWidth(330)
-        self.ok_btn.setMaximumWidth(420)
+        self.ok_btn.setMinimumWidth(410)
+        self.ok_btn.setMaximumWidth(410)
         self.ok_btn.setCursor(Qt.PointingHandCursor)
         self.ok_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        button_shadow = QGraphicsDropShadowEffect(self.ok_btn)
+        button_shadow.setBlurRadius(14)
+        button_shadow.setOffset(5, 5)
+        button_shadow.setColor(QColor("#dbeafe"))
+        self.ok_btn.setGraphicsEffect(button_shadow)
         self.ok_btn.setStyleSheet(
-            f"QPushButton{{font-family:{APP_FONT}; font-size:24px; font-weight:700; background:#0d6efd; color:white; border:none; border-radius:18px; padding:10px 28px;}}"
+            f"QPushButton{{font-family:{APP_FONT}; font-size:26px; font-weight:700; background:#0d6efd; color:white; border:none; border-radius:18px; padding:10px 28px;}}"
             "QPushButton:hover{background:#0b5ed7;}"
             "QPushButton:pressed{background:#0a58ca;}"
             "QPushButton:disabled{background:#94a3b8; color:#e2e8f0;}"
