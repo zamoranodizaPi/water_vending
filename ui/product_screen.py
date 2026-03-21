@@ -16,7 +16,6 @@ from PyQt5.QtWidgets import (
 )
 
 APP_FONT = "'Roboto','Open Sans','DejaVu Sans'"
-HEADER_HEIGHT = 80
 CARD_HEIGHT = 220
 BUTTON_HEIGHT = 60
 SECTION_NOTE_HEIGHT = 44
@@ -310,20 +309,8 @@ class ProductScreen(QWidget):
     def _build_ui(self):
         self.setStyleSheet("QWidget{background:#f4f7fb;}")
         root = QVBoxLayout(self)
-        root.setContentsMargins(20, 20, 20, 20)
-        root.setSpacing(22)
-
-        self.header_frame = QFrame()
-        self.header_frame.setFixedHeight(HEADER_HEIGHT)
-        self.header_frame.setStyleSheet("QFrame{background:#0d6efd; border-radius:22px;}")
-        header_shadow = QGraphicsDropShadowEffect(self.header_frame)
-        header_shadow.setBlurRadius(12)
-        header_shadow.setOffset(0, 4)
-        header_shadow.setColor(QColor(13, 110, 253, 45))
-        self.header_frame.setGraphicsEffect(header_shadow)
-        header = QHBoxLayout(self.header_frame)
-        header.setContentsMargins(18, 10, 18, 10)
-        header.setSpacing(10)
+        root.setContentsMargins(20, 4, 20, 20)
+        root.setSpacing(18)
 
         self.service_hotspot = TopLeftHotspot()
         self.service_hotspot.setFixedSize(50, 50)
@@ -331,18 +318,23 @@ class ProductScreen(QWidget):
         self.service_hotspot.setStyleSheet("background:transparent;")
 
         self.logo = QLabel()
-        self.logo.setFixedSize(1024, 110)
+        self.logo.setFixedHeight(110)
+        self.logo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.logo.setAlignment(Qt.AlignCenter)
         pix = QPixmap(str(self.logo_path)).scaled(1024, 110, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setText("Lupita")
-            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:white;")
+            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:#0d6efd;")
         else:
             self.logo.setPixmap(pix)
 
-        header.addWidget(self.service_hotspot, 0, Qt.AlignVCenter)
-        header.addWidget(self.logo, 1, Qt.AlignCenter)
-        root.addWidget(self.header_frame)
+        top_row = QHBoxLayout()
+        top_row.setContentsMargins(0, 0, 0, 0)
+        top_row.setSpacing(0)
+        top_row.addWidget(self.service_hotspot, 0, Qt.AlignTop | Qt.AlignLeft)
+        top_row.addWidget(self.logo, 1, Qt.AlignTop | Qt.AlignHCenter)
+        top_row.addSpacing(50)
+        root.addLayout(top_row)
 
         self.section_label = QLabel("Seleccione su producto")
         self.section_label.setAlignment(Qt.AlignCenter)
