@@ -30,13 +30,21 @@ water_vending/
 
 ## Mapeo GPIO
 - GPIO 12: pulsos del monedero
-- GPIO 16: selección garrafón completo
+- GPIO 16: selección 1 galón
 - GPIO 20: selección medio garrafón
-- GPIO 21: selección 1 galón
+- GPIO 21: selección garrafón completo
+- GPIO 13: botón OK
+- Pin físico 29 / GPIO 5: paro de emergencia
+- GPIO 23: LED botón garrafón completo
+- GPIO 24: LED botón medio garrafón
+- GPIO 25: LED botón galón
+- GPIO 8: LED botón OK
+- GPIO 7: LED botón paro
 - GPIO 17: válvula de llenado
-- GPIO 27: válvula de enjuague
-- GPIO 25: selección de enjuague (toggle)
-- GPIO 24: botón OK
+- GPIO 22: válvula de enjuague
+- GPIO 27: luz de cortesía
+- GPIO 26: lámpara UV
+- GPIO 6: ozono
 
 ## Precios en pantalla inicial
 - Garrafón completo: **$12**
@@ -45,16 +53,17 @@ water_vending/
 
 ## Flujo operativo
 1. El monedero agrega crédito por pulsos en GPIO 12.
-2. El operador selecciona producto (GPIO 16/20/21).
-3. (Opcional) Activa enjuague (GPIO 25).
-4. Si enjuague está activo, al presionar OK (GPIO 24) se ejecuta enjuague por 2 segundos (GPIO 27) y luego se pide confirmar llenado con OK.
-5. Si enjuague NO está activo, al presionar OK inicia llenado directo (GPIO 17).
-6. Tiempos de llenado:
+2. El operador selecciona producto con botones físicos o pantalla.
+3. Al completar crédito, parpadea suavemente el LED del producto disponible de mayor precio.
+4. Al seleccionar producto, queda fijo su LED y parpadea el LED de OK cuando ya hay crédito suficiente.
+5. El garrafón completo siempre ejecuta enjuague antes del llenado. Medio garrafón y galón no enjuagan.
+6. Durante el llenado todos los LEDs se apagan, salvo el de paro de emergencia que parpadea.
+7. En estado idle, cada minuto corre una secuencia de LEDs de 5 segundos para llamar la atención.
+8. Tiempos de llenado:
    - Garrafón completo: 20s
    - Medio garrafón: 10s
    - 1 galón: 5s
-7. Durante el llenado se muestra únicamente la barra de progreso (ancho doble) con texto "Llenando".
-8. Al finalizar aparece “Gracias por su compra!!!” durante 2 segundos y vuelve a la pantalla principal.
+9. Al finalizar, todos los LEDs hacen 3 parpadeos rápidos y la máquina vuelve a idle.
 
 ## Resolución objetivo
 Interfaz adaptativa: escala automáticamente para la resolución de pantalla en uso (base recomendada 800 x 480).
