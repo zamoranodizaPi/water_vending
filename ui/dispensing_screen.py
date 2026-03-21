@@ -5,13 +5,15 @@ from PyQt5.QtCore import QTimer, pyqtSignal, Qt
 from PyQt5.QtGui import QMovie, QPixmap
 from PyQt5.QtWidgets import QLabel, QProgressBar, QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QSizePolicy, QFrame
 
-APP_FONT = "'Spicy Rice','DejaVu Sans'"
+APP_FONT = "'Roboto','Open Sans','DejaVu Sans'"
 HEADER_STYLE = "QWidget{background:#0d6efd; border-radius:20px;}"
-SECTION_TITLE_STYLE = f"font-family:{APP_FONT}; font-size:32px; font-weight:900; color:#0d6efd;"
+PRIMARY_TITLE_STYLE = f"font-family:{APP_FONT}; font-size:26px; font-weight:700; color:#ffffff;"
+SECTION_TITLE_STYLE = f"font-family:{APP_FONT}; font-size:30px; font-weight:700; color:#0d6efd;"
 STOP_BUTTON_STYLE = (
-    f"QPushButton{{font-family:{APP_FONT}; font-size:22px; font-weight:800; background:#dc3545; color:white; "
+    f"QPushButton{{font-family:{APP_FONT}; font-size:22px; font-weight:700; background:#dc3545; color:white; "
     "border-radius:16px; border:none; padding:8px 20px;}}"
     "QPushButton:hover{background:#bb2d3b;}"
+    "QPushButton:pressed{background:#a52834;}"
 )
 
 
@@ -37,23 +39,35 @@ class DispensingScreen(QWidget):
         root.setSpacing(0)
 
         self.header_container = QFrame()
-        self.header_container.setFixedHeight(82)
+        self.header_container.setFixedHeight(78)
         self.header_container.setStyleSheet(HEADER_STYLE)
         header = QHBoxLayout(self.header_container)
-        header.setContentsMargins(20, 10, 20, 10)
+        header.setContentsMargins(18, 10, 18, 10)
         header.setSpacing(12)
 
         self.logo = QLabel(self.header_container)
-        self.logo.setFixedSize(920, 82)
-        self.logo.setAlignment(Qt.AlignCenter)
+        self.logo.setFixedSize(150, 54)
+        self.logo.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.logo.setStyleSheet("background: transparent;")
-        pix = QPixmap(str(logo_path)).scaled(900, 70, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(logo_path)).scaled(140, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setText("Lupita")
             self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:#ffffff;")
         else:
             self.logo.setPixmap(pix)
-        header.addWidget(self.logo, 1, Qt.AlignCenter)
+
+        self.header_title = QLabel("Agua Purificada Lupita")
+        self.header_title.setAlignment(Qt.AlignCenter)
+        self.header_title.setStyleSheet(PRIMARY_TITLE_STYLE)
+
+        header.addWidget(self.logo, 0, Qt.AlignVCenter)
+        header.addStretch()
+        header.addWidget(self.header_title, 0, Qt.AlignCenter)
+        header.addStretch()
+
+        spacer = QWidget(self.header_container)
+        spacer.setFixedWidth(150)
+        header.addWidget(spacer, 0, Qt.AlignVCenter)
         root.addWidget(self.header_container)
 
         self.title = QLabel("Proceso")

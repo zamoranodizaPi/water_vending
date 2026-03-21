@@ -10,7 +10,7 @@ from ui.main_window import MainWindow
 def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     app = QApplication(sys.argv)
-    app.setStyleSheet("QWidget { font-family: 'Spicy Rice','DejaVu Sans'; background: #f7f9fb; }")
+    app.setStyleSheet("QWidget { font-family: 'Roboto','Open Sans','DejaVu Sans'; background: #f7f9fb; }")
 
     window = MainWindow()
     window.show_startup()

@@ -5,16 +5,17 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QMovie, QPixmap
 from PyQt5.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy, QFrame
 
-APP_FONT = "'Spicy Rice','DejaVu Sans'"
+APP_FONT = "'Roboto','Open Sans','DejaVu Sans'"
 HEADER_STYLE = "QFrame{background:#0d6efd; border-radius:20px;}"
 SCREEN_BG = "QWidget { background:#f3f7fb; }"
-PRIMARY_TITLE_STYLE = f"font-family:{APP_FONT}; font-size:48px; font-weight:800; color:#ffffff;"
-SECTION_TITLE_STYLE = f"font-family:{APP_FONT}; font-size:32px; font-weight:900; color:#0d6efd;"
-BODY_TEXT_STYLE = f"font-family:{APP_FONT}; font-size:20px; font-weight:500; color:#1f2937;"
+PRIMARY_TITLE_STYLE = f"font-family:{APP_FONT}; font-size:26px; font-weight:700; color:#ffffff;"
+SECTION_TITLE_STYLE = f"font-family:{APP_FONT}; font-size:30px; font-weight:700; color:#0d6efd;"
+BODY_TEXT_STYLE = f"font-family:{APP_FONT}; font-size:19px; font-weight:600; color:#1f2937;"
 PRIMARY_BUTTON_STYLE = (
-    f"QPushButton{{font-family:{APP_FONT}; font-size:22px; font-weight:800; background:#0d6efd; color:white; "
+    f"QPushButton{{font-family:{APP_FONT}; font-size:22px; font-weight:700; background:#0d6efd; color:white; "
     "border-radius:16px; border:none; padding:8px 20px;}}"
     "QPushButton:hover{background:#0b5ed7;}"
+    "QPushButton:pressed{background:#0a58ca;}"
     "QPushButton:disabled{background:#9ca3af; color:#e5e7eb;}"
 )
 
@@ -31,23 +32,35 @@ class BrandedScreen(QWidget):
 
     def _build_header(self):
         self.header_frame = QFrame()
-        self.header_frame.setFixedHeight(82)
+        self.header_frame.setFixedHeight(78)
         self.header_frame.setStyleSheet(HEADER_STYLE)
         title_row = QHBoxLayout(self.header_frame)
-        title_row.setContentsMargins(20, 10, 20, 10)
+        title_row.setContentsMargins(18, 10, 18, 10)
         title_row.setSpacing(12)
 
         self.logo = QLabel(self.header_frame)
-        self.logo.setFixedSize(920, 82)
-        self.logo.setAlignment(Qt.AlignCenter)
+        self.logo.setFixedSize(150, 54)
+        self.logo.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.logo.setStyleSheet("background: transparent;")
-        pix = QPixmap(str(self.logo_path)).scaled(900, 70, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(self.logo_path)).scaled(140, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setText("Lupita")
             self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:#ffffff;")
         else:
             self.logo.setPixmap(pix)
-        title_row.addWidget(self.logo, 1, Qt.AlignCenter)
+
+        self.header_title = QLabel("Agua Purificada Lupita")
+        self.header_title.setAlignment(Qt.AlignCenter)
+        self.header_title.setStyleSheet(PRIMARY_TITLE_STYLE)
+
+        title_row.addWidget(self.logo, 0, Qt.AlignVCenter)
+        title_row.addStretch()
+        title_row.addWidget(self.header_title, 0, Qt.AlignCenter)
+        title_row.addStretch()
+
+        spacer = QWidget(self.header_frame)
+        spacer.setFixedWidth(150)
+        title_row.addWidget(spacer, 0, Qt.AlignVCenter)
         self.root.addWidget(self.header_frame)
 
     def set_credit(self, credit: float):
