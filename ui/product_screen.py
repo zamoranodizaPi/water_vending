@@ -331,30 +331,17 @@ class ProductScreen(QWidget):
         self.service_hotspot.setStyleSheet("background:transparent;")
 
         self.logo = QLabel()
-        self.logo.setFixedSize(180, 70)
-        self.logo.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-        pix = QPixmap(str(self.logo_path)).scaled(170, 70, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.logo.setFixedSize(1024, 110)
+        self.logo.setAlignment(Qt.AlignCenter)
+        pix = QPixmap(str(self.logo_path)).scaled(1024, 110, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setText("Lupita")
             self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:white;")
         else:
             self.logo.setPixmap(pix)
 
-        self.header_title = QLabel("Agua Purificada Lupita")
-        self.header_title.setAlignment(Qt.AlignCenter)
-        self.header_title.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:29px; font-weight:700; color:white; letter-spacing:0.4px;"
-        )
-
         header.addWidget(self.service_hotspot, 0, Qt.AlignVCenter)
-        header.addWidget(self.logo, 0, Qt.AlignVCenter)
-        header.addStretch()
-        header.addWidget(self.header_title, 0, Qt.AlignCenter)
-        header.addStretch()
-
-        spacer = QWidget()
-        spacer.setFixedWidth(180)
-        header.addWidget(spacer, 0, Qt.AlignVCenter)
+        header.addWidget(self.logo, 1, Qt.AlignCenter)
         root.addWidget(self.header_frame)
 
         self.section_label = QLabel("Seleccione su producto")
