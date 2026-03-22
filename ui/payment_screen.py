@@ -20,9 +20,10 @@ class BrandedScreen(QWidget):
         self.root.setContentsMargins(10, 5, 10, 16)
         self.root.setSpacing(0)
         self._build_header()
-        self.content = QWidget()
+        self.content = QFrame()
+        self.content.setObjectName("contentPanel")
         self.content_layout = QVBoxLayout(self.content)
-        self.content_layout.setContentsMargins(16, 0, 16, 0)
+        self.content_layout.setContentsMargins(18, 12, 18, 12)
         self.content_layout.setSpacing(0)
         self.root.addWidget(self.content)
 

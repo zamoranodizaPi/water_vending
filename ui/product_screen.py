@@ -62,9 +62,19 @@ class ProductCard(QPushButton):
         self.card_frame.setProperty("attention", False)
         root.addWidget(self.card_frame)
 
-        body = QVBoxLayout(self.card_frame)
-        body.setContentsMargins(15, 12, 15, 12)
+        card_root = QVBoxLayout(self.card_frame)
+        card_root.setContentsMargins(0, 0, 0, 0)
+        card_root.setSpacing(0)
+
+        self.accent_bar = QFrame()
+        self.accent_bar.setObjectName("accentBar")
+        self.accent_bar.setProperty("accent", self._accent_name())
+        card_root.addWidget(self.accent_bar)
+
+        body = QVBoxLayout()
+        body.setContentsMargins(18, 16, 18, 16)
         body.setSpacing(0)
+        card_root.addLayout(body, 1)
 
         self.image = QLabel()
         self.image.setFixedSize(200, 200)
@@ -103,6 +113,13 @@ class ProductCard(QPushButton):
 
         self._apply_state(animated=False)
 
+    def _accent_name(self) -> str:
+        return {
+            "full_garrafon": "blue",
+            "half_garrafon": "orange",
+            "gallon": "pink",
+        }.get(self.product["id"], "blue")
+
     def enterEvent(self, event):
         self._hovered = True
         self._apply_state()
@@ -125,18 +142,19 @@ class ProductCard(QPushButton):
         self.card_frame.setProperty("selected", self.isChecked())
         self.card_frame.setProperty("hovered", self._hovered)
         self.card_frame.setProperty("affordable", self._affordable)
+        refresh_style(self.accent_bar)
         if self.isChecked():
-            blur = 12
+            blur = 14
             shadow_color = color_with_alpha(PRIMARY, 70)
         elif self._hovered:
-            blur = 10
+            blur = 12
             shadow_color = color_with_alpha(PRIMARY_HOVER, 60)
         elif not self._affordable:
-            blur = 7
+            blur = 8
             shadow_color = color_with_alpha(TEXT_SECONDARY, 45)
         else:
-            blur = 8
-            shadow_color = color_with_alpha(TEXT_SECONDARY, 55)
+            blur = 10
+            shadow_color = color_with_alpha(TEXT_SECONDARY, 50)
 
         refresh_style(self.card_frame)
         self.shadow.setColor(shadow_color)
@@ -335,6 +353,11 @@ class ProductScreen(QWidget):
         self.ok_btn.setStyleSheet(
             f"QPushButton{{font-family:{APP_FONT}; font-size:21px; text-align:left; padding-left:18px;}}"
         )
+        self.ok_btn.setGraphicsEffect(QGraphicsDropShadowEffect(self.ok_btn))
+        ok_shadow = self.ok_btn.graphicsEffect()
+        ok_shadow.setBlurRadius(10)
+        ok_shadow.setOffset(0, 3)
+        ok_shadow.setColor(color_with_alpha(PRIMARY, 70))
         self.ok_btn.clicked.connect(self.ok_pressed.emit)
         action_layout.addWidget(self.ok_btn, 0, Qt.AlignLeft | Qt.AlignVCenter)
         action_layout.addWidget(self.credit_box, 0, Qt.AlignRight | Qt.AlignVCenter)

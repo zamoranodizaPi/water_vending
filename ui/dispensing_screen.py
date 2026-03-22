@@ -55,9 +55,10 @@ class DispensingScreen(QWidget):
         header.addWidget(self.logo_box, 0, Qt.AlignCenter)
         root.addWidget(self.header_container)
 
-        content = QWidget()
+        content = QFrame()
+        content.setObjectName("contentPanel")
         content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(16, 0, 16, 0)
+        content_layout.setContentsMargins(18, 12, 18, 12)
         content_layout.setSpacing(0)
 
         self.title = QLabel("Proceso")

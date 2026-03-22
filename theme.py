@@ -5,20 +5,26 @@ from PyQt5.QtGui import QColor
 
 APP_FONT = "'Roboto','Open Sans','DejaVu Sans'"
 
-PRIMARY = "#0D6EFD"
-PRIMARY_HOVER = "#0B5ED7"
-PRIMARY_DARK = "#0A58CA"
+PRIMARY = "#2563EB"
+PRIMARY_HOVER = "#1D4ED8"
+PRIMARY_DARK = "#1E40AF"
+HEADER_BLUE = "#3B82F6"
 
-ACCENT = "#FFC107"
-ACCENT_LIGHT = "#FFF8E1"
+ACCENT = "#FACC15"
+ACCENT_LIGHT = "#FFFBEB"
+ACCENT_ORANGE = "#F59E0B"
+ACCENT_PINK = "#EC4899"
 
-BACKGROUND = "#F1F5F9"
+BACKGROUND = "#F8FAFC"
 SURFACE = "#FFFFFF"
 
-TEXT_PRIMARY = "#1F2937"
+TEXT_PRIMARY = "#111827"
 TEXT_SECONDARY = "#6B7280"
 
 BORDER = "#E5E7EB"
+ERROR = "#DC2626"
+ERROR_BG = "#FEE2E2"
+CREDIT_BG = "#111827"
 
 
 GLOBAL_STYLESHEET = f"""
@@ -43,12 +49,12 @@ QFrame#header {{
 }}
 
 QFrame#logoBox {{
-    background-color: {PRIMARY_DARK};
+    background-color: {HEADER_BLUE};
     border-radius: 12px;
 }}
 
 QFrame#credit {{
-    background-color: {PRIMARY_DARK};
+    background-color: {CREDIT_BG};
     border-radius: 12px;
 }}
 
@@ -62,10 +68,16 @@ QFrame#actionBox {{
     border-radius: 18px;
 }}
 
+QFrame#contentPanel {{
+    background-color: {SURFACE};
+    border: 1px solid {BORDER};
+    border-radius: 20px;
+}}
+
 QFrame#card {{
     background-color: {SURFACE};
-    border-radius: 15px;
-    border: 1px solid {BORDER};
+    border-radius: 18px;
+    border: 2px solid {BORDER};
 }}
 
 QFrame#card[selected="true"] {{
@@ -74,17 +86,39 @@ QFrame#card[selected="true"] {{
 }}
 
 QFrame#card[hovered="true"] {{
-    border: 3px solid {PRIMARY_HOVER};
+    border: 2px solid {PRIMARY_HOVER};
 }}
 
 QFrame#card[affordable="false"] {{
-    border: 1px solid {BORDER};
+    border: 2px solid {BORDER};
     background-color: {SURFACE};
 }}
 
 QFrame#card[attention="true"] {{
     border: 3px solid {ACCENT};
     background-color: {ACCENT_LIGHT};
+}}
+
+QFrame#accentBar {{
+    border: none;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+    min-height: 6px;
+    max-height: 6px;
+}}
+
+QFrame#accentBar[accent="blue"] {{
+    background-color: {HEADER_BLUE};
+}}
+
+QFrame#accentBar[accent="orange"] {{
+    background-color: {ACCENT_ORANGE};
+}}
+
+QFrame#accentBar[accent="pink"] {{
+    background-color: {ACCENT_PINK};
 }}
 
 QLabel {{
@@ -97,13 +131,13 @@ QLabel[role="secondary"] {{
 }}
 
 QLabel[role="warning"] {{
-    color: {PRIMARY_DARK};
+    color: {ERROR};
 }}
 
 QLabel[role="price"] {{
     color: {PRIMARY};
     font-weight: 700;
-    font-size: 22px;
+    font-size: 26px;
 }}
 
 QFrame#card[selected="true"] QLabel[role="price"],
@@ -125,7 +159,7 @@ QLabel#headerTitle {{
 }}
 
 QLabel#screenTitle {{
-    color: {PRIMARY};
+    color: {TEXT_PRIMARY};
     font-size: 30px;
     font-weight: 700;
 }}
@@ -143,11 +177,13 @@ QLabel#sectionLabel {{
 }}
 
 QLabel#sectionLabel[warning="true"] {{
-    color: {PRIMARY_DARK};
+    color: {ERROR};
 }}
 
 QLabel#alertLabel {{
-    color: {PRIMARY_DARK};
+    color: {ERROR};
+    background-color: {ERROR_BG};
+    border-radius: 10px;
     font-size: 13px;
     font-weight: 600;
 }}
@@ -159,13 +195,13 @@ QLabel#creditText {{
 }}
 
 QLabel#creditText[role="warning"] {{
-    color: {ACCENT_LIGHT};
+    color: {ACCENT};
 }}
 
 QPushButton[variant="primary"] {{
     background-color: {PRIMARY};
     color: {SURFACE};
-    border-radius: 12px;
+    border-radius: 16px;
     border: none;
     font-size: 18px;
     font-weight: 700;
