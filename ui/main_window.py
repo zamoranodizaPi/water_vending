@@ -417,7 +417,7 @@ class MainWindow(QMainWindow):
                 settings.UPSIDE_DOWN_IMAGE,
                 "Coloque el garrafon boca abajo",
                 image_size=(350, 300),
-                image_offset_y=0,
+                image_offset_y=-30,
             )
         else:
             self.flow_step = "await_fill_position"
@@ -425,7 +425,7 @@ class MainWindow(QMainWindow):
                 "Coloque su embase en la cabina",
                 self.current_product["image"],
                 "Prepare el envase para llenado",
-                image_offset_y=-40,
+                image_offset_y=-70,
             )
         self.stack.setCurrentWidget(self.prompt_screen)
 
@@ -441,7 +441,7 @@ class MainWindow(QMainWindow):
             "Coloque su embase en la cabina",
             self.current_product["image"],
             subtitle,
-            image_offset_y=-40,
+            image_offset_y=-70,
         )
         self.stack.setCurrentWidget(self.prompt_screen)
         self.audio.play("press_ok")
