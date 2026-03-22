@@ -20,7 +20,7 @@ CARD_HEIGHT = 250
 BADGE_WIDTH = 300
 BADGE_HEIGHT = 60
 BUTTON_WIDTH = 400
-BUTTON_HEIGHT = 70
+BUTTON_HEIGHT = 60
 HEADER_WIDTH = 1024
 HEADER_HEIGHT = 100
 
@@ -116,29 +116,39 @@ class ProductCard(QPushButton):
         self._apply_state(animated=False)
 
     def _apply_state(self, animated: bool = True):
+        name_color = "#374151"
+        volume_color = "#6B7280"
+        price_color = "#0D6EFD"
         if self.isChecked():
-            background = "#E7F1FF"
-            border = "#0D6EFD"
-            blur = 18
-            shadow_color = QColor(13, 110, 253, 45)
+            blur = 8
+            shadow_color = QColor(13, 110, 253, 24)
+            name_color = "#0A58CA"
+            volume_color = "#0A58CA"
+            price_color = "#0A58CA"
         elif self._hovered:
-            background = "#F8FBFF"
-            border = "#D6E4FF"
-            blur = 17
-            shadow_color = QColor(15, 23, 42, 40)
+            blur = 6
+            shadow_color = QColor(13, 110, 253, 16)
+            name_color = "#0B5ED7"
+            price_color = "#0B5ED7"
         elif not self._affordable:
-            background = "#FFFFFF"
-            border = "#E5E7EB"
-            blur = 12
-            shadow_color = QColor(15, 23, 42, 24)
+            blur = 0
+            shadow_color = QColor(15, 23, 42, 0)
+            name_color = "#9CA3AF"
+            volume_color = "#9CA3AF"
+            price_color = "#94A3B8"
         else:
-            background = "#FFFFFF"
-            border = "#E5E7EB"
-            blur = 15
-            shadow_color = QColor(15, 23, 42, 35)
+            blur = 0
+            shadow_color = QColor(15, 23, 42, 0)
 
-        self.card_frame.setStyleSheet(
-            f"QFrame{{background:{background}; border:1px solid {border}; border-radius:15px;}}"
+        self.card_frame.setStyleSheet("QFrame{background:transparent; border:none;}")
+        self.name.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:14px; font-weight:600; color:{name_color}; background:transparent;"
+        )
+        self.volume.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:12px; font-weight:500; color:{volume_color}; background:transparent;"
+        )
+        self.price.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:24px; font-weight:700; color:{price_color}; background:transparent;"
         )
         self.shadow.setColor(shadow_color)
         if animated:
@@ -165,8 +175,6 @@ class ProductCard(QPushButton):
             settle.setEasingCurve(QEasingCurve.InOutQuad)
             group.addAnimation(expand)
             group.addAnimation(settle)
-
-        self.card_frame.setStyleSheet("QFrame{background:#F8FBFF; border:1px solid #B7D1FF; border-radius:15px;}")
 
         def _done():
             self._apply_state(animated=False)
@@ -205,8 +213,8 @@ class ProductScreen(QWidget):
         self.coin_image_path = coin_image_path
         self.cards = {}
         self._rinse_locked = False
-        self._credit_base_style = f"font-family:{APP_FONT}; font-size:19px; font-weight:700; color:white;"
-        self._credit_warning_style = f"font-family:{APP_FONT}; font-size:19px; font-weight:700; color:#FFF7ED;"
+        self._credit_base_style = f"font-family:{APP_FONT}; font-size:22px; font-weight:700; color:white;"
+        self._credit_warning_style = f"font-family:{APP_FONT}; font-size:22px; font-weight:700; color:#FFF7ED;"
         self._section_base_style = f"font-family:{APP_FONT}; font-size:20px; font-weight:700; color:#1F2937;"
         self._section_warning_style = f"font-family:{APP_FONT}; font-size:20px; font-weight:700; color:#B91C1C;"
         self._build_ui()
@@ -313,7 +321,7 @@ class ProductScreen(QWidget):
         self.ok_btn.setFixedSize(BUTTON_WIDTH, BUTTON_HEIGHT)
         self.ok_btn.setCursor(Qt.PointingHandCursor)
         self.ok_btn.setStyleSheet(
-            f"QPushButton{{font-family:{APP_FONT}; font-size:18px; font-weight:700; background:#0D6EFD; color:white; border:none; border-radius:15px;}}"
+            f"QPushButton{{font-family:{APP_FONT}; font-size:21px; font-weight:700; background:#0D6EFD; color:white; border:none; border-radius:15px; text-align:right; padding-right:18px;}}"
             "QPushButton:hover{background:#0B5ED7;}"
             "QPushButton:pressed{background:#0A58CA;}"
             "QPushButton:disabled{background:#94A3B8; color:#E5E7EB;}"
