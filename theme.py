@@ -121,7 +121,7 @@ QLabel[role="warning"] {{
 QLabel[role="price"] {{
     color: {ACCENT_PINK};
     font-weight: 700;
-    font-size: 26px;
+    font-size: 29px;
 }}
 
 QLabel[role="price"][blink="true"] {{

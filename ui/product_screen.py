@@ -272,6 +272,7 @@ class ProductScreen(QWidget):
         self.coin_image_path = coin_image_path
         self.cards = {}
         self._rinse_locked = False
+        self._ok_base_text = "Seleccionar producto"
         self._build_ui()
 
     def _build_ui(self):
@@ -394,7 +395,7 @@ class ProductScreen(QWidget):
         action_layout.setContentsMargins(10, 10, 10, 10)
         action_layout.setSpacing(12)
 
-        self.ok_btn = QPushButton("Seleccionar producto")
+        self.ok_btn = QPushButton(self._ok_base_text)
         self.ok_btn.setProperty("variant", "primary")
         self.ok_btn.setFixedSize(BUTTON_WIDTH, BUTTON_HEIGHT)
         self.ok_btn.setCursor(Qt.PointingHandCursor)
@@ -485,7 +486,10 @@ class ProductScreen(QWidget):
         refresh_style(self.section_label)
 
     def set_countdown(self, seconds: int | None):
-        return
+        if seconds is None:
+            self.ok_btn.setText(self._ok_base_text)
+            return
+        self.ok_btn.setText(f"{self._ok_base_text} ({seconds}s)")
 
     def pulse_credit_attention(self):
         state = {"step": 0}
