@@ -447,7 +447,7 @@ class MainWindow(QMainWindow):
             "Coloque su embase en la cabina",
             self.current_product["image"],
             subtitle,
-            image_offset_y=-15,
+            image_offset_y=-20,
         )
         self.stack.setCurrentWidget(self.prompt_screen)
         self.audio.play("press_ok")
@@ -596,9 +596,8 @@ class MainWindow(QMainWindow):
 
     def _show_thanks(self):
         self.message_screen.set_message(
-            "Gracias por su Compra!!!",
-            settings.THANKS_GIF,
-            image_size=(267, 400),
+            "",
+            gif_path=settings.THANKS_GIF,
             hide_header=True,
         )
         self.stack.setCurrentWidget(self.message_screen)

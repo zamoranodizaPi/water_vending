@@ -74,6 +74,12 @@ QFrame#contentPanel {{
     border-radius: 20px;
 }}
 
+QFrame#contentPanel[thankyou="true"] {{
+    background-color: transparent;
+    border: none;
+    border-radius: 0px;
+}}
+
 QFrame#card {{
     background-color: {SURFACE};
     border-radius: 26px;
@@ -118,10 +124,22 @@ QLabel[role="price"] {{
     font-size: 26px;
 }}
 
+QLabel[role="price"][blink="true"] {{
+    color: {ERROR};
+}}
+
 QFrame#card[selected="true"] QLabel[role="price"],
 QFrame#card[selected="true"] QLabel[role="name"],
 QFrame#card[selected="true"] QLabel[role="secondary"] {{
     color: {TEXT_PRIMARY};
+}}
+
+QFrame#card[selected="true"] QLabel[role="price"] {{
+    color: {PRIMARY};
+}}
+
+QFrame#card[selected="true"] QLabel[role="price"][blink="true"] {{
+    color: {ERROR};
 }}
 
 QFrame#card[affordable="false"] QLabel[role="name"],
