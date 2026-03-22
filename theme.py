@@ -119,7 +119,7 @@ QLabel[role="warning"] {{
 }}
 
 QLabel[role="price"] {{
-    color: {PRIMARY};
+    color: {ACCENT_PINK};
     font-weight: 700;
     font-size: 26px;
 }}
@@ -135,7 +135,7 @@ QFrame#card[selected="true"] QLabel[role="secondary"] {{
 }}
 
 QFrame#card[selected="true"] QLabel[role="price"] {{
-    color: {PRIMARY};
+    color: {ACCENT_PINK};
 }}
 
 QFrame#card[selected="true"] QLabel[role="price"][blink="true"] {{
