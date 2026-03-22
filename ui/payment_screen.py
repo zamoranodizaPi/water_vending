@@ -60,6 +60,7 @@ class PromptScreen(BrandedScreen):
         self.setObjectName("promptScreen")
         self.ok_pressed = QPushButton("OK")
         self._movie = None
+        self._image_pixmap = None
         self._footer_hint_base = "Presione OK cuando este listo"
         self._build_ui()
 
@@ -70,7 +71,8 @@ class PromptScreen(BrandedScreen):
 
         self.image = QLabel()
         self.image.setAlignment(Qt.AlignCenter)
-        self.image.setFixedHeight(300)
+        self.image.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.image.setMinimumHeight(260)
 
         self.subtitle = QLabel("")
         self.subtitle.setObjectName("bodyText")
@@ -86,13 +88,29 @@ class PromptScreen(BrandedScreen):
         self.ok_pressed.setVisible(False)
 
         self.content_layout.addWidget(self.title)
-        self.content_layout.addSpacing(4)
-        self.content_layout.addWidget(self.image, alignment=Qt.AlignCenter)
-        self.content_layout.addSpacing(24)
+        self.content_layout.addSpacing(8)
+        self.content_layout.addWidget(self.image, 1, Qt.AlignCenter)
+        self.content_layout.addSpacing(10)
         self.content_layout.addWidget(self.subtitle)
-        self.content_layout.addSpacing(12)
+        self.content_layout.addSpacing(8)
         self.content_layout.addWidget(self.footer_hint)
-        self.content_layout.addStretch(1)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._refresh_image()
+
+    def _refresh_image(self):
+        if self._movie and self._movie.isValid():
+            self._movie.setScaledSize(self.image.size())
+            return
+        if self._image_pixmap is None:
+            return
+        target = self.image.size()
+        if target.width() <= 0 or target.height() <= 0:
+            return
+        self.image.setPixmap(
+            self._image_pixmap.scaled(target, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        )
 
     def set_prompt_countdown(self, seconds: int | None):
         if seconds is None:
@@ -104,10 +122,12 @@ class PromptScreen(BrandedScreen):
         self.title.setText(title)
         self.image.setMovie(None)
         self._movie = None
+        self._image_pixmap = None
         if str(image_path).lower().endswith(".gif"):
             self._movie = QMovie(str(image_path))
             if self._movie.isValid():
                 self.image.setMovie(self._movie)
+                self._movie.setScaledSize(self.image.size())
                 self._movie.start()
             else:
                 self.image.setText("[Animación no disponible]")
@@ -115,18 +135,18 @@ class PromptScreen(BrandedScreen):
                 self.image.setStyleSheet("font-size:25px;")
                 refresh_style(self.image)
         else:
-            width, height = image_size or (300, 190)
-            pix = QPixmap(str(image_path)).scaled(width, height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pix = QPixmap(str(image_path))
             if pix.isNull():
                 self.image.setText("[Imagen no disponible]")
                 self.image.setProperty("role", "secondary")
                 self.image.setStyleSheet("font-size:25px;")
                 refresh_style(self.image)
             else:
-                self.image.setPixmap(pix)
+                self._image_pixmap = pix
                 self.image.setProperty("role", "")
                 self.image.setStyleSheet("")
                 refresh_style(self.image)
+                self._refresh_image()
         self.subtitle.setText(subtitle)
 
 
@@ -135,6 +155,7 @@ class MessageScreen(BrandedScreen):
         super().__init__(logo_path)
         self.setObjectName("messageScreen")
         self._movie = None
+        self._image_pixmap = None
         self.message = QLabel("")
         self.animation = QLabel()
         self._build_ui()
@@ -144,38 +165,54 @@ class MessageScreen(BrandedScreen):
         self.message.setAlignment(Qt.AlignCenter)
         self.message.setWordWrap(True)
         self.animation.setAlignment(Qt.AlignCenter)
-        self.animation.setFixedHeight(170)
+        self.animation.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.animation.setMinimumHeight(220)
 
-        self.content_layout.addStretch(1)
         self.content_layout.addWidget(self.message)
-        self.content_layout.addSpacing(14)
-        self.content_layout.addWidget(self.animation, alignment=Qt.AlignCenter)
-        self.content_layout.addStretch(1)
+        self.content_layout.addSpacing(12)
+        self.content_layout.addWidget(self.animation, 1, Qt.AlignCenter)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._refresh_animation()
+
+    def _refresh_animation(self):
+        if self._movie and self._movie.isValid():
+            self._movie.setScaledSize(self.animation.size())
+            return
+        if self._image_pixmap is None:
+            return
+        target = self.animation.size()
+        if target.width() <= 0 or target.height() <= 0:
+            return
+        self.animation.setPixmap(
+            self._image_pixmap.scaled(target, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        )
 
     def set_message(self, text: str, gif_path=None, image_path=None, image_size=None):
         self.message.setText(text)
         self.animation.clear()
         self.animation.setMovie(None)
         self._movie = None
+        self._image_pixmap = None
         if image_path:
-            width, height = image_size or (170, 150)
-            pix = QPixmap(str(image_path)).scaled(width, height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pix = QPixmap(str(image_path))
             if pix.isNull():
                 self.animation.setText("[Imagen no disponible]")
                 self.animation.setProperty("role", "secondary")
                 self.animation.setStyleSheet("font-size:22px;")
                 refresh_style(self.animation)
             else:
-                self.animation.setPixmap(pix)
+                self._image_pixmap = pix
                 self.animation.setProperty("role", "")
                 self.animation.setStyleSheet("")
                 refresh_style(self.animation)
+                self._refresh_animation()
         elif gif_path:
             self._movie = QMovie(str(gif_path))
             if self._movie.isValid():
-                if image_size:
-                    self._movie.setScaledSize(QSize(*image_size))
                 self.animation.setMovie(self._movie)
+                self._movie.setScaledSize(self.animation.size())
                 self._movie.start()
             else:
                 self.animation.setText("[Animación no disponible]")

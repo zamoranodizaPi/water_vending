@@ -24,7 +24,7 @@ TEXT_SECONDARY = "#6B7280"
 BORDER = "#E5E7EB"
 ERROR = "#DC2626"
 ERROR_BG = "#FEE2E2"
-CREDIT_BG = "#111827"
+CREDIT_BG = PRIMARY
 
 
 GLOBAL_STYLESHEET = f"""
@@ -55,7 +55,7 @@ QFrame#logoBox {{
 
 QFrame#credit {{
     background-color: {CREDIT_BG};
-    border-radius: 12px;
+    border-radius: 16px;
 }}
 
 QFrame#credit[flash="true"] {{
@@ -76,7 +76,7 @@ QFrame#contentPanel {{
 
 QFrame#card {{
     background-color: {SURFACE};
-    border-radius: 18px;
+    border-radius: 26px;
     border: 2px solid {BORDER};
 }}
 
@@ -101,8 +101,8 @@ QFrame#card[attention="true"] {{
 
 QFrame#accentBar {{
     border: none;
-    border-top-left-radius: 18px;
-    border-top-right-radius: 18px;
+    border-top-left-radius: 26px;
+    border-top-right-radius: 26px;
     border-bottom-left-radius: 0px;
     border-bottom-right-radius: 0px;
     min-height: 6px;

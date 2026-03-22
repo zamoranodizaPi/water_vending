@@ -14,10 +14,22 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from theme import APP_FONT, PRIMARY, PRIMARY_HOVER, SURFACE, TEXT_SECONDARY, color_with_alpha, refresh_style
+from theme import (
+    ACCENT_ORANGE,
+    APP_FONT,
+    PRIMARY,
+    PRIMARY_HOVER,
+    SURFACE,
+    TEXT_SECONDARY,
+    color_with_alpha,
+    refresh_style,
+)
 
 CARD_MIN_WIDTH = 285
 CARD_MIN_HEIGHT = 250
+CARD_SELECTED_SCALE = 1.2
+CARD_REDUCED_SCALE = 0.8
+CARD_IMAGE_SIZE = 200
 BADGE_WIDTH = 300
 BADGE_HEIGHT = 60
 BUTTON_WIDTH = 300
@@ -32,9 +44,12 @@ class ProductCard(QPushButton):
         self.product = product
         self._hovered = False
         self._affordable = True
+        self._visual_scale = 1.0
+        self._base_pixmap = None
         self.setCheckable(True)
         self.setCursor(Qt.PointingHandCursor)
         self.setMinimumSize(CARD_MIN_WIDTH, CARD_MIN_HEIGHT)
+        self.setMaximumSize(CARD_MIN_WIDTH, CARD_MIN_HEIGHT)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setObjectName("productCard")
         self.setStyleSheet("QPushButton{background:transparent; border:none;}")
@@ -55,6 +70,7 @@ class ProductCard(QPushButton):
         self.card_frame = QFrame()
         self.card_frame.setObjectName("card")
         self.card_frame.setMinimumSize(CARD_MIN_WIDTH, CARD_MIN_HEIGHT)
+        self.card_frame.setMaximumSize(CARD_MIN_WIDTH, CARD_MIN_HEIGHT)
         self.card_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.card_frame.setProperty("selected", False)
         self.card_frame.setProperty("hovered", False)
@@ -77,17 +93,18 @@ class ProductCard(QPushButton):
         card_root.addLayout(body, 1)
 
         self.image = QLabel()
-        self.image.setFixedSize(200, 200)
+        self.image.setFixedSize(CARD_IMAGE_SIZE, CARD_IMAGE_SIZE)
         self.image.setAlignment(Qt.AlignCenter)
         self.image.setStyleSheet("background:transparent;")
-        pix = QPixmap(str(product["image"])).scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(product["image"]))
         if pix.isNull():
             self.image.setText(product["name"])
             self.image.setProperty("role", "secondary")
             self.image.setStyleSheet(f"font-family:{APP_FONT}; font-size:16px;")
             refresh_style(self.image)
         else:
-            self.image.setPixmap(pix)
+            self._base_pixmap = pix
+            self._refresh_image()
 
         self.name = QLabel(product["name"])
         self.name.setProperty("role", "name")
@@ -112,6 +129,13 @@ class ProductCard(QPushButton):
         body.addWidget(self.price)
 
         self._apply_state(animated=False)
+
+    def _refresh_image(self):
+        image_side = max(120, int(CARD_IMAGE_SIZE * self._visual_scale))
+        self.image.setFixedSize(image_side, image_side)
+        if self._base_pixmap is not None:
+            scaled = self._base_pixmap.scaled(image_side, image_side, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.image.setPixmap(scaled)
 
     def _accent_name(self) -> str:
         return {
@@ -138,14 +162,27 @@ class ProductCard(QPushButton):
         super().setEnabled(enabled)
         self._apply_state(animated=False)
 
+    def set_visual_scale(self, scale: float):
+        if abs(self._visual_scale - scale) < 0.001:
+            return
+        self._visual_scale = scale
+        width = int(CARD_MIN_WIDTH * scale)
+        height = int(CARD_MIN_HEIGHT * scale)
+        self.setMinimumSize(width, height)
+        self.setMaximumSize(width, height)
+        self.card_frame.setMinimumSize(width, height)
+        self.card_frame.setMaximumSize(width, height)
+        self._refresh_image()
+        self.updateGeometry()
+
     def _apply_state(self, animated: bool = True):
         self.card_frame.setProperty("selected", self.isChecked())
         self.card_frame.setProperty("hovered", self._hovered)
         self.card_frame.setProperty("affordable", self._affordable)
         refresh_style(self.accent_bar)
         if self.isChecked():
-            blur = 14
-            shadow_color = color_with_alpha(PRIMARY, 70)
+            blur = 22
+            shadow_color = color_with_alpha(ACCENT_ORANGE, 135)
         elif self._hovered:
             blur = 12
             shadow_color = color_with_alpha(PRIMARY_HOVER, 60)
@@ -396,8 +433,16 @@ class ProductScreen(QWidget):
         self.alert_label.setVisible(False)
 
     def set_selected(self, product_id: str | None):
+        has_selection = bool(product_id)
         for pid, card in self.cards.items():
-            card.setChecked(pid == product_id)
+            is_selected = pid == product_id
+            card.setChecked(is_selected)
+            if not has_selection:
+                card.set_visual_scale(1.0)
+            elif is_selected:
+                card.set_visual_scale(CARD_SELECTED_SCALE)
+            else:
+                card.set_visual_scale(CARD_REDUCED_SCALE)
 
     def set_product_enabled(self, product_id: str, enabled: bool):
         self.cards[product_id].setEnabled(True)

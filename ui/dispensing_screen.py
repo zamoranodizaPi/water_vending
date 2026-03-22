@@ -5,7 +5,7 @@ from PyQt5.QtCore import QTimer, pyqtSignal, Qt
 from PyQt5.QtGui import QMovie, QPixmap
 from PyQt5.QtWidgets import QLabel, QProgressBar, QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QSizePolicy, QFrame
 
-from theme import APP_FONT, PRIMARY, SURFACE, refresh_style
+from theme import APP_FONT, SURFACE, refresh_style
 
 HEADER_WIDTH = 1004
 HEADER_HEIGHT = 100
@@ -25,6 +25,7 @@ class DispensingScreen(QWidget):
         self._elapsed_ms = 0
         self._total_ms = 1
         self._movie = None
+        self._image_pixmap = None
         self._build_ui(logo_path)
 
     def _build_ui(self, logo_path):
@@ -67,8 +68,8 @@ class DispensingScreen(QWidget):
 
         self.animation = QLabel()
         self.animation.setAlignment(Qt.AlignCenter)
-        self.animation.setMinimumHeight(180)
-        self.animation.setMaximumHeight(210)
+        self.animation.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.animation.setMinimumHeight(240)
 
         self.progress = QProgressBar()
         self.progress.setObjectName("processProgress")
@@ -88,16 +89,31 @@ class DispensingScreen(QWidget):
         self.emergency_btn.clicked.connect(self.emergency_pressed.emit)
         self.emergency_btn.setVisible(False)
 
-        content_layout.addStretch(1)
         content_layout.addWidget(self.title)
-        content_layout.addSpacing(10)
-        content_layout.addWidget(self.animation, alignment=Qt.AlignCenter)
-        content_layout.addSpacing(16)
+        content_layout.addSpacing(12)
+        content_layout.addWidget(self.animation, 1, Qt.AlignCenter)
+        content_layout.addSpacing(18)
         content_layout.addWidget(self.progress, alignment=Qt.AlignCenter)
-        content_layout.addSpacing(14)
+        content_layout.addSpacing(10)
         content_layout.addWidget(self.emergency_btn, alignment=Qt.AlignCenter)
-        content_layout.addStretch(1)
         root.addWidget(content)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._refresh_animation()
+
+    def _refresh_animation(self):
+        if self._movie and self._movie.isValid():
+            self._movie.setScaledSize(self.animation.size())
+            return
+        if self._image_pixmap is None:
+            return
+        target = self.animation.size()
+        if target.width() <= 0 or target.height() <= 0:
+            return
+        self.animation.setPixmap(
+            self._image_pixmap.scaled(target, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        )
 
     def set_credit(self, credit: float):
         return
@@ -111,24 +127,26 @@ class DispensingScreen(QWidget):
         self.animation.clear()
         self.animation.setMovie(None)
         self._movie = None
+        self._image_pixmap = None
 
         if image_path:
-            width, height = image_size or (220, 180)
-            pix = QPixmap(str(image_path)).scaled(width, height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pix = QPixmap(str(image_path))
             if pix.isNull():
                 self.animation.setText("[Imagen no disponible]")
                 self.animation.setProperty("role", "secondary")
                 self.animation.setStyleSheet("font-size:22px;")
                 refresh_style(self.animation)
             else:
-                self.animation.setPixmap(pix)
+                self._image_pixmap = pix
                 self.animation.setProperty("role", "")
                 self.animation.setStyleSheet("")
                 refresh_style(self.animation)
+                self._refresh_animation()
         elif gif_path:
             self._movie = QMovie(str(gif_path))
             if self._movie.isValid():
                 self.animation.setMovie(self._movie)
+                self._movie.setScaledSize(self.animation.size())
                 self._movie.start()
             else:
                 self.animation.setText("[Animación no disponible]")
