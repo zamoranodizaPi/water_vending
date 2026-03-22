@@ -169,10 +169,6 @@ class MainWindow(QMainWindow):
     def _touch_interaction(self):
         self._courtesy_on()
         self.button_leds.note_interaction()
-        if self.stack.currentWidget() == self.product_screen:
-            min_price = min(p["price"] for p in settings.PRODUCTS)
-            if self.credit < min_price:
-                self.product_screen.show_alert("Ingrese credito", ms=3000)
 
     def _on_idle_attention_started(self):
         if self.stack.currentWidget() != self.product_screen:
@@ -399,8 +395,6 @@ class MainWindow(QMainWindow):
                 self.product_screen.show_alert("Seleccione un producto", ms=2500)
                 self.audio.play("select_product")
             else:
-                self.product_screen.set_section_message("Ingrese credito y seleccione producto", warning=True)
-                QTimer.singleShot(3000, lambda: self.product_screen.set_section_message(None))
                 self.audio.play("credit_insufficient")
             return
 

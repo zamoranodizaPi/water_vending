@@ -96,7 +96,9 @@ class PromptScreen(BrandedScreen):
 
         self.content_layout.addWidget(self.title)
         self.content_layout.addSpacing(8)
-        self.content_layout.addWidget(self.image_wrap, 1)
+        self.content_layout.addStretch(1)
+        self.content_layout.addWidget(self.image_wrap, 0, Qt.AlignCenter)
+        self.content_layout.addStretch(1)
         self.content_layout.addSpacing(10)
         self.content_layout.addWidget(self.subtitle)
         self.content_layout.addSpacing(8)
