@@ -21,6 +21,7 @@ BADGE_WIDTH = 300
 BADGE_HEIGHT = 60
 BUTTON_WIDTH = 400
 BUTTON_HEIGHT = 70
+HEADER_WIDTH = 1024
 HEADER_HEIGHT = 150
 
 
@@ -56,7 +57,7 @@ class ProductCard(QPushButton):
 
         body = QVBoxLayout(self.card_frame)
         body.setContentsMargins(15, 15, 15, 15)
-        body.setSpacing(8)
+        body.setSpacing(4)
 
         self.image = QLabel()
         self.image.setFixedSize(120, 130)
@@ -91,8 +92,8 @@ class ProductCard(QPushButton):
         body.addWidget(self.image, 0, Qt.AlignHCenter)
         body.addWidget(self.name)
         body.addWidget(self.volume)
-        body.addStretch()
         body.addWidget(self.price)
+        body.addStretch()
 
         self._apply_state(animated=False)
 
@@ -213,11 +214,11 @@ class ProductScreen(QWidget):
     def _build_ui(self):
         self.setStyleSheet("QWidget{background:#F1F5F9;}")
         root = QVBoxLayout(self)
-        root.setContentsMargins(16, 0, 16, 16)
+        root.setContentsMargins(0, 0, 0, 16)
         root.setSpacing(0)
 
         self.header_frame = QFrame()
-        self.header_frame.setFixedHeight(HEADER_HEIGHT)
+        self.header_frame.setFixedSize(HEADER_WIDTH, HEADER_HEIGHT)
         self.header_frame.setStyleSheet("QFrame{background:#FFFFFF; border:none;}")
         header_layout = QHBoxLayout(self.header_frame)
         header_layout.setContentsMargins(0, 0, 0, 0)
@@ -227,32 +228,36 @@ class ProductScreen(QWidget):
         self.service_hotspot.setFixedSize(50, 50)
         self.service_hotspot.pressed.connect(self.top_left_corner_pressed.emit)
         self.service_hotspot.setStyleSheet("background:transparent;")
+        self.service_hotspot.setParent(self.header_frame)
+        self.service_hotspot.move(0, 0)
 
         self.logo_box = QFrame()
         self.logo_box.setStyleSheet("QFrame{background:#0A58CA; border:none; border-radius:12px;}")
+        self.logo_box.setFixedSize(HEADER_WIDTH, HEADER_HEIGHT)
         self.logo = QLabel(self.logo_box)
         self.logo.setAlignment(Qt.AlignCenter)
         pix = QPixmap(str(self.logo_path)).scaled(1024, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
-            self.logo_box.setFixedSize(252, 150)
-            self.logo.setGeometry(0, 0, 252, 150)
+            self.logo.setGeometry(0, 0, HEADER_WIDTH, HEADER_HEIGHT)
             self.logo.setText("Lupita")
             self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:28px; font-weight:700; color:#FFFFFF;")
         else:
-            self.logo_box.setFixedSize(pix.size())
-            self.logo.setGeometry(0, 0, pix.width(), pix.height())
+            self.logo.setGeometry(0, 0, HEADER_WIDTH, HEADER_HEIGHT)
             self.logo.setPixmap(pix)
 
-        header_layout.addWidget(self.service_hotspot, 0, Qt.AlignTop | Qt.AlignLeft)
-        header_layout.addWidget(self.logo_box, 1, Qt.AlignCenter)
-        header_layout.addSpacing(50)
+        header_layout.addWidget(self.logo_box, 0, Qt.AlignCenter)
         root.addWidget(self.header_frame)
+
+        content_frame = QFrame()
+        content_layout = QVBoxLayout(content_frame)
+        content_layout.setContentsMargins(16, 0, 16, 0)
+        content_layout.setSpacing(0)
 
         self.section_label = QLabel("")
         self.section_label.setAlignment(Qt.AlignCenter)
         self.section_label.setFixedHeight(32)
         self.section_label.setStyleSheet(self._section_base_style)
-        root.addWidget(self.section_label)
+        content_layout.addWidget(self.section_label)
 
         self.credit_box = QFrame()
         self.credit_box.setFixedSize(BADGE_WIDTH, BADGE_HEIGHT)
@@ -283,9 +288,9 @@ class ProductScreen(QWidget):
             f"font-family:{APP_FONT}; font-size:13px; font-weight:600; color:#B91C1C;"
         )
         self.alert_label.setVisible(False)
-        root.addWidget(self.alert_label)
+        content_layout.addWidget(self.alert_label)
 
-        root.addSpacing(4)
+        content_layout.addSpacing(4)
 
         self.product_row = QHBoxLayout()
         self.product_row.setContentsMargins(0, 8, 0, 0)
@@ -295,10 +300,10 @@ class ProductScreen(QWidget):
             card.clicked.connect(lambda _, pid=product["id"]: self.product_selected.emit(pid))
             self.cards[product["id"]] = card
             self.product_row.addWidget(card, 1)
-        root.addLayout(self.product_row)
+        content_layout.addLayout(self.product_row)
 
-        root.addStretch()
-        root.addSpacing(12)
+        content_layout.addStretch()
+        content_layout.addSpacing(12)
 
         footer_row = QHBoxLayout()
         footer_row.setContentsMargins(0, 0, 0, 0)
@@ -317,7 +322,8 @@ class ProductScreen(QWidget):
         footer_row.addStretch()
         footer_row.addWidget(self.ok_btn, 0, Qt.AlignVCenter)
         footer_row.addWidget(self.credit_box, 0, Qt.AlignRight | Qt.AlignVCenter)
-        root.addLayout(footer_row)
+        content_layout.addLayout(footer_row)
+        root.addWidget(content_frame)
 
     def mousePressEvent(self, event):
         for name, btn in (("ok", self.ok_btn),):
