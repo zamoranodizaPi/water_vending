@@ -1,12 +1,11 @@
-"""Main screen with modern touch-friendly product selection."""
+"""Product selection screen for a 1024x600 vending layout."""
 from __future__ import annotations
 
 from PyQt5.QtCore import QEasingCurve, QPropertyAnimation, QSequentialAnimationGroup, QTimer, QRect, Qt, pyqtSignal
-from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPen, QPixmap
+from PyQt5.QtGui import QColor, QPixmap
 from PyQt5.QtWidgets import (
     QFrame,
     QGraphicsDropShadowEffect,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -16,104 +15,13 @@ from PyQt5.QtWidgets import (
 )
 
 APP_FONT = "'Roboto','Open Sans','DejaVu Sans'"
-CARD_HEIGHT = 220
-BUTTON_HEIGHT = 60
-SECTION_NOTE_HEIGHT = 44
-
-
-class ModernProductIcon(QWidget):
-    def __init__(self, product_id: str, parent: QWidget | None = None):
-        super().__init__(parent)
-        self.product_id = product_id
-        self.setFixedSize(102, 102)
-
-    def paintEvent(self, event):
-        del event
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor("#eaf3ff"))
-        painter.drawEllipse(4, 4, 94, 94)
-
-        if self.product_id == "gallon":
-            self._draw_gallon(painter)
-        elif self.product_id == "half_garrafon":
-            self._draw_half_bottle(painter)
-        else:
-            self._draw_full_bottle(painter)
-
-    def _draw_full_bottle(self, painter: QPainter):
-        path = QPainterPath()
-        path.moveTo(40, 16)
-        path.lineTo(62, 16)
-        path.lineTo(66, 26)
-        path.lineTo(66, 34)
-        path.cubicTo(74, 40, 79, 48, 79, 59)
-        path.lineTo(79, 80)
-        path.cubicTo(79, 87, 74, 91, 67, 91)
-        path.lineTo(35, 91)
-        path.cubicTo(28, 91, 23, 87, 23, 80)
-        path.lineTo(23, 59)
-        path.cubicTo(23, 48, 28, 40, 36, 34)
-        path.lineTo(36, 26)
-        path.closeSubpath()
-        painter.setBrush(QColor("#0d6efd"))
-        painter.drawPath(path)
-
-        painter.setBrush(QColor(255, 255, 255, 70))
-        painter.drawRoundedRect(33, 28, 10, 46, 5, 5)
-        painter.setBrush(QColor("#cfe2ff"))
-        painter.drawRoundedRect(36, 18, 30, 8, 4, 4)
-
-    def _draw_half_bottle(self, painter: QPainter):
-        path = QPainterPath()
-        path.moveTo(40, 24)
-        path.lineTo(62, 24)
-        path.lineTo(65, 34)
-        path.lineTo(65, 40)
-        path.cubicTo(73, 46, 76, 52, 76, 60)
-        path.lineTo(76, 78)
-        path.cubicTo(76, 85, 71, 89, 64, 89)
-        path.lineTo(38, 89)
-        path.cubicTo(31, 89, 26, 85, 26, 78)
-        path.lineTo(26, 60)
-        path.cubicTo(26, 52, 29, 46, 37, 40)
-        path.lineTo(37, 34)
-        path.closeSubpath()
-        painter.setBrush(QColor("#38bdf8"))
-        painter.drawPath(path)
-
-        painter.setBrush(QColor(255, 255, 255, 78))
-        painter.drawRoundedRect(36, 34, 9, 36, 5, 5)
-        painter.setBrush(QColor("#dbeafe"))
-        painter.drawRoundedRect(37, 24, 28, 8, 4, 4)
-
-    def _draw_gallon(self, painter: QPainter):
-        body = QPainterPath()
-        body.moveTo(34, 30)
-        body.cubicTo(28, 34, 24, 41, 24, 50)
-        body.lineTo(24, 78)
-        body.cubicTo(24, 85, 29, 90, 36, 90)
-        body.lineTo(64, 90)
-        body.cubicTo(71, 90, 76, 85, 76, 78)
-        body.lineTo(76, 48)
-        body.cubicTo(76, 42, 73, 37, 69, 34)
-        body.lineTo(63, 34)
-        body.lineTo(60, 25)
-        body.lineTo(43, 25)
-        body.lineTo(40, 30)
-        body.closeSubpath()
-        painter.setBrush(QColor("#2563eb"))
-        painter.drawPath(body)
-
-        painter.setBrush(Qt.NoBrush)
-        painter.setPen(QPen(QColor("#93c5fd"), 6))
-        painter.drawArc(56, 22, 22, 24, 35 * 16, 235 * 16)
-
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(255, 255, 255, 80))
-        painter.drawRoundedRect(34, 38, 9, 30, 4, 4)
+CARD_WIDTH = 220
+CARD_HEIGHT = 260
+BADGE_WIDTH = 300
+BADGE_HEIGHT = 60
+BUTTON_WIDTH = 400
+BUTTON_HEIGHT = 70
+HEADER_HEIGHT = 150
 
 
 class ProductCard(QPushButton):
@@ -123,67 +31,65 @@ class ProductCard(QPushButton):
         self._hovered = False
         self.setCheckable(True)
         self.setCursor(Qt.PointingHandCursor)
-        self.setMinimumHeight(CARD_HEIGHT)
-        self.setMinimumWidth(180)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setFixedSize(CARD_WIDTH, CARD_HEIGHT)
         self.setStyleSheet("QPushButton{background:transparent; border:none;}")
 
         self.shadow = QGraphicsDropShadowEffect(self)
-        self.shadow.setBlurRadius(14)
-        self.shadow.setOffset(5, 5)
-        self.shadow.setColor(QColor("#dbeafe"))
+        self.shadow.setBlurRadius(15)
+        self.shadow.setOffset(0, 4)
+        self.shadow.setColor(QColor(15, 23, 42, 35))
         self.setGraphicsEffect(self.shadow)
 
         self.shadow_anim = QPropertyAnimation(self.shadow, b"blurRadius", self)
-        self.shadow_anim.setDuration(180)
+        self.shadow_anim.setDuration(150)
         self.shadow_anim.setEasingCurve(QEasingCurve.OutCubic)
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
 
         self.card_frame = QFrame()
-        self.card_frame.setMinimumHeight(CARD_HEIGHT)
-        self.card_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        layout.addWidget(self.card_frame)
+        self.card_frame.setFixedSize(CARD_WIDTH, CARD_HEIGHT)
+        root.addWidget(self.card_frame)
 
         body = QVBoxLayout(self.card_frame)
-        body.setContentsMargins(16, 16, 16, 16)
-        body.setSpacing(9)
+        body.setContentsMargins(15, 15, 15, 15)
+        body.setSpacing(8)
 
-        self.icon_shell = QFrame()
-        self.icon_shell.setFixedSize(118, 118)
-        self.icon_shell.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.icon_shell.setStyleSheet("QFrame{background:#f8fbff; border-radius:28px;}")
-        icon_layout = QVBoxLayout(self.icon_shell)
-        icon_layout.setContentsMargins(8, 8, 8, 8)
-        icon_layout.addWidget(ModernProductIcon(product["id"]), 0, Qt.AlignCenter)
+        self.image = QLabel()
+        self.image.setFixedSize(120, 130)
+        self.image.setAlignment(Qt.AlignCenter)
+        self.image.setStyleSheet("background:transparent;")
+        pix = QPixmap(str(product["image"])).scaled(100, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        if pix.isNull():
+            self.image.setText(product["name"])
+            self.image.setStyleSheet(f"font-family:{APP_FONT}; font-size:13px; color:#6B7280;")
+        else:
+            self.image.setPixmap(pix)
 
         self.name = QLabel(product["name"])
         self.name.setAlignment(Qt.AlignCenter)
         self.name.setWordWrap(True)
         self.name.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:18px; font-weight:600; color:#333333; background:transparent;"
+            f"font-family:{APP_FONT}; font-size:14px; font-weight:600; color:#374151; background:transparent;"
         )
 
         self.volume = QLabel(f"{product['volume_l']} L")
         self.volume.setAlignment(Qt.AlignCenter)
         self.volume.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:13px; font-weight:600; color:#64748b; background:transparent;"
+            f"font-family:{APP_FONT}; font-size:12px; font-weight:500; color:#6B7280; background:transparent;"
         )
 
         self.price = QLabel(f"${product['price']:.0f}")
         self.price.setAlignment(Qt.AlignCenter)
         self.price.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:30px; font-weight:800; color:#0d6efd; background:transparent;"
+            f"font-family:{APP_FONT}; font-size:24px; font-weight:700; color:#0D6EFD; background:transparent;"
         )
 
-        body.addWidget(self.icon_shell, 0, Qt.AlignCenter)
-        body.addSpacing(2)
+        body.addWidget(self.image, 0, Qt.AlignHCenter)
         body.addWidget(self.name)
         body.addWidget(self.volume)
-        body.addWidget(self.price)
         body.addStretch()
+        body.addWidget(self.price)
 
         self._apply_state(animated=False)
 
@@ -207,35 +113,30 @@ class ProductCard(QPushButton):
 
     def _apply_state(self, animated: bool = True):
         if not self.isEnabled():
-            bg = "#edf1f5"
-            border = "#d7dee7"
-            shadow = QColor(0, 0, 0, 12)
-            blur = 10
+            background = "#F3F4F6"
+            border = "#E5E7EB"
+            blur = 8
+            shadow_color = QColor(15, 23, 42, 18)
         elif self.isChecked():
-            bg = "#e7f1ff"
-            border = "#0d6efd"
-            shadow = QColor("#dbeafe")
-            blur = 22
-        elif self._hovered:
-            bg = "#f0f8ff"
-            border = "#8ab4ff"
-            shadow = QColor("#dbeafe")
+            background = "#E7F1FF"
+            border = "#0D6EFD"
             blur = 18
+            shadow_color = QColor(13, 110, 253, 45)
+        elif self._hovered:
+            background = "#F8FBFF"
+            border = "#D6E4FF"
+            blur = 17
+            shadow_color = QColor(15, 23, 42, 40)
         else:
-            bg = "#ffffff"
-            border = "#dbe4f0"
-            shadow = QColor("#dbeafe")
-            blur = 14
+            background = "#FFFFFF"
+            border = "#E5E7EB"
+            blur = 15
+            shadow_color = QColor(15, 23, 42, 35)
 
         self.card_frame.setStyleSheet(
-            f"QFrame{{background:{bg}; border:3px solid {border}; border-radius:24px;}}"
+            f"QFrame{{background:{background}; border:1px solid {border}; border-radius:15px;}}"
         )
-        self.icon_shell.setStyleSheet(
-            "QFrame{background:#f8fbff; border:none; border-radius:28px;}"
-            if self.isEnabled()
-            else "QFrame{background:#f1f5f9; border:none; border-radius:28px;}"
-        )
-        self.shadow.setColor(shadow)
+        self.shadow.setColor(shadow_color)
         if animated:
             self.shadow_anim.stop()
             self.shadow_anim.setStartValue(self.shadow.blurRadius())
@@ -245,29 +146,25 @@ class ProductCard(QPushButton):
             self.shadow.setBlurRadius(blur)
 
     def pulse_attention(self, flashes: int = 3):
-        self._hovered = True
         group = QSequentialAnimationGroup(self)
         for _ in range(flashes):
-            grow = QPropertyAnimation(self.shadow, b"blurRadius")
-            grow.setDuration(170)
-            grow.setStartValue(14)
-            grow.setEndValue(22)
-            grow.setEasingCurve(QEasingCurve.InOutQuad)
+            expand = QPropertyAnimation(self.shadow, b"blurRadius")
+            expand.setDuration(170)
+            expand.setStartValue(15)
+            expand.setEndValue(22)
+            expand.setEasingCurve(QEasingCurve.InOutQuad)
 
             settle = QPropertyAnimation(self.shadow, b"blurRadius")
             settle.setDuration(170)
             settle.setStartValue(22)
-            settle.setEndValue(14)
+            settle.setEndValue(15)
             settle.setEasingCurve(QEasingCurve.InOutQuad)
-
-            group.addAnimation(grow)
+            group.addAnimation(expand)
             group.addAnimation(settle)
 
-        self.card_frame.setStyleSheet("QFrame{background:#f0f8ff; border:3px solid #0d6efd; border-radius:24px;}")
-        self.shadow.setColor(QColor("#dbeafe"))
+        self.card_frame.setStyleSheet("QFrame{background:#F8FBFF; border:1px solid #B7D1FF; border-radius:15px;}")
 
         def _done():
-            self._hovered = False
             self._apply_state(animated=False)
 
         group.finished.connect(_done)
@@ -300,17 +197,24 @@ class ProductScreen(QWidget):
         self.coin_image_path = coin_image_path
         self.cards = {}
         self._rinse_locked = False
-        self._credit_base_style = f"font-family:{APP_FONT}; font-size:21px; font-weight:700; color:white;"
-        self._credit_warning_style = f"font-family:{APP_FONT}; font-size:21px; font-weight:700; color:#fff7ed;"
-        self._section_base_style = f"font-family:{APP_FONT}; font-size:21px; font-weight:700; color:#1d4ed8;"
-        self._section_warning_style = f"font-family:{APP_FONT}; font-size:21px; font-weight:700; color:#b91c1c;"
+        self._credit_base_style = f"font-family:{APP_FONT}; font-size:19px; font-weight:700; color:white;"
+        self._credit_warning_style = f"font-family:{APP_FONT}; font-size:19px; font-weight:700; color:#FFF7ED;"
+        self._section_base_style = f"font-family:{APP_FONT}; font-size:20px; font-weight:700; color:#1F2937;"
+        self._section_warning_style = f"font-family:{APP_FONT}; font-size:20px; font-weight:700; color:#B91C1C;"
         self._build_ui()
 
     def _build_ui(self):
-        self.setStyleSheet("QWidget{background:#f4f7fb;}")
+        self.setStyleSheet("QWidget{background:#F1F5F9;}")
         root = QVBoxLayout(self)
-        root.setContentsMargins(20, 4, 20, 20)
-        root.setSpacing(18)
+        root.setContentsMargins(20, 0, 20, 18)
+        root.setSpacing(0)
+
+        self.header_frame = QFrame()
+        self.header_frame.setFixedHeight(HEADER_HEIGHT)
+        self.header_frame.setStyleSheet("QFrame{background:#FFFFFF; border:none;}")
+        header_layout = QHBoxLayout(self.header_frame)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(0)
 
         self.service_hotspot = TopLeftHotspot()
         self.service_hotspot.setFixedSize(50, 50)
@@ -318,124 +222,110 @@ class ProductScreen(QWidget):
         self.service_hotspot.setStyleSheet("background:transparent;")
 
         self.logo = QLabel()
-        self.logo.setFixedHeight(110)
+        self.logo.setFixedHeight(150)
         self.logo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.logo.setAlignment(Qt.AlignCenter)
-        pix = QPixmap(str(self.logo_path)).scaled(1024, 110, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(self.logo_path)).scaled(1024, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setText("Lupita")
-            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:#0d6efd;")
+            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:28px; font-weight:700; color:#0D6EFD;")
         else:
             self.logo.setPixmap(pix)
 
-        top_row = QHBoxLayout()
-        top_row.setContentsMargins(0, 0, 0, 0)
-        top_row.setSpacing(0)
-        top_row.addWidget(self.service_hotspot, 0, Qt.AlignTop | Qt.AlignLeft)
-        top_row.addWidget(self.logo, 1, Qt.AlignTop | Qt.AlignHCenter)
-        top_row.addSpacing(50)
-        root.addLayout(top_row)
+        header_layout.addWidget(self.service_hotspot, 0, Qt.AlignTop | Qt.AlignLeft)
+        header_layout.addWidget(self.logo, 1, Qt.AlignCenter)
+        header_layout.addSpacing(50)
+        root.addWidget(self.header_frame)
+
+        self.title_row = QHBoxLayout()
+        self.title_row.setContentsMargins(0, 12, 0, 12)
+        self.title_row.setSpacing(0)
+
+        left_spacer = QWidget()
+        left_spacer.setFixedWidth(BADGE_WIDTH)
+        self.title_row.addWidget(left_spacer)
 
         self.section_label = QLabel("Seleccione su producto")
         self.section_label.setAlignment(Qt.AlignCenter)
-        self.section_label.setMinimumHeight(SECTION_NOTE_HEIGHT)
         self.section_label.setStyleSheet(self._section_base_style)
-        root.addWidget(self.section_label)
+        self.title_row.addWidget(self.section_label, 1, Qt.AlignCenter)
 
         self.credit_box = QFrame()
-        self.credit_box.setMinimumHeight(68)
-        self.credit_box.setStyleSheet("QFrame{background:#0a58ca; border:none; border-radius:20px;}")
+        self.credit_box.setFixedSize(BADGE_WIDTH, BADGE_HEIGHT)
+        self.credit_box.setStyleSheet("QFrame{background:#0A58CA; border:none; border-radius:12px;}")
         credit_layout = QHBoxLayout(self.credit_box)
-        credit_layout.setContentsMargins(20, 10, 20, 10)
-        credit_layout.setSpacing(14)
+        credit_layout.setContentsMargins(10, 10, 10, 10)
+        credit_layout.setSpacing(10)
 
-        coin_wrap = QFrame()
-        coin_wrap.setFixedSize(48, 48)
-        coin_wrap.setStyleSheet("QFrame{background:#ffd24d; border:none; border-radius:22px;}")
-        coin_inner = QVBoxLayout(coin_wrap)
-        coin_inner.setContentsMargins(0, 0, 0, 0)
         coin = QLabel()
+        coin.setFixedSize(32, 32)
         coin.setAlignment(Qt.AlignCenter)
         coin_pix = QPixmap(str(self.coin_image_path)).scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if coin_pix.isNull():
             coin.setText("$")
-            coin.setStyleSheet(f"font-family:{APP_FONT}; font-size:20px; font-weight:800; color:#7c4a00;")
+            coin.setStyleSheet(f"font-family:{APP_FONT}; font-size:18px; font-weight:700; color:#FBBF24;")
         else:
             coin.setPixmap(coin_pix)
-        coin_inner.addWidget(coin)
 
-        self.credit_label = QLabel("Credito Disponible: $0")
+        self.credit_label = QLabel("Credito: $0")
         self.credit_label.setStyleSheet(self._credit_base_style)
 
-        self.countdown_label = QLabel("")
-        self.countdown_label.setMinimumHeight(50)
-        self.countdown_label.setMinimumWidth(180)
-        self.countdown_label.setAlignment(Qt.AlignCenter)
-        self.countdown_label.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:17px; font-weight:700; color:white; background:#0847a6; border:none; border-radius:16px; padding:6px 12px;"
-        )
-        self.countdown_label.setVisible(False)
-
-        credit_layout.addWidget(coin_wrap)
+        credit_layout.addWidget(coin)
         credit_layout.addWidget(self.credit_label, 1)
-        credit_layout.addWidget(self.countdown_label, 0, Qt.AlignRight)
-        root.addWidget(self.credit_box)
+        self.title_row.addWidget(self.credit_box, 0, Qt.AlignRight)
+        root.addLayout(self.title_row)
 
         self.alert_label = QLabel("")
         self.alert_label.setAlignment(Qt.AlignCenter)
-        self.alert_label.setMinimumHeight(SECTION_NOTE_HEIGHT)
+        self.alert_label.setFixedHeight(24)
         self.alert_label.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:18px; font-weight:700; color:#c62828;"
+            f"font-family:{APP_FONT}; font-size:13px; font-weight:600; color:#B91C1C;"
         )
         self.alert_label.setVisible(False)
         root.addWidget(self.alert_label)
 
-        grid = QGridLayout()
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setHorizontalSpacing(25)
-        grid.setVerticalSpacing(20)
-        for idx, product in enumerate(self.products):
+        root.addSpacing(8)
+
+        self.product_row = QHBoxLayout()
+        self.product_row.setContentsMargins(0, 10, 0, 0)
+        self.product_row.setSpacing(30)
+        self.product_row.addStretch()
+        for product in self.products:
             card = ProductCard(product)
             card.clicked.connect(lambda _, pid=product["id"]: self.product_selected.emit(pid))
             self.cards[product["id"]] = card
-            grid.addWidget(card, 0, idx)
-        root.addLayout(grid)
+            self.product_row.addWidget(card, 0, Qt.AlignTop)
+        self.product_row.addStretch()
+        root.addLayout(self.product_row)
 
-        button_row = QHBoxLayout()
-        button_row.setSpacing(0)
-        button_row.addStretch()
+        root.addStretch()
+
+        self.footer_hint = QLabel("Toque una tarjeta para elegir el envase")
+        self.footer_hint.setAlignment(Qt.AlignCenter)
+        self.footer_hint.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:13px; font-weight:500; color:#6B7280;"
+        )
+        root.addWidget(self.footer_hint)
+
+        root.addSpacing(12)
+
+        footer_row = QHBoxLayout()
+        footer_row.setContentsMargins(0, 0, 0, 0)
+        footer_row.addStretch()
 
         self.ok_btn = QPushButton("Seleccionar producto")
-        self.ok_btn.setMinimumHeight(BUTTON_HEIGHT)
-        self.ok_btn.setMinimumWidth(410)
-        self.ok_btn.setMaximumWidth(410)
+        self.ok_btn.setFixedSize(BUTTON_WIDTH, BUTTON_HEIGHT)
         self.ok_btn.setCursor(Qt.PointingHandCursor)
-        self.ok_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        button_shadow = QGraphicsDropShadowEffect(self.ok_btn)
-        button_shadow.setBlurRadius(14)
-        button_shadow.setOffset(5, 5)
-        button_shadow.setColor(QColor("#dbeafe"))
-        self.ok_btn.setGraphicsEffect(button_shadow)
         self.ok_btn.setStyleSheet(
-            f"QPushButton{{font-family:{APP_FONT}; font-size:26px; font-weight:700; background:#0d6efd; color:white; border:none; border-radius:18px; padding:10px 28px;}}"
-            "QPushButton:hover{background:#0b5ed7;}"
-            "QPushButton:pressed{background:#0a58ca;}"
-            "QPushButton:disabled{background:#94a3b8; color:#e2e8f0;}"
+            f"QPushButton{{font-family:{APP_FONT}; font-size:18px; font-weight:700; background:#0D6EFD; color:white; border:none; border-radius:15px;}}"
+            "QPushButton:hover{background:#0B5ED7;}"
+            "QPushButton:pressed{background:#0A58CA;}"
+            "QPushButton:disabled{background:#94A3B8; color:#E5E7EB;}"
         )
         self.ok_btn.clicked.connect(self.ok_pressed.emit)
-
-        button_row.addWidget(self.ok_btn)
-        button_row.addStretch()
-        root.addLayout(button_row)
-
-        self.instructions = QLabel("Toque una tarjeta para elegir el envase y luego presione el boton azul.")
-        self.instructions.setAlignment(Qt.AlignCenter)
-        self.instructions.setWordWrap(True)
-        self.instructions.setMinimumHeight(SECTION_NOTE_HEIGHT)
-        self.instructions.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:15px; font-weight:600; color:#475569; background:#e9eef6; border:none; border-radius:14px; padding:8px 12px;"
-        )
-        root.addWidget(self.instructions)
+        footer_row.addWidget(self.ok_btn, 0, Qt.AlignCenter)
+        footer_row.addStretch()
+        root.addLayout(footer_row)
 
     def mousePressEvent(self, event):
         for name, btn in (("ok", self.ok_btn),):
@@ -450,7 +340,7 @@ class ProductScreen(QWidget):
 
     def set_credit(self, credit: float):
         self.credit_label.setStyleSheet(self._credit_base_style)
-        self.credit_label.setText(f"Credito Disponible: ${credit:.0f}")
+        self.credit_label.setText(f"Credito: ${credit:.0f}")
 
     def show_credit_warning(self, text: str):
         self.credit_label.setStyleSheet(self._credit_warning_style)
@@ -497,16 +387,14 @@ class ProductScreen(QWidget):
 
     def set_countdown(self, seconds: int | None):
         if seconds is None:
-            self.countdown_label.clear()
-            self.countdown_label.setVisible(False)
+            self.footer_hint.setText("Toque una tarjeta para elegir el envase")
             return
-        self.countdown_label.setText(f"Tiempo: {seconds}s")
-        self.countdown_label.setVisible(True)
+        self.footer_hint.setText(f"Toque una tarjeta para elegir el envase ({seconds}s)")
 
     def pulse_credit_attention(self):
         state = {"step": 0}
-        normal_style = "QFrame{background:#0a58ca; border:none; border-radius:20px;}"
-        flash_style = "QFrame{background:#0d6efd; border:none; border-radius:20px;}"
+        normal_style = "QFrame{background:#0A58CA; border:none; border-radius:12px;}"
+        flash_style = "QFrame{background:#0D6EFD; border:none; border-radius:12px;}"
 
         def _tick():
             if state["step"] >= 6:
@@ -514,7 +402,7 @@ class ProductScreen(QWidget):
                 return
             self.credit_box.setStyleSheet(flash_style if state["step"] % 2 == 0 else normal_style)
             state["step"] += 1
-            QTimer.singleShot(150, _tick)
+            QTimer.singleShot(140, _tick)
 
         _tick()
 
