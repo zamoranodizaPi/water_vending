@@ -15,8 +15,8 @@ from PyQt5.QtWidgets import (
 )
 
 APP_FONT = "'Roboto','Open Sans','DejaVu Sans'"
-CARD_WIDTH = 220
-CARD_HEIGHT = 260
+CARD_MIN_WIDTH = 285
+CARD_HEIGHT = 250
 BADGE_WIDTH = 300
 BADGE_HEIGHT = 60
 BUTTON_WIDTH = 400
@@ -29,9 +29,11 @@ class ProductCard(QPushButton):
         super().__init__()
         self.product = product
         self._hovered = False
+        self._affordable = True
         self.setCheckable(True)
         self.setCursor(Qt.PointingHandCursor)
-        self.setFixedSize(CARD_WIDTH, CARD_HEIGHT)
+        self.setMinimumSize(CARD_MIN_WIDTH, CARD_HEIGHT)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.setStyleSheet("QPushButton{background:transparent; border:none;}")
 
         self.shadow = QGraphicsDropShadowEffect(self)
@@ -48,7 +50,8 @@ class ProductCard(QPushButton):
         root.setContentsMargins(0, 0, 0, 0)
 
         self.card_frame = QFrame()
-        self.card_frame.setFixedSize(CARD_WIDTH, CARD_HEIGHT)
+        self.card_frame.setMinimumSize(CARD_MIN_WIDTH, CARD_HEIGHT)
+        self.card_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         root.addWidget(self.card_frame)
 
         body = QVBoxLayout(self.card_frame)
@@ -112,12 +115,7 @@ class ProductCard(QPushButton):
         self._apply_state(animated=False)
 
     def _apply_state(self, animated: bool = True):
-        if not self.isEnabled():
-            background = "#F3F4F6"
-            border = "#E5E7EB"
-            blur = 8
-            shadow_color = QColor(15, 23, 42, 18)
-        elif self.isChecked():
+        if self.isChecked():
             background = "#E7F1FF"
             border = "#0D6EFD"
             blur = 18
@@ -127,6 +125,11 @@ class ProductCard(QPushButton):
             border = "#D6E4FF"
             blur = 17
             shadow_color = QColor(15, 23, 42, 40)
+        elif not self._affordable:
+            background = "#FFFFFF"
+            border = "#E5E7EB"
+            blur = 12
+            shadow_color = QColor(15, 23, 42, 24)
         else:
             background = "#FFFFFF"
             border = "#E5E7EB"
@@ -170,8 +173,12 @@ class ProductCard(QPushButton):
         group.finished.connect(_done)
         group.start()
 
+    def set_affordable(self, affordable: bool):
+        self._affordable = affordable
+        self._apply_state(animated=False)
+
     def is_affordable(self) -> bool:
-        return self.isEnabled()
+        return self._affordable
 
 
 class TopLeftHotspot(QWidget):
@@ -206,7 +213,7 @@ class ProductScreen(QWidget):
     def _build_ui(self):
         self.setStyleSheet("QWidget{background:#F1F5F9;}")
         root = QVBoxLayout(self)
-        root.setContentsMargins(20, 0, 20, 18)
+        root.setContentsMargins(16, 0, 16, 16)
         root.setSpacing(0)
 
         self.header_frame = QFrame()
@@ -221,34 +228,31 @@ class ProductScreen(QWidget):
         self.service_hotspot.pressed.connect(self.top_left_corner_pressed.emit)
         self.service_hotspot.setStyleSheet("background:transparent;")
 
-        self.logo = QLabel()
-        self.logo.setFixedHeight(150)
-        self.logo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.logo_box = QFrame()
+        self.logo_box.setStyleSheet("QFrame{background:#0A58CA; border:none; border-radius:12px;}")
+        self.logo = QLabel(self.logo_box)
         self.logo.setAlignment(Qt.AlignCenter)
         pix = QPixmap(str(self.logo_path)).scaled(1024, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
+            self.logo_box.setFixedSize(252, 150)
+            self.logo.setGeometry(0, 0, 252, 150)
             self.logo.setText("Lupita")
-            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:28px; font-weight:700; color:#0D6EFD;")
+            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:28px; font-weight:700; color:#FFFFFF;")
         else:
+            self.logo_box.setFixedSize(pix.size())
+            self.logo.setGeometry(0, 0, pix.width(), pix.height())
             self.logo.setPixmap(pix)
 
         header_layout.addWidget(self.service_hotspot, 0, Qt.AlignTop | Qt.AlignLeft)
-        header_layout.addWidget(self.logo, 1, Qt.AlignCenter)
+        header_layout.addWidget(self.logo_box, 1, Qt.AlignCenter)
         header_layout.addSpacing(50)
         root.addWidget(self.header_frame)
 
-        self.title_row = QHBoxLayout()
-        self.title_row.setContentsMargins(0, 12, 0, 12)
-        self.title_row.setSpacing(0)
-
-        left_spacer = QWidget()
-        left_spacer.setFixedWidth(BADGE_WIDTH)
-        self.title_row.addWidget(left_spacer)
-
-        self.section_label = QLabel("Seleccione su producto")
+        self.section_label = QLabel("")
         self.section_label.setAlignment(Qt.AlignCenter)
+        self.section_label.setFixedHeight(32)
         self.section_label.setStyleSheet(self._section_base_style)
-        self.title_row.addWidget(self.section_label, 1, Qt.AlignCenter)
+        root.addWidget(self.section_label)
 
         self.credit_box = QFrame()
         self.credit_box.setFixedSize(BADGE_WIDTH, BADGE_HEIGHT)
@@ -256,7 +260,6 @@ class ProductScreen(QWidget):
         credit_layout = QHBoxLayout(self.credit_box)
         credit_layout.setContentsMargins(10, 10, 10, 10)
         credit_layout.setSpacing(10)
-
         coin = QLabel()
         coin.setFixedSize(32, 32)
         coin.setAlignment(Qt.AlignCenter)
@@ -272,8 +275,6 @@ class ProductScreen(QWidget):
 
         credit_layout.addWidget(coin)
         credit_layout.addWidget(self.credit_label, 1)
-        self.title_row.addWidget(self.credit_box, 0, Qt.AlignRight)
-        root.addLayout(self.title_row)
 
         self.alert_label = QLabel("")
         self.alert_label.setAlignment(Qt.AlignCenter)
@@ -284,34 +285,24 @@ class ProductScreen(QWidget):
         self.alert_label.setVisible(False)
         root.addWidget(self.alert_label)
 
-        root.addSpacing(8)
+        root.addSpacing(4)
 
         self.product_row = QHBoxLayout()
-        self.product_row.setContentsMargins(0, 10, 0, 0)
-        self.product_row.setSpacing(30)
-        self.product_row.addStretch()
+        self.product_row.setContentsMargins(0, 8, 0, 0)
+        self.product_row.setSpacing(18)
         for product in self.products:
             card = ProductCard(product)
             card.clicked.connect(lambda _, pid=product["id"]: self.product_selected.emit(pid))
             self.cards[product["id"]] = card
-            self.product_row.addWidget(card, 0, Qt.AlignTop)
-        self.product_row.addStretch()
+            self.product_row.addWidget(card, 1)
         root.addLayout(self.product_row)
 
         root.addStretch()
-
-        self.footer_hint = QLabel("Toque una tarjeta para elegir el envase")
-        self.footer_hint.setAlignment(Qt.AlignCenter)
-        self.footer_hint.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:13px; font-weight:500; color:#6B7280;"
-        )
-        root.addWidget(self.footer_hint)
-
         root.addSpacing(12)
 
         footer_row = QHBoxLayout()
         footer_row.setContentsMargins(0, 0, 0, 0)
-        footer_row.addStretch()
+        footer_row.setSpacing(16)
 
         self.ok_btn = QPushButton("Seleccionar producto")
         self.ok_btn.setFixedSize(BUTTON_WIDTH, BUTTON_HEIGHT)
@@ -323,8 +314,9 @@ class ProductScreen(QWidget):
             "QPushButton:disabled{background:#94A3B8; color:#E5E7EB;}"
         )
         self.ok_btn.clicked.connect(self.ok_pressed.emit)
-        footer_row.addWidget(self.ok_btn, 0, Qt.AlignCenter)
         footer_row.addStretch()
+        footer_row.addWidget(self.ok_btn, 0, Qt.AlignVCenter)
+        footer_row.addWidget(self.credit_box, 0, Qt.AlignRight | Qt.AlignVCenter)
         root.addLayout(footer_row)
 
     def mousePressEvent(self, event):
@@ -360,7 +352,8 @@ class ProductScreen(QWidget):
             card.setChecked(pid == product_id)
 
     def set_product_enabled(self, product_id: str, enabled: bool):
-        self.cards[product_id].setEnabled(enabled)
+        self.cards[product_id].setEnabled(True)
+        self.cards[product_id].set_affordable(enabled)
 
     def set_ok_enabled(self, enabled: bool):
         self.ok_btn.setEnabled(enabled)
@@ -379,17 +372,14 @@ class ProductScreen(QWidget):
 
     def set_section_message(self, text: str | None, warning: bool = False):
         if not text:
-            self.section_label.setText("Seleccione su producto")
+            self.section_label.clear()
             self.section_label.setStyleSheet(self._section_base_style)
             return
         self.section_label.setText(text)
         self.section_label.setStyleSheet(self._section_warning_style if warning else self._section_base_style)
 
     def set_countdown(self, seconds: int | None):
-        if seconds is None:
-            self.footer_hint.setText("Toque una tarjeta para elegir el envase")
-            return
-        self.footer_hint.setText(f"Toque una tarjeta para elegir el envase ({seconds}s)")
+        return
 
     def pulse_credit_attention(self):
         state = {"step": 0}

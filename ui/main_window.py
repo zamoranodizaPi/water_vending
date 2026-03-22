@@ -234,9 +234,9 @@ class MainWindow(QMainWindow):
 
         for product in settings.PRODUCTS:
             was_enabled = self.product_screen.cards[product["id"]].is_affordable()
-            enabled = self.credit >= product["price"]
-            self.product_screen.set_product_enabled(product["id"], enabled)
-            if enabled and (not was_enabled) and (not initial):
+            affordable = self.credit >= product["price"]
+            self.product_screen.set_product_enabled(product["id"], affordable)
+            if affordable and (not was_enabled) and (not initial):
                 self.product_screen.cards[product["id"]].pulse_attention(3)
 
         self.product_screen.set_ok_enabled(True)
