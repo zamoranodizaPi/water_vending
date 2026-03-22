@@ -256,15 +256,11 @@ class MainWindow(QMainWindow):
         )
 
     def _show_credit_insufficient(self):
-        self.product_screen.show_alert("Credito Insuficiente", ms=3000)
-        self.product_screen.set_section_message("Credito Insuficiente", warning=True)
-        QTimer.singleShot(3000, lambda: self.product_screen.set_section_message(None))
         self.audio.play("credit_insufficient")
 
     def _show_insert_credit_and_return_idle(self):
         if not self.current_product:
             return
-        self.product_screen.set_section_message(f"Precio ${self.current_product['price']:.0f}", warning=True)
         self._selection_countdown_remaining = 30
         self.product_screen.set_countdown(self._selection_countdown_remaining)
         self._selection_countdown_timer.start()
@@ -280,13 +276,10 @@ class MainWindow(QMainWindow):
             self._selection_countdown_timer.stop()
             self._selection_countdown_remaining = 0
             self.product_screen.set_countdown(None)
-            self.product_screen.set_section_message(None)
             self._update_credit_displays()
             if had_countdown and self.stack.currentWidget() == self.product_screen:
                 self.audio.queue(["select_product", "press_ok"])
                 self._show_preparation_prompt()
-        elif self._selection_reset_timer.isActive():
-            self.product_screen.set_section_message(f"Precio ${self.current_product['price']:.0f}", warning=True)
 
     def _tick_selection_countdown(self):
         if self._selection_countdown_remaining <= 1:
@@ -429,7 +422,8 @@ class MainWindow(QMainWindow):
                 "Coloque su embase en la cabina",
                 settings.UPSIDE_DOWN_IMAGE,
                 "Coloque el garrafon boca abajo",
-                image_size=(400, 400),
+                image_size=(350, 300),
+                image_offset_y=20,
             )
         else:
             self.flow_step = "await_fill_position"
@@ -437,6 +431,7 @@ class MainWindow(QMainWindow):
                 "Coloque su embase en la cabina",
                 self.current_product["image"],
                 "Prepare el envase para llenado",
+                image_offset_y=-20,
             )
         self.stack.setCurrentWidget(self.prompt_screen)
 
@@ -452,6 +447,7 @@ class MainWindow(QMainWindow):
             "Coloque su embase en la cabina",
             self.current_product["image"],
             subtitle,
+            image_offset_y=-15,
         )
         self.stack.setCurrentWidget(self.prompt_screen)
         self.audio.play("press_ok")
@@ -476,8 +472,9 @@ class MainWindow(QMainWindow):
                 "Enjuagando",
                 settings.RINSE_SECONDS,
                 image_path=settings.UPSIDE_DOWN_IMAGE,
-                image_size=(400, 400),
+                image_size=(350, 300),
                 emergency_enabled=False,
+                image_offset_y=20,
             )
             self.audio.play("nozzle_cleaning")
         elif self.flow_step == "await_fill_position":
@@ -500,7 +497,9 @@ class MainWindow(QMainWindow):
                 "Llenando",
                 total_s,
                 image_path=self.current_product["image"],
+                image_size=(300, 300),
                 emergency_enabled=True,
+                image_offset_y=-20,
             )
             self.audio.queue(["starting_fill", "filling"])
         except GPIOControllerError as exc:

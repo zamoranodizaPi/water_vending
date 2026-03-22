@@ -26,6 +26,7 @@ class DispensingScreen(QWidget):
         self._total_ms = 1
         self._movie = None
         self._image_pixmap = None
+        self._image_offset_y = 0
         self._build_ui(logo_path)
 
     def _build_ui(self, logo_path):
@@ -66,10 +67,16 @@ class DispensingScreen(QWidget):
         self.title.setObjectName("screenTitle")
         self.title.setAlignment(Qt.AlignCenter)
 
+        self.animation_wrap = QWidget()
+        self.animation_wrap_layout = QVBoxLayout(self.animation_wrap)
+        self.animation_wrap_layout.setContentsMargins(0, 0, 0, 0)
+        self.animation_wrap_layout.setSpacing(0)
+
         self.animation = QLabel()
         self.animation.setAlignment(Qt.AlignCenter)
         self.animation.setFixedSize(400, 400)
         self.animation.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.animation_wrap_layout.addWidget(self.animation, 0, Qt.AlignHCenter)
 
         self.progress = QProgressBar()
         self.progress.setObjectName("processProgress")
@@ -91,7 +98,7 @@ class DispensingScreen(QWidget):
 
         content_layout.addWidget(self.title)
         content_layout.addSpacing(12)
-        content_layout.addWidget(self.animation, 1, Qt.AlignCenter)
+        content_layout.addWidget(self.animation_wrap, 1)
         content_layout.addSpacing(18)
         content_layout.addWidget(self.progress, alignment=Qt.AlignCenter)
         content_layout.addSpacing(10)
@@ -115,11 +122,30 @@ class DispensingScreen(QWidget):
             self._image_pixmap.scaled(target, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         )
 
+    def _set_animation_slot(self, image_size=None, offset_y: int = 0):
+        width, height = image_size or (400, 400)
+        self.animation.setFixedSize(width, height)
+        self._image_offset_y = offset_y
+        top_margin = max(0, offset_y)
+        bottom_margin = max(0, -offset_y)
+        self.animation_wrap_layout.setContentsMargins(0, top_margin, 0, bottom_margin)
+        self._refresh_animation()
+
     def set_credit(self, credit: float):
         return
 
-    def start(self, title: str, total_seconds: float, gif_path=None, image_path=None, image_size=None, emergency_enabled: bool = False):
+    def start(
+        self,
+        title: str,
+        total_seconds: float,
+        gif_path=None,
+        image_path=None,
+        image_size=None,
+        emergency_enabled: bool = False,
+        image_offset_y: int = 0,
+    ):
         self.title.setText(title)
+        self._set_animation_slot(image_size=image_size, offset_y=image_offset_y)
         self._total_ms = max(500, int(total_seconds * 1000))
         self._elapsed_ms = 0
         self.progress.setValue(0)

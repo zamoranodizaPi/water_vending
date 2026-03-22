@@ -25,11 +25,11 @@ from theme import (
     refresh_style,
 )
 
-CARD_MIN_WIDTH = 285
-CARD_MIN_HEIGHT = 250
-CARD_SELECTED_SCALE = 1.2
-CARD_REDUCED_SCALE = 0.8
-CARD_IMAGE_SIZE = 200
+CARD_MIN_WIDTH = 342
+CARD_MIN_HEIGHT = 300
+CARD_SELECTED_SCALE = 1.1
+CARD_REDUCED_SCALE = 0.9
+CARD_IMAGE_SIZE = 220
 BADGE_WIDTH = 300
 BADGE_HEIGHT = 60
 BUTTON_WIDTH = 300
@@ -83,8 +83,8 @@ class ProductCard(QPushButton):
         card_root.setSpacing(0)
 
         body = QVBoxLayout()
-        body.setContentsMargins(18, 18, 18, 18)
-        body.setSpacing(2)
+        body.setContentsMargins(18, 8, 18, 6)
+        body.setSpacing(0)
         card_root.addLayout(body, 1)
 
         self.image = QLabel()
@@ -117,8 +117,7 @@ class ProductCard(QPushButton):
         self.price.setAlignment(Qt.AlignCenter)
         self.price.setStyleSheet(f"font-family:{APP_FONT}; font-size:27px; font-weight:700;")
 
-        body.addWidget(self.image, 0, Qt.AlignHCenter | Qt.AlignBottom)
-        body.addSpacing(4)
+        body.addWidget(self.image, 1, Qt.AlignHCenter | Qt.AlignBottom)
         body.addWidget(self.name)
         body.addWidget(self.volume)
         body.addWidget(self.price)

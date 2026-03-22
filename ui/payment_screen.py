@@ -61,6 +61,7 @@ class PromptScreen(BrandedScreen):
         self.ok_pressed = QPushButton("OK")
         self._movie = None
         self._image_pixmap = None
+        self._image_offset_y = 0
         self._footer_hint_base = "Presione OK cuando este listo"
         self._build_ui()
 
@@ -69,10 +70,16 @@ class PromptScreen(BrandedScreen):
         self.title.setObjectName("screenTitle")
         self.title.setAlignment(Qt.AlignCenter)
 
+        self.image_wrap = QWidget()
+        self.image_wrap_layout = QVBoxLayout(self.image_wrap)
+        self.image_wrap_layout.setContentsMargins(0, 0, 0, 0)
+        self.image_wrap_layout.setSpacing(0)
+
         self.image = QLabel()
         self.image.setAlignment(Qt.AlignCenter)
         self.image.setFixedSize(400, 400)
         self.image.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.image_wrap_layout.addWidget(self.image, 0, Qt.AlignHCenter)
 
         self.subtitle = QLabel("")
         self.subtitle.setObjectName("bodyText")
@@ -89,7 +96,7 @@ class PromptScreen(BrandedScreen):
 
         self.content_layout.addWidget(self.title)
         self.content_layout.addSpacing(8)
-        self.content_layout.addWidget(self.image, 1, Qt.AlignCenter)
+        self.content_layout.addWidget(self.image_wrap, 1)
         self.content_layout.addSpacing(10)
         self.content_layout.addWidget(self.subtitle)
         self.content_layout.addSpacing(8)
@@ -112,14 +119,24 @@ class PromptScreen(BrandedScreen):
             self._image_pixmap.scaled(target, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         )
 
+    def _set_image_slot(self, image_size=None, offset_y: int = 0):
+        width, height = image_size or (400, 400)
+        self.image.setFixedSize(width, height)
+        self._image_offset_y = offset_y
+        top_margin = max(0, offset_y)
+        bottom_margin = max(0, -offset_y)
+        self.image_wrap_layout.setContentsMargins(0, top_margin, 0, bottom_margin)
+        self._refresh_image()
+
     def set_prompt_countdown(self, seconds: int | None):
         if seconds is None:
             self.footer_hint.setText(self._footer_hint_base)
             return
         self.footer_hint.setText(f"{self._footer_hint_base} ({seconds})")
 
-    def configure(self, title: str, image_path, subtitle: str, image_size=None):
+    def configure(self, title: str, image_path, subtitle: str, image_size=None, image_offset_y: int = 0):
         self.title.setText(title)
+        self._set_image_slot(image_size=image_size, offset_y=image_offset_y)
         self.image.setMovie(None)
         self._movie = None
         self._image_pixmap = None
