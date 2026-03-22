@@ -16,10 +16,10 @@ from PyQt5.QtWidgets import (
 
 APP_FONT = "'Roboto','Open Sans','DejaVu Sans'"
 CARD_MIN_WIDTH = 285
-CARD_HEIGHT = 250
+CARD_MIN_HEIGHT = 250
 BADGE_WIDTH = 300
 BADGE_HEIGHT = 60
-BUTTON_WIDTH = 400
+BUTTON_WIDTH = 300
 BUTTON_HEIGHT = 60
 HEADER_WIDTH = 1024
 HEADER_HEIGHT = 100
@@ -33,8 +33,8 @@ class ProductCard(QPushButton):
         self._affordable = True
         self.setCheckable(True)
         self.setCursor(Qt.PointingHandCursor)
-        self.setMinimumSize(CARD_MIN_WIDTH, CARD_HEIGHT)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setMinimumSize(CARD_MIN_WIDTH, CARD_MIN_HEIGHT)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setStyleSheet("QPushButton{background:transparent; border:none;}")
 
         self.shadow = QGraphicsDropShadowEffect(self)
@@ -51,8 +51,8 @@ class ProductCard(QPushButton):
         root.setContentsMargins(0, 0, 0, 0)
 
         self.card_frame = QFrame()
-        self.card_frame.setMinimumSize(CARD_MIN_WIDTH, CARD_HEIGHT)
-        self.card_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.card_frame.setMinimumSize(CARD_MIN_WIDTH, CARD_MIN_HEIGHT)
+        self.card_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         root.addWidget(self.card_frame)
 
         body = QVBoxLayout(self.card_frame)
@@ -119,28 +119,36 @@ class ProductCard(QPushButton):
         name_color = "#374151"
         volume_color = "#6B7280"
         price_color = "#0D6EFD"
+        background = "#FFFFFF"
+        border = "#D1D5DB"
         if self.isChecked():
             blur = 8
-            shadow_color = QColor(13, 110, 253, 24)
+            shadow_color = QColor(55, 65, 81, 65)
             name_color = "#0A58CA"
             volume_color = "#0A58CA"
             price_color = "#0A58CA"
+            border = "#0D6EFD"
         elif self._hovered:
             blur = 6
-            shadow_color = QColor(13, 110, 253, 16)
+            shadow_color = QColor(55, 65, 81, 52)
             name_color = "#0B5ED7"
             price_color = "#0B5ED7"
+            border = "#93C5FD"
         elif not self._affordable:
-            blur = 0
-            shadow_color = QColor(15, 23, 42, 0)
+            blur = 4
+            shadow_color = QColor(55, 65, 81, 32)
             name_color = "#9CA3AF"
             volume_color = "#9CA3AF"
             price_color = "#94A3B8"
+            background = "#F8FAFC"
+            border = "#E5E7EB"
         else:
-            blur = 0
-            shadow_color = QColor(15, 23, 42, 0)
+            blur = 5
+            shadow_color = QColor(55, 65, 81, 44)
 
-        self.card_frame.setStyleSheet("QFrame{background:transparent; border:none;}")
+        self.card_frame.setStyleSheet(
+            f"QFrame{{background:{background}; border:1px solid {border}; border-radius:15px;}}"
+        )
         self.name.setStyleSheet(
             f"font-family:{APP_FONT}; font-size:14px; font-weight:600; color:{name_color}; background:transparent;"
         )
@@ -199,12 +207,22 @@ class TopLeftHotspot(QWidget):
         super().mousePressEvent(event)
 
 
+class ClickableFrame(QFrame):
+    pressed = pyqtSignal()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.pressed.emit()
+        super().mousePressEvent(event)
+
+
 class ProductScreen(QWidget):
     product_selected = pyqtSignal(str)
     ok_pressed = pyqtSignal()
     rinse_pressed = pyqtSignal()
     disabled_control_touched = pyqtSignal(str)
     top_left_corner_pressed = pyqtSignal()
+    credit_box_pressed = pyqtSignal()
 
     def __init__(self, products, logo_path, coin_image_path):
         super().__init__()
@@ -222,7 +240,7 @@ class ProductScreen(QWidget):
     def _build_ui(self):
         self.setStyleSheet("QWidget{background:#F1F5F9;}")
         root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 16)
+        root.setContentsMargins(5, 5, 5, 16)
         root.setSpacing(0)
 
         self.header_frame = QFrame()
@@ -267,9 +285,10 @@ class ProductScreen(QWidget):
         self.section_label.setStyleSheet(self._section_base_style)
         content_layout.addWidget(self.section_label)
 
-        self.credit_box = QFrame()
+        self.credit_box = ClickableFrame()
         self.credit_box.setFixedSize(BADGE_WIDTH, BADGE_HEIGHT)
         self.credit_box.setStyleSheet("QFrame{background:#0A58CA; border:none; border-radius:12px;}")
+        self.credit_box.pressed.connect(self.credit_box_pressed.emit)
         credit_layout = QHBoxLayout(self.credit_box)
         credit_layout.setContentsMargins(10, 10, 10, 10)
         credit_layout.setSpacing(10)
@@ -300,17 +319,24 @@ class ProductScreen(QWidget):
 
         content_layout.addSpacing(4)
 
+        self.product_area = QWidget()
+        self.product_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.product_area_layout = QVBoxLayout(self.product_area)
+        self.product_area_layout.setContentsMargins(0, 8, 0, 0)
+        self.product_area_layout.setSpacing(0)
+
         self.product_row = QHBoxLayout()
-        self.product_row.setContentsMargins(0, 8, 0, 0)
+        self.product_row.setContentsMargins(0, 0, 0, 0)
         self.product_row.setSpacing(18)
         for product in self.products:
             card = ProductCard(product)
             card.clicked.connect(lambda _, pid=product["id"]: self.product_selected.emit(pid))
             self.cards[product["id"]] = card
             self.product_row.addWidget(card, 1)
-        content_layout.addLayout(self.product_row)
+        self.product_area_layout.addLayout(self.product_row)
+        content_layout.addWidget(self.product_area, 9)
 
-        content_layout.addStretch()
+        content_layout.addStretch(1)
         content_layout.addSpacing(12)
 
         footer_row = QHBoxLayout()
@@ -327,8 +353,8 @@ class ProductScreen(QWidget):
             "QPushButton:disabled{background:#94A3B8; color:#E5E7EB;}"
         )
         self.ok_btn.clicked.connect(self.ok_pressed.emit)
+        footer_row.addWidget(self.ok_btn, 0, Qt.AlignLeft | Qt.AlignVCenter)
         footer_row.addStretch()
-        footer_row.addWidget(self.ok_btn, 0, Qt.AlignVCenter)
         footer_row.addWidget(self.credit_box, 0, Qt.AlignRight | Qt.AlignVCenter)
         content_layout.addLayout(footer_row)
         root.addWidget(content_frame)

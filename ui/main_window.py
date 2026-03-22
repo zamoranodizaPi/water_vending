@@ -142,6 +142,7 @@ class MainWindow(QMainWindow):
         self.product_screen.product_selected.connect(self._set_selected_product)
         self.product_screen.ok_pressed.connect(self._on_ok_home)
         self.product_screen.top_left_corner_pressed.connect(self._add_service_credit)
+        self.product_screen.credit_box_pressed.connect(self._add_credit_box_amount)
         self.prompt_screen.ok_pressed.clicked.connect(self._on_prompt_ok)
         self.progress_screen.progress_changed.connect(self._on_progress_changed)
         self.progress_screen.completed.connect(self._on_progress_completed)
@@ -216,6 +217,15 @@ class MainWindow(QMainWindow):
         if self.stack.currentWidget() != self.product_screen:
             return
         self.credit += 1.0
+        self._update_credit_displays()
+        self._sync_selection_countdown()
+        self._refresh_product_enablement()
+        self.audio.queue(["coin_received", "credit_updated"])
+
+    def _add_credit_box_amount(self):
+        if self.stack.currentWidget() != self.product_screen:
+            return
+        self.credit += 2.0
         self._update_credit_displays()
         self._sync_selection_countdown()
         self._refresh_product_enablement()
