@@ -63,18 +63,18 @@ class ProductCard(QPushButton):
         root.addWidget(self.card_frame)
 
         body = QVBoxLayout(self.card_frame)
-        body.setContentsMargins(15, 15, 15, 15)
-        body.setSpacing(4)
+        body.setContentsMargins(15, 12, 15, 12)
+        body.setSpacing(0)
 
         self.image = QLabel()
-        self.image.setFixedSize(120, 130)
+        self.image.setFixedSize(200, 200)
         self.image.setAlignment(Qt.AlignCenter)
         self.image.setStyleSheet("background:transparent;")
-        pix = QPixmap(str(product["image"])).scaled(100, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(product["image"])).scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.image.setText(product["name"])
             self.image.setProperty("role", "secondary")
-            self.image.setStyleSheet(f"font-family:{APP_FONT}; font-size:13px;")
+            self.image.setStyleSheet(f"font-family:{APP_FONT}; font-size:16px;")
             refresh_style(self.image)
         else:
             self.image.setPixmap(pix)
@@ -83,24 +83,22 @@ class ProductCard(QPushButton):
         self.name.setProperty("role", "name")
         self.name.setAlignment(Qt.AlignCenter)
         self.name.setWordWrap(True)
-        self.name.setStyleSheet(f"font-family:{APP_FONT}; font-size:14px; font-weight:600;")
+        self.name.setStyleSheet(f"font-family:{APP_FONT}; font-size:17px; font-weight:600;")
 
         self.volume = QLabel(f"{product['volume_l']} L")
         self.volume.setProperty("role", "secondary")
         self.volume.setAlignment(Qt.AlignCenter)
-        self.volume.setStyleSheet(f"font-family:{APP_FONT}; font-size:12px; font-weight:500;")
+        self.volume.setStyleSheet(f"font-family:{APP_FONT}; font-size:15px; font-weight:500;")
 
         self.price = QLabel(f"${product['price']:.0f}")
         self.price.setProperty("role", "price")
         self.price.setAlignment(Qt.AlignCenter)
-        self.price.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:700;")
+        self.price.setStyleSheet(f"font-family:{APP_FONT}; font-size:27px; font-weight:700;")
 
         body.addWidget(self.image, 0, Qt.AlignHCenter)
-        body.addStretch(2)
+        body.addStretch(1)
         body.addWidget(self.name)
-        body.addStretch(1)
         body.addWidget(self.volume)
-        body.addStretch(1)
         body.addWidget(self.price)
 
         self._apply_state(animated=False)

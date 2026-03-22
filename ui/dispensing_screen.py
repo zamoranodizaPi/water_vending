@@ -5,7 +5,10 @@ from PyQt5.QtCore import QTimer, pyqtSignal, Qt
 from PyQt5.QtGui import QMovie, QPixmap
 from PyQt5.QtWidgets import QLabel, QProgressBar, QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QSizePolicy, QFrame
 
-from theme import APP_FONT, PRIMARY, refresh_style
+from theme import APP_FONT, PRIMARY, SURFACE, refresh_style
+
+HEADER_WIDTH = 1024
+HEADER_HEIGHT = 100
 
 
 class DispensingScreen(QWidget):
@@ -26,40 +29,36 @@ class DispensingScreen(QWidget):
 
     def _build_ui(self, logo_path):
         root = QVBoxLayout(self)
-        root.setContentsMargins(14, 10, 14, 10)
+        root.setContentsMargins(10, 5, 10, 16)
         root.setSpacing(0)
 
         self.header_container = QFrame()
         self.header_container.setObjectName("header")
-        self.header_container.setFixedHeight(78)
+        self.header_container.setFixedSize(HEADER_WIDTH, HEADER_HEIGHT)
         header = QHBoxLayout(self.header_container)
-        header.setContentsMargins(18, 10, 18, 10)
-        header.setSpacing(12)
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(0)
 
-        self.logo = QLabel(self.header_container)
+        self.logo_box = QFrame()
+        self.logo_box.setObjectName("logoBox")
+        self.logo_box.setFixedSize(HEADER_WIDTH, HEADER_HEIGHT)
+        self.logo = QLabel(self.logo_box)
         self.logo.setObjectName("logoLabel")
-        self.logo.setFixedSize(150, 54)
-        self.logo.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        pix = QPixmap(str(logo_path)).scaled(140, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.logo.setGeometry(0, 0, HEADER_WIDTH, HEADER_HEIGHT)
+        self.logo.setAlignment(Qt.AlignCenter)
+        pix = QPixmap(str(logo_path)).scaled(1024, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setText("Lupita")
-            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{PRIMARY};")
+            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:28px; font-weight:700; color:{SURFACE};")
         else:
             self.logo.setPixmap(pix)
-
-        self.header_title = QLabel("Agua Purificada Lupita")
-        self.header_title.setObjectName("headerTitle")
-        self.header_title.setAlignment(Qt.AlignCenter)
-
-        header.addWidget(self.logo, 0, Qt.AlignVCenter)
-        header.addStretch()
-        header.addWidget(self.header_title, 0, Qt.AlignCenter)
-        header.addStretch()
-
-        spacer = QWidget(self.header_container)
-        spacer.setFixedWidth(150)
-        header.addWidget(spacer, 0, Qt.AlignVCenter)
+        header.addWidget(self.logo_box, 0, Qt.AlignCenter)
         root.addWidget(self.header_container)
+
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(16, 0, 16, 0)
+        content_layout.setSpacing(0)
 
         self.title = QLabel("Proceso")
         self.title.setObjectName("screenTitle")
@@ -88,15 +87,16 @@ class DispensingScreen(QWidget):
         self.emergency_btn.clicked.connect(self.emergency_pressed.emit)
         self.emergency_btn.setVisible(False)
 
-        root.addSpacing(10)
-        root.addWidget(self.title)
-        root.addSpacing(8)
-        root.addWidget(self.animation)
-        root.addSpacing(16)
-        root.addWidget(self.progress, alignment=Qt.AlignCenter)
-        root.addSpacing(14)
-        root.addWidget(self.emergency_btn, alignment=Qt.AlignCenter)
-        root.addStretch()
+        content_layout.addStretch(1)
+        content_layout.addWidget(self.title)
+        content_layout.addSpacing(10)
+        content_layout.addWidget(self.animation, alignment=Qt.AlignCenter)
+        content_layout.addSpacing(16)
+        content_layout.addWidget(self.progress, alignment=Qt.AlignCenter)
+        content_layout.addSpacing(14)
+        content_layout.addWidget(self.emergency_btn, alignment=Qt.AlignCenter)
+        content_layout.addStretch(1)
+        root.addWidget(content)
 
     def set_credit(self, credit: float):
         return

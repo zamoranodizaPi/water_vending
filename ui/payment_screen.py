@@ -5,7 +5,10 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QMovie, QPixmap
 from PyQt5.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy, QFrame
 
-from theme import APP_FONT, PRIMARY, refresh_style
+from theme import APP_FONT, PRIMARY, SURFACE, refresh_style
+
+HEADER_WIDTH = 1024
+HEADER_HEIGHT = 100
 
 
 class BrandedScreen(QWidget):
@@ -14,41 +17,37 @@ class BrandedScreen(QWidget):
         self.setObjectName("screen")
         self.logo_path = logo_path
         self.root = QVBoxLayout(self)
-        self.root.setContentsMargins(14, 10, 14, 10)
+        self.root.setContentsMargins(10, 5, 10, 16)
         self.root.setSpacing(0)
         self._build_header()
+        self.content = QWidget()
+        self.content_layout = QVBoxLayout(self.content)
+        self.content_layout.setContentsMargins(16, 0, 16, 0)
+        self.content_layout.setSpacing(0)
+        self.root.addWidget(self.content)
 
     def _build_header(self):
         self.header_frame = QFrame()
         self.header_frame.setObjectName("header")
-        self.header_frame.setFixedHeight(78)
+        self.header_frame.setFixedSize(HEADER_WIDTH, HEADER_HEIGHT)
         title_row = QHBoxLayout(self.header_frame)
-        title_row.setContentsMargins(18, 10, 18, 10)
-        title_row.setSpacing(12)
+        title_row.setContentsMargins(0, 0, 0, 0)
+        title_row.setSpacing(0)
 
-        self.logo = QLabel(self.header_frame)
+        self.logo_box = QFrame()
+        self.logo_box.setObjectName("logoBox")
+        self.logo_box.setFixedSize(HEADER_WIDTH, HEADER_HEIGHT)
+        self.logo = QLabel(self.logo_box)
         self.logo.setObjectName("logoLabel")
-        self.logo.setFixedSize(150, 54)
-        self.logo.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        pix = QPixmap(str(self.logo_path)).scaled(140, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.logo.setGeometry(0, 0, HEADER_WIDTH, HEADER_HEIGHT)
+        self.logo.setAlignment(Qt.AlignCenter)
+        pix = QPixmap(str(self.logo_path)).scaled(1024, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setText("Lupita")
-            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{PRIMARY};")
+            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:28px; font-weight:700; color:{SURFACE};")
         else:
             self.logo.setPixmap(pix)
-
-        self.header_title = QLabel("Agua Purificada Lupita")
-        self.header_title.setObjectName("headerTitle")
-        self.header_title.setAlignment(Qt.AlignCenter)
-
-        title_row.addWidget(self.logo, 0, Qt.AlignVCenter)
-        title_row.addStretch()
-        title_row.addWidget(self.header_title, 0, Qt.AlignCenter)
-        title_row.addStretch()
-
-        spacer = QWidget(self.header_frame)
-        spacer.setFixedWidth(150)
-        title_row.addWidget(spacer, 0, Qt.AlignVCenter)
+        title_row.addWidget(self.logo_box, 0, Qt.AlignCenter)
         self.root.addWidget(self.header_frame)
 
     def set_credit(self, credit: float):
@@ -83,24 +82,17 @@ class PromptScreen(BrandedScreen):
         self.footer_hint.setAlignment(Qt.AlignCenter)
         self.footer_hint.setWordWrap(True)
 
-        self.ok_pressed.setProperty("variant", "primary")
-        self.ok_pressed.setMinimumHeight(56)
-        self.ok_pressed.setMinimumWidth(250)
-        self.ok_pressed.setMaximumWidth(340)
-        self.ok_pressed.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.ok_pressed.setStyleSheet(f"QPushButton{{font-family:{APP_FONT}; font-size:22px;}}")
+        self.ok_pressed.setVisible(False)
 
-        self.root.addSpacing(12)
-        self.root.addWidget(self.title)
-        self.root.addSpacing(10)
-        self.root.addWidget(self.image)
-        self.root.addSpacing(16)
-        self.root.addWidget(self.subtitle)
-        self.root.addSpacing(10)
-        self.root.addWidget(self.footer_hint)
-        self.root.addSpacing(14)
-        self.root.addWidget(self.ok_pressed, alignment=Qt.AlignCenter)
-        self.root.addStretch()
+        self.content_layout.addStretch(1)
+        self.content_layout.addWidget(self.title)
+        self.content_layout.addSpacing(10)
+        self.content_layout.addWidget(self.image, alignment=Qt.AlignCenter)
+        self.content_layout.addSpacing(16)
+        self.content_layout.addWidget(self.subtitle)
+        self.content_layout.addSpacing(10)
+        self.content_layout.addWidget(self.footer_hint)
+        self.content_layout.addStretch(1)
 
     def set_prompt_countdown(self, seconds: int | None):
         if seconds is None:
@@ -154,11 +146,11 @@ class MessageScreen(BrandedScreen):
         self.animation.setAlignment(Qt.AlignCenter)
         self.animation.setFixedHeight(170)
 
-        self.root.addSpacing(18)
-        self.root.addWidget(self.message)
-        self.root.addSpacing(14)
-        self.root.addWidget(self.animation)
-        self.root.addStretch()
+        self.content_layout.addStretch(1)
+        self.content_layout.addWidget(self.message)
+        self.content_layout.addSpacing(14)
+        self.content_layout.addWidget(self.animation, alignment=Qt.AlignCenter)
+        self.content_layout.addStretch(1)
 
     def set_message(self, text: str, gif_path=None, image_path=None, image_size=None):
         self.message.setText(text)
