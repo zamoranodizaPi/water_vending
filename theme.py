@@ -13,7 +13,7 @@ HEADER_BLUE = "#3B82F6"
 ACCENT = "#FACC15"
 ACCENT_LIGHT = "#FFFBEB"
 ACCENT_ORANGE = "#F59E0B"
-ACCENT_PINK = "#EC4899"
+ACCENT_PINK = "#E4007C"
 
 BACKGROUND = "#F8FAFC"
 SURFACE = "#FFFFFF"
@@ -83,7 +83,7 @@ QFrame#contentPanel[thankyou="true"] {{
 QFrame#card {{
     background-color: {SURFACE};
     border-radius: 26px;
-    border: 2px solid {BORDER};
+    border: 2px solid {TEXT_SECONDARY};
 }}
 
 QFrame#card[selected="true"] {{
@@ -119,13 +119,13 @@ QLabel[role="warning"] {{
 }}
 
 QLabel[role="price"] {{
-    color: {TEXT_SECONDARY};
+    color: {ACCENT_PINK};
     font-weight: 700;
     font-size: 26px;
 }}
 
 QLabel[role="price"][blink="true"] {{
-    color: {ERROR};
+    color: {PRIMARY};
 }}
 
 QFrame#card[selected="true"] QLabel[role="price"],
@@ -135,11 +135,11 @@ QFrame#card[selected="true"] QLabel[role="secondary"] {{
 }}
 
 QFrame#card[selected="true"] QLabel[role="price"] {{
-    color: {TEXT_SECONDARY};
+    color: {ACCENT_PINK};
 }}
 
 QFrame#card[selected="true"] QLabel[role="price"][blink="true"] {{
-    color: {ERROR};
+    color: {PRIMARY};
 }}
 
 QFrame#card[affordable="false"] QLabel[role="name"],
