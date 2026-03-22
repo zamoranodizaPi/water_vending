@@ -90,10 +90,12 @@ class ProductCard(QPushButton):
         )
 
         body.addWidget(self.image, 0, Qt.AlignHCenter)
+        body.addStretch(2)
         body.addWidget(self.name)
+        body.addStretch(1)
         body.addWidget(self.volume)
+        body.addStretch(1)
         body.addWidget(self.price)
-        body.addStretch()
 
         self._apply_state(animated=False)
 
@@ -121,33 +123,34 @@ class ProductCard(QPushButton):
         price_color = "#0D6EFD"
         background = "#FFFFFF"
         border = "#D1D5DB"
+        border_width = 3
         if self.isChecked():
-            blur = 8
-            shadow_color = QColor(55, 65, 81, 65)
+            blur = 15
+            shadow_color = QColor(55, 65, 81, 95)
             name_color = "#0A58CA"
             volume_color = "#0A58CA"
             price_color = "#0A58CA"
             border = "#0D6EFD"
         elif self._hovered:
-            blur = 6
-            shadow_color = QColor(55, 65, 81, 52)
+            blur = 13
+            shadow_color = QColor(55, 65, 81, 82)
             name_color = "#0B5ED7"
             price_color = "#0B5ED7"
             border = "#93C5FD"
         elif not self._affordable:
-            blur = 4
-            shadow_color = QColor(55, 65, 81, 32)
+            blur = 9
+            shadow_color = QColor(55, 65, 81, 58)
             name_color = "#9CA3AF"
             volume_color = "#9CA3AF"
             price_color = "#94A3B8"
             background = "#F8FAFC"
             border = "#E5E7EB"
         else:
-            blur = 5
-            shadow_color = QColor(55, 65, 81, 44)
+            blur = 11
+            shadow_color = QColor(55, 65, 81, 72)
 
         self.card_frame.setStyleSheet(
-            f"QFrame{{background:{background}; border:1px solid {border}; border-radius:15px;}}"
+            f"QFrame{{background:{background}; border:{border_width}px solid {border}; border-radius:15px;}}"
         )
         self.name.setStyleSheet(
             f"font-family:{APP_FONT}; font-size:14px; font-weight:600; color:{name_color}; background:transparent;"
@@ -168,27 +171,21 @@ class ProductCard(QPushButton):
             self.shadow.setBlurRadius(blur)
 
     def pulse_attention(self, flashes: int = 3):
-        group = QSequentialAnimationGroup(self)
-        for _ in range(flashes):
-            expand = QPropertyAnimation(self.shadow, b"blurRadius")
-            expand.setDuration(170)
-            expand.setStartValue(15)
-            expand.setEndValue(22)
-            expand.setEasingCurve(QEasingCurve.InOutQuad)
+        state = {"step": 0}
+        flash_style = "QFrame{background:#E7F1FF; border:3px solid #0D6EFD; border-radius:15px;}"
 
-            settle = QPropertyAnimation(self.shadow, b"blurRadius")
-            settle.setDuration(170)
-            settle.setStartValue(22)
-            settle.setEndValue(15)
-            settle.setEasingCurve(QEasingCurve.InOutQuad)
-            group.addAnimation(expand)
-            group.addAnimation(settle)
+        def _tick():
+            if state["step"] >= flashes * 2:
+                self._apply_state(animated=False)
+                return
+            if state["step"] % 2 == 0:
+                self.card_frame.setStyleSheet(flash_style)
+            else:
+                self._apply_state(animated=False)
+            state["step"] += 1
+            QTimer.singleShot(170, _tick)
 
-        def _done():
-            self._apply_state(animated=False)
-
-        group.finished.connect(_done)
-        group.start()
+        _tick()
 
     def set_affordable(self, affordable: bool):
         self._affordable = affordable
@@ -240,7 +237,7 @@ class ProductScreen(QWidget):
     def _build_ui(self):
         self.setStyleSheet("QWidget{background:#F1F5F9;}")
         root = QVBoxLayout(self)
-        root.setContentsMargins(5, 5, 5, 16)
+        root.setContentsMargins(10, 5, 10, 16)
         root.setSpacing(0)
 
         self.header_frame = QFrame()
@@ -341,21 +338,34 @@ class ProductScreen(QWidget):
 
         footer_row = QHBoxLayout()
         footer_row.setContentsMargins(0, 0, 0, 0)
-        footer_row.setSpacing(16)
+        footer_row.setSpacing(0)
+
+        self.action_box = QFrame()
+        self.action_box.setStyleSheet(
+            "QFrame{background:#E2E8F0; border:1px solid #CBD5E1; border-radius:18px;}"
+        )
+        self.action_box.setGraphicsEffect(QGraphicsDropShadowEffect(self.action_box))
+        action_shadow = self.action_box.graphicsEffect()
+        action_shadow.setBlurRadius(18)
+        action_shadow.setOffset(0, 5)
+        action_shadow.setColor(QColor(51, 65, 85, 55))
+        action_layout = QHBoxLayout(self.action_box)
+        action_layout.setContentsMargins(10, 10, 10, 10)
+        action_layout.setSpacing(12)
 
         self.ok_btn = QPushButton("Seleccionar producto")
         self.ok_btn.setFixedSize(BUTTON_WIDTH, BUTTON_HEIGHT)
         self.ok_btn.setCursor(Qt.PointingHandCursor)
         self.ok_btn.setStyleSheet(
-            f"QPushButton{{font-family:{APP_FONT}; font-size:21px; font-weight:700; background:#0D6EFD; color:white; border:none; border-radius:15px; text-align:right; padding-right:18px;}}"
+            f"QPushButton{{font-family:{APP_FONT}; font-size:21px; font-weight:700; background:#0D6EFD; color:white; border:none; border-radius:15px; text-align:left; padding-left:18px;}}"
             "QPushButton:hover{background:#0B5ED7;}"
             "QPushButton:pressed{background:#0A58CA;}"
             "QPushButton:disabled{background:#94A3B8; color:#E5E7EB;}"
         )
         self.ok_btn.clicked.connect(self.ok_pressed.emit)
-        footer_row.addWidget(self.ok_btn, 0, Qt.AlignLeft | Qt.AlignVCenter)
-        footer_row.addStretch()
-        footer_row.addWidget(self.credit_box, 0, Qt.AlignRight | Qt.AlignVCenter)
+        action_layout.addWidget(self.ok_btn, 0, Qt.AlignLeft | Qt.AlignVCenter)
+        action_layout.addWidget(self.credit_box, 0, Qt.AlignRight | Qt.AlignVCenter)
+        footer_row.addWidget(self.action_box)
         content_layout.addLayout(footer_row)
         root.addWidget(content_frame)
 
