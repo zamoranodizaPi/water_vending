@@ -216,12 +216,14 @@ class MessageScreen(BrandedScreen):
         self._refresh_animation()
 
     def _refresh_animation(self):
+        target = self.animation.size()
+        if self._thank_you_mode:
+            target.setHeight(target.height() + 100)
         if self._movie and self._movie.isValid():
-            self._movie.setScaledSize(self.animation.size())
+            self._movie.setScaledSize(target)
             return
         if self._image_pixmap is None:
             return
-        target = self.animation.size()
         if target.width() <= 0 or target.height() <= 0:
             return
         self.animation.setPixmap(

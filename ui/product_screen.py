@@ -25,11 +25,11 @@ from theme import (
     refresh_style,
 )
 
-CARD_MIN_WIDTH = 342
-CARD_MIN_HEIGHT = 300
+CARD_MIN_WIDTH = 280
+CARD_MIN_HEIGHT = 280
 CARD_SELECTED_SCALE = 1.1
 CARD_REDUCED_SCALE = 0.9
-CARD_IMAGE_SIZE = 220
+CARD_IMAGE_SIZE = 210
 BADGE_WIDTH = 300
 BADGE_HEIGHT = 60
 BUTTON_WIDTH = 300
@@ -46,6 +46,7 @@ class ProductCard(QPushButton):
         self._affordable = True
         self._visual_scale = 1.0
         self._base_pixmap = None
+        self._price_blink_on = False
         self.setCheckable(True)
         self.setCursor(Qt.PointingHandCursor)
         self.setMinimumSize(CARD_MIN_WIDTH, CARD_MIN_HEIGHT)
@@ -114,8 +115,13 @@ class ProductCard(QPushButton):
 
         self.price = QLabel(f"${product['price']:.0f}")
         self.price.setProperty("role", "price")
+        self.price.setProperty("blink", False)
         self.price.setAlignment(Qt.AlignCenter)
         self.price.setStyleSheet(f"font-family:{APP_FONT}; font-size:27px; font-weight:700;")
+
+        self.price_blink_timer = QTimer(self)
+        self.price_blink_timer.setInterval(260)
+        self.price_blink_timer.timeout.connect(self._toggle_price_blink)
 
         body.addWidget(self.image, 1, Qt.AlignHCenter | Qt.AlignBottom)
         body.addWidget(self.name)
@@ -130,6 +136,23 @@ class ProductCard(QPushButton):
         if self._base_pixmap is not None:
             scaled = self._base_pixmap.scaled(image_side, image_side, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.image.setPixmap(scaled)
+
+    def _toggle_price_blink(self):
+        self._price_blink_on = not self._price_blink_on
+        self.price.setProperty("blink", self._price_blink_on)
+        refresh_style(self.price)
+
+    def _set_price_blinking(self, blinking: bool):
+        if blinking:
+            if not self.price_blink_timer.isActive():
+                self._price_blink_on = False
+                self.price_blink_timer.start()
+                self._toggle_price_blink()
+            return
+        self.price_blink_timer.stop()
+        self._price_blink_on = False
+        self.price.setProperty("blink", False)
+        refresh_style(self.price)
 
     def enterEvent(self, event):
         self._hovered = True
@@ -166,6 +189,7 @@ class ProductCard(QPushButton):
         self.card_frame.setProperty("selected", self.isChecked())
         self.card_frame.setProperty("hovered", self._hovered)
         self.card_frame.setProperty("affordable", self._affordable)
+        self._set_price_blinking(self.isChecked())
         if self.isChecked():
             blur = 22
             shadow_color = color_with_alpha(ACCENT_ORANGE, 135)
