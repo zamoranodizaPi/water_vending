@@ -1,7 +1,7 @@
 """Instruction and message screens with persistent branding header."""
 from __future__ import annotations
 
-from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QMovie, QPixmap
 from PyQt5.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy, QFrame
 
@@ -71,8 +71,8 @@ class PromptScreen(BrandedScreen):
 
         self.image = QLabel()
         self.image.setAlignment(Qt.AlignCenter)
-        self.image.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.image.setMinimumHeight(260)
+        self.image.setFixedSize(400, 400)
+        self.image.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         self.subtitle = QLabel("")
         self.subtitle.setObjectName("bodyText")
@@ -165,8 +165,8 @@ class MessageScreen(BrandedScreen):
         self.message.setAlignment(Qt.AlignCenter)
         self.message.setWordWrap(True)
         self.animation.setAlignment(Qt.AlignCenter)
-        self.animation.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.animation.setMinimumHeight(220)
+        self.animation.setFixedSize(400, 400)
+        self.animation.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         self.content_layout.addWidget(self.message)
         self.content_layout.addSpacing(12)

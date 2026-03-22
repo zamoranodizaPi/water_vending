@@ -99,28 +99,6 @@ QFrame#card[attention="true"] {{
     background-color: {ACCENT_LIGHT};
 }}
 
-QFrame#accentBar {{
-    border: none;
-    border-top-left-radius: 26px;
-    border-top-right-radius: 26px;
-    border-bottom-left-radius: 0px;
-    border-bottom-right-radius: 0px;
-    min-height: 6px;
-    max-height: 6px;
-}}
-
-QFrame#accentBar[accent="blue"] {{
-    background-color: {HEADER_BLUE};
-}}
-
-QFrame#accentBar[accent="orange"] {{
-    background-color: {ACCENT_ORANGE};
-}}
-
-QFrame#accentBar[accent="pink"] {{
-    background-color: {ACCENT_PINK};
-}}
-
 QLabel {{
     color: {TEXT_PRIMARY};
     background-color: transparent;

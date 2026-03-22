@@ -82,14 +82,9 @@ class ProductCard(QPushButton):
         card_root.setContentsMargins(0, 0, 0, 0)
         card_root.setSpacing(0)
 
-        self.accent_bar = QFrame()
-        self.accent_bar.setObjectName("accentBar")
-        self.accent_bar.setProperty("accent", self._accent_name())
-        card_root.addWidget(self.accent_bar)
-
         body = QVBoxLayout()
-        body.setContentsMargins(18, 16, 18, 16)
-        body.setSpacing(0)
+        body.setContentsMargins(18, 18, 18, 18)
+        body.setSpacing(2)
         card_root.addLayout(body, 1)
 
         self.image = QLabel()
@@ -122,8 +117,8 @@ class ProductCard(QPushButton):
         self.price.setAlignment(Qt.AlignCenter)
         self.price.setStyleSheet(f"font-family:{APP_FONT}; font-size:27px; font-weight:700;")
 
-        body.addWidget(self.image, 0, Qt.AlignHCenter)
-        body.addStretch(1)
+        body.addWidget(self.image, 0, Qt.AlignHCenter | Qt.AlignBottom)
+        body.addSpacing(4)
         body.addWidget(self.name)
         body.addWidget(self.volume)
         body.addWidget(self.price)
@@ -136,13 +131,6 @@ class ProductCard(QPushButton):
         if self._base_pixmap is not None:
             scaled = self._base_pixmap.scaled(image_side, image_side, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.image.setPixmap(scaled)
-
-    def _accent_name(self) -> str:
-        return {
-            "full_garrafon": "blue",
-            "half_garrafon": "orange",
-            "gallon": "pink",
-        }.get(self.product["id"], "blue")
 
     def enterEvent(self, event):
         self._hovered = True
@@ -179,7 +167,6 @@ class ProductCard(QPushButton):
         self.card_frame.setProperty("selected", self.isChecked())
         self.card_frame.setProperty("hovered", self._hovered)
         self.card_frame.setProperty("affordable", self._affordable)
-        refresh_style(self.accent_bar)
         if self.isChecked():
             blur = 22
             shadow_color = color_with_alpha(ACCENT_ORANGE, 135)

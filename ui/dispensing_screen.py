@@ -68,8 +68,8 @@ class DispensingScreen(QWidget):
 
         self.animation = QLabel()
         self.animation.setAlignment(Qt.AlignCenter)
-        self.animation.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.animation.setMinimumHeight(240)
+        self.animation.setFixedSize(400, 400)
+        self.animation.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         self.progress = QProgressBar()
         self.progress.setObjectName("processProgress")
