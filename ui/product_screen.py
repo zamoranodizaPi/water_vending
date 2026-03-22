@@ -22,7 +22,7 @@ BADGE_HEIGHT = 60
 BUTTON_WIDTH = 400
 BUTTON_HEIGHT = 70
 HEADER_WIDTH = 1024
-HEADER_HEIGHT = 150
+HEADER_HEIGHT = 100
 
 
 class ProductCard(QPushButton):
@@ -236,7 +236,7 @@ class ProductScreen(QWidget):
         self.logo_box.setFixedSize(HEADER_WIDTH, HEADER_HEIGHT)
         self.logo = QLabel(self.logo_box)
         self.logo.setAlignment(Qt.AlignCenter)
-        pix = QPixmap(str(self.logo_path)).scaled(1024, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(self.logo_path)).scaled(1024, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setGeometry(0, 0, HEADER_WIDTH, HEADER_HEIGHT)
             self.logo.setText("Lupita")
