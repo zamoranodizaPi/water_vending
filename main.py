@@ -6,6 +6,7 @@ import sys
 from config import load_config
 from database.sales_db import SalesDatabase
 from hardware.valve_controller import ValveController
+from theme import apply_app_theme
 
 
 logging.basicConfig(
@@ -38,6 +39,7 @@ def main() -> int:
 
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(True)
+    apply_app_theme(app)
 
     window = MainWindow(config=config, db=db, valve=valve)
 

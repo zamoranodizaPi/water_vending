@@ -1,8 +1,8 @@
 """Product selection screen for a 1024x600 vending layout."""
 from __future__ import annotations
 
-from PyQt5.QtCore import QEasingCurve, QPropertyAnimation, QSequentialAnimationGroup, QTimer, QRect, Qt, pyqtSignal
-from PyQt5.QtGui import QColor, QPixmap
+from PyQt5.QtCore import QEasingCurve, QPropertyAnimation, QTimer, QRect, Qt, pyqtSignal
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
     QFrame,
     QGraphicsDropShadowEffect,
@@ -14,7 +14,8 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-APP_FONT = "'Roboto','Open Sans','DejaVu Sans'"
+from theme import APP_FONT, PRIMARY, PRIMARY_HOVER, SURFACE, TEXT_SECONDARY, color_with_alpha, refresh_style
+
 CARD_MIN_WIDTH = 285
 CARD_MIN_HEIGHT = 250
 BADGE_WIDTH = 300
@@ -35,12 +36,13 @@ class ProductCard(QPushButton):
         self.setCursor(Qt.PointingHandCursor)
         self.setMinimumSize(CARD_MIN_WIDTH, CARD_MIN_HEIGHT)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setObjectName("productCard")
         self.setStyleSheet("QPushButton{background:transparent; border:none;}")
 
         self.shadow = QGraphicsDropShadowEffect(self)
-        self.shadow.setBlurRadius(15)
+        self.shadow.setBlurRadius(10)
         self.shadow.setOffset(0, 4)
-        self.shadow.setColor(QColor(15, 23, 42, 35))
+        self.shadow.setColor(color_with_alpha(TEXT_SECONDARY, 70))
         self.setGraphicsEffect(self.shadow)
 
         self.shadow_anim = QPropertyAnimation(self.shadow, b"blurRadius", self)
@@ -51,8 +53,13 @@ class ProductCard(QPushButton):
         root.setContentsMargins(0, 0, 0, 0)
 
         self.card_frame = QFrame()
+        self.card_frame.setObjectName("card")
         self.card_frame.setMinimumSize(CARD_MIN_WIDTH, CARD_MIN_HEIGHT)
         self.card_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.card_frame.setProperty("selected", False)
+        self.card_frame.setProperty("hovered", False)
+        self.card_frame.setProperty("affordable", True)
+        self.card_frame.setProperty("attention", False)
         root.addWidget(self.card_frame)
 
         body = QVBoxLayout(self.card_frame)
@@ -66,28 +73,27 @@ class ProductCard(QPushButton):
         pix = QPixmap(str(product["image"])).scaled(100, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.image.setText(product["name"])
-            self.image.setStyleSheet(f"font-family:{APP_FONT}; font-size:13px; color:#6B7280;")
+            self.image.setProperty("role", "secondary")
+            self.image.setStyleSheet(f"font-family:{APP_FONT}; font-size:13px;")
+            refresh_style(self.image)
         else:
             self.image.setPixmap(pix)
 
         self.name = QLabel(product["name"])
+        self.name.setProperty("role", "name")
         self.name.setAlignment(Qt.AlignCenter)
         self.name.setWordWrap(True)
-        self.name.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:14px; font-weight:600; color:#374151; background:transparent;"
-        )
+        self.name.setStyleSheet(f"font-family:{APP_FONT}; font-size:14px; font-weight:600;")
 
         self.volume = QLabel(f"{product['volume_l']} L")
+        self.volume.setProperty("role", "secondary")
         self.volume.setAlignment(Qt.AlignCenter)
-        self.volume.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:12px; font-weight:500; color:#6B7280; background:transparent;"
-        )
+        self.volume.setStyleSheet(f"font-family:{APP_FONT}; font-size:12px; font-weight:500;")
 
         self.price = QLabel(f"${product['price']:.0f}")
+        self.price.setProperty("role", "price")
         self.price.setAlignment(Qt.AlignCenter)
-        self.price.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:24px; font-weight:700; color:#0D6EFD; background:transparent;"
-        )
+        self.price.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:700;")
 
         body.addWidget(self.image, 0, Qt.AlignHCenter)
         body.addStretch(2)
@@ -118,49 +124,23 @@ class ProductCard(QPushButton):
         self._apply_state(animated=False)
 
     def _apply_state(self, animated: bool = True):
-        name_color = "#374151"
-        volume_color = "#6B7280"
-        price_color = "#0D6EFD"
-        background = "#FFFFFF"
-        border = "#D1D5DB"
-        border_width = 3
+        self.card_frame.setProperty("selected", self.isChecked())
+        self.card_frame.setProperty("hovered", self._hovered)
+        self.card_frame.setProperty("affordable", self._affordable)
         if self.isChecked():
-            blur = 15
-            shadow_color = QColor(55, 65, 81, 95)
-            name_color = "#0A58CA"
-            volume_color = "#0A58CA"
-            price_color = "#0A58CA"
-            border = "#0D6EFD"
+            blur = 12
+            shadow_color = color_with_alpha(PRIMARY, 70)
         elif self._hovered:
-            blur = 13
-            shadow_color = QColor(55, 65, 81, 82)
-            name_color = "#0B5ED7"
-            price_color = "#0B5ED7"
-            border = "#93C5FD"
+            blur = 10
+            shadow_color = color_with_alpha(PRIMARY_HOVER, 60)
         elif not self._affordable:
-            blur = 9
-            shadow_color = QColor(55, 65, 81, 58)
-            name_color = "#9CA3AF"
-            volume_color = "#9CA3AF"
-            price_color = "#94A3B8"
-            background = "#F8FAFC"
-            border = "#E5E7EB"
+            blur = 7
+            shadow_color = color_with_alpha(TEXT_SECONDARY, 45)
         else:
-            blur = 11
-            shadow_color = QColor(55, 65, 81, 72)
+            blur = 8
+            shadow_color = color_with_alpha(TEXT_SECONDARY, 55)
 
-        self.card_frame.setStyleSheet(
-            f"QFrame{{background:{background}; border:{border_width}px solid {border}; border-radius:15px;}}"
-        )
-        self.name.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:14px; font-weight:600; color:{name_color}; background:transparent;"
-        )
-        self.volume.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:12px; font-weight:500; color:{volume_color}; background:transparent;"
-        )
-        self.price.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:24px; font-weight:700; color:{price_color}; background:transparent;"
-        )
+        refresh_style(self.card_frame)
         self.shadow.setColor(shadow_color)
         if animated:
             self.shadow_anim.stop()
@@ -172,16 +152,15 @@ class ProductCard(QPushButton):
 
     def pulse_attention(self, flashes: int = 3):
         state = {"step": 0}
-        flash_style = "QFrame{background:#E7F1FF; border:3px solid #0D6EFD; border-radius:15px;}"
 
         def _tick():
             if state["step"] >= flashes * 2:
+                self.card_frame.setProperty("attention", False)
+                refresh_style(self.card_frame)
                 self._apply_state(animated=False)
                 return
-            if state["step"] % 2 == 0:
-                self.card_frame.setStyleSheet(flash_style)
-            else:
-                self._apply_state(animated=False)
+            self.card_frame.setProperty("attention", state["step"] % 2 == 0)
+            refresh_style(self.card_frame)
             state["step"] += 1
             QTimer.singleShot(170, _tick)
 
@@ -223,26 +202,22 @@ class ProductScreen(QWidget):
 
     def __init__(self, products, logo_path, coin_image_path):
         super().__init__()
+        self.setObjectName("productScreen")
         self.products = products
         self.logo_path = logo_path
         self.coin_image_path = coin_image_path
         self.cards = {}
         self._rinse_locked = False
-        self._credit_base_style = f"font-family:{APP_FONT}; font-size:22px; font-weight:700; color:white;"
-        self._credit_warning_style = f"font-family:{APP_FONT}; font-size:22px; font-weight:700; color:#FFF7ED;"
-        self._section_base_style = f"font-family:{APP_FONT}; font-size:20px; font-weight:700; color:#1F2937;"
-        self._section_warning_style = f"font-family:{APP_FONT}; font-size:20px; font-weight:700; color:#B91C1C;"
         self._build_ui()
 
     def _build_ui(self):
-        self.setStyleSheet("QWidget{background:#F1F5F9;}")
         root = QVBoxLayout(self)
         root.setContentsMargins(10, 5, 10, 16)
         root.setSpacing(0)
 
         self.header_frame = QFrame()
+        self.header_frame.setObjectName("header")
         self.header_frame.setFixedSize(HEADER_WIDTH, HEADER_HEIGHT)
-        self.header_frame.setStyleSheet("QFrame{background:#FFFFFF; border:none;}")
         header_layout = QHBoxLayout(self.header_frame)
         header_layout.setContentsMargins(0, 0, 0, 0)
         header_layout.setSpacing(0)
@@ -250,20 +225,20 @@ class ProductScreen(QWidget):
         self.service_hotspot = TopLeftHotspot()
         self.service_hotspot.setFixedSize(50, 50)
         self.service_hotspot.pressed.connect(self.top_left_corner_pressed.emit)
-        self.service_hotspot.setStyleSheet("background:transparent;")
         self.service_hotspot.setParent(self.header_frame)
         self.service_hotspot.move(0, 0)
 
         self.logo_box = QFrame()
-        self.logo_box.setStyleSheet("QFrame{background:#0A58CA; border:none; border-radius:12px;}")
+        self.logo_box.setObjectName("logoBox")
         self.logo_box.setFixedSize(HEADER_WIDTH, HEADER_HEIGHT)
         self.logo = QLabel(self.logo_box)
+        self.logo.setObjectName("logoLabel")
         self.logo.setAlignment(Qt.AlignCenter)
         pix = QPixmap(str(self.logo_path)).scaled(1024, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setGeometry(0, 0, HEADER_WIDTH, HEADER_HEIGHT)
             self.logo.setText("Lupita")
-            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:28px; font-weight:700; color:#FFFFFF;")
+            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:28px; font-weight:700; color:{SURFACE};")
         else:
             self.logo.setGeometry(0, 0, HEADER_WIDTH, HEADER_HEIGHT)
             self.logo.setPixmap(pix)
@@ -277,14 +252,17 @@ class ProductScreen(QWidget):
         content_layout.setSpacing(0)
 
         self.section_label = QLabel("")
+        self.section_label.setObjectName("sectionLabel")
+        self.section_label.setProperty("warning", False)
         self.section_label.setAlignment(Qt.AlignCenter)
         self.section_label.setFixedHeight(32)
-        self.section_label.setStyleSheet(self._section_base_style)
+        self.section_label.setStyleSheet(f"font-family:{APP_FONT};")
         content_layout.addWidget(self.section_label)
 
         self.credit_box = ClickableFrame()
+        self.credit_box.setObjectName("credit")
+        self.credit_box.setProperty("flash", False)
         self.credit_box.setFixedSize(BADGE_WIDTH, BADGE_HEIGHT)
-        self.credit_box.setStyleSheet("QFrame{background:#0A58CA; border:none; border-radius:12px;}")
         self.credit_box.pressed.connect(self.credit_box_pressed.emit)
         credit_layout = QHBoxLayout(self.credit_box)
         credit_layout.setContentsMargins(10, 10, 10, 10)
@@ -295,22 +273,23 @@ class ProductScreen(QWidget):
         coin_pix = QPixmap(str(self.coin_image_path)).scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if coin_pix.isNull():
             coin.setText("$")
-            coin.setStyleSheet(f"font-family:{APP_FONT}; font-size:18px; font-weight:700; color:#FBBF24;")
+            coin.setStyleSheet(f"font-family:{APP_FONT}; font-size:18px; font-weight:700; color:{SURFACE};")
         else:
             coin.setPixmap(coin_pix)
 
         self.credit_label = QLabel("Credito: $0")
-        self.credit_label.setStyleSheet(self._credit_base_style)
+        self.credit_label.setObjectName("creditText")
+        self.credit_label.setStyleSheet(f"font-family:{APP_FONT}; font-size:22px; font-weight:700;")
 
         credit_layout.addWidget(coin)
         credit_layout.addWidget(self.credit_label, 1)
 
         self.alert_label = QLabel("")
+        self.alert_label.setObjectName("alertLabel")
+        self.alert_label.setProperty("role", "warning")
         self.alert_label.setAlignment(Qt.AlignCenter)
         self.alert_label.setFixedHeight(24)
-        self.alert_label.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:13px; font-weight:600; color:#B91C1C;"
-        )
+        self.alert_label.setStyleSheet(f"font-family:{APP_FONT};")
         self.alert_label.setVisible(False)
         content_layout.addWidget(self.alert_label)
 
@@ -341,26 +320,22 @@ class ProductScreen(QWidget):
         footer_row.setSpacing(0)
 
         self.action_box = QFrame()
-        self.action_box.setStyleSheet(
-            "QFrame{background:#E2E8F0; border:1px solid #CBD5E1; border-radius:18px;}"
-        )
+        self.action_box.setObjectName("actionBox")
         self.action_box.setGraphicsEffect(QGraphicsDropShadowEffect(self.action_box))
         action_shadow = self.action_box.graphicsEffect()
-        action_shadow.setBlurRadius(18)
-        action_shadow.setOffset(0, 5)
-        action_shadow.setColor(QColor(51, 65, 85, 55))
+        action_shadow.setBlurRadius(8)
+        action_shadow.setOffset(0, 3)
+        action_shadow.setColor(color_with_alpha(TEXT_SECONDARY, 40))
         action_layout = QHBoxLayout(self.action_box)
         action_layout.setContentsMargins(10, 10, 10, 10)
         action_layout.setSpacing(12)
 
         self.ok_btn = QPushButton("Seleccionar producto")
+        self.ok_btn.setProperty("variant", "primary")
         self.ok_btn.setFixedSize(BUTTON_WIDTH, BUTTON_HEIGHT)
         self.ok_btn.setCursor(Qt.PointingHandCursor)
         self.ok_btn.setStyleSheet(
-            f"QPushButton{{font-family:{APP_FONT}; font-size:21px; font-weight:700; background:#0D6EFD; color:white; border:none; border-radius:15px; text-align:left; padding-left:18px;}}"
-            "QPushButton:hover{background:#0B5ED7;}"
-            "QPushButton:pressed{background:#0A58CA;}"
-            "QPushButton:disabled{background:#94A3B8; color:#E5E7EB;}"
+            f"QPushButton{{font-family:{APP_FONT}; font-size:21px; text-align:left; padding-left:18px;}}"
         )
         self.ok_btn.clicked.connect(self.ok_pressed.emit)
         action_layout.addWidget(self.ok_btn, 0, Qt.AlignLeft | Qt.AlignVCenter)
@@ -381,11 +356,13 @@ class ProductScreen(QWidget):
         super().mousePressEvent(event)
 
     def set_credit(self, credit: float):
-        self.credit_label.setStyleSheet(self._credit_base_style)
+        self.credit_label.setProperty("role", "")
+        refresh_style(self.credit_label)
         self.credit_label.setText(f"Credito: ${credit:.0f}")
 
     def show_credit_warning(self, text: str):
-        self.credit_label.setStyleSheet(self._credit_warning_style)
+        self.credit_label.setProperty("role", "warning")
+        refresh_style(self.credit_label)
         self.credit_label.setText(text)
 
     def show_alert(self, text: str, ms: int = 3000):
@@ -423,24 +400,26 @@ class ProductScreen(QWidget):
     def set_section_message(self, text: str | None, warning: bool = False):
         if not text:
             self.section_label.clear()
-            self.section_label.setStyleSheet(self._section_base_style)
+            self.section_label.setProperty("warning", False)
+            refresh_style(self.section_label)
             return
         self.section_label.setText(text)
-        self.section_label.setStyleSheet(self._section_warning_style if warning else self._section_base_style)
+        self.section_label.setProperty("warning", warning)
+        refresh_style(self.section_label)
 
     def set_countdown(self, seconds: int | None):
         return
 
     def pulse_credit_attention(self):
         state = {"step": 0}
-        normal_style = "QFrame{background:#0A58CA; border:none; border-radius:12px;}"
-        flash_style = "QFrame{background:#0D6EFD; border:none; border-radius:12px;}"
 
         def _tick():
             if state["step"] >= 6:
-                self.credit_box.setStyleSheet(normal_style)
+                self.credit_box.setProperty("flash", False)
+                refresh_style(self.credit_box)
                 return
-            self.credit_box.setStyleSheet(flash_style if state["step"] % 2 == 0 else normal_style)
+            self.credit_box.setProperty("flash", state["step"] % 2 == 0)
+            refresh_style(self.credit_box)
             state["step"] += 1
             QTimer.singleShot(140, _tick)
 

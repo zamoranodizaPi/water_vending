@@ -5,16 +5,7 @@ from PyQt5.QtCore import QTimer, pyqtSignal, Qt
 from PyQt5.QtGui import QMovie, QPixmap
 from PyQt5.QtWidgets import QLabel, QProgressBar, QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QSizePolicy, QFrame
 
-APP_FONT = "'Roboto','Open Sans','DejaVu Sans'"
-HEADER_STYLE = "QWidget{background:#0d6efd; border-radius:20px;}"
-PRIMARY_TITLE_STYLE = f"font-family:{APP_FONT}; font-size:26px; font-weight:700; color:#ffffff;"
-SECTION_TITLE_STYLE = f"font-family:{APP_FONT}; font-size:30px; font-weight:700; color:#0d6efd;"
-STOP_BUTTON_STYLE = (
-    f"QPushButton{{font-family:{APP_FONT}; font-size:22px; font-weight:700; background:#dc3545; color:white; "
-    "border-radius:16px; border:none; padding:8px 20px;}}"
-    "QPushButton:hover{background:#bb2d3b;}"
-    "QPushButton:pressed{background:#a52834;}"
-)
+from theme import APP_FONT, PRIMARY, refresh_style
 
 
 class DispensingScreen(QWidget):
@@ -24,7 +15,7 @@ class DispensingScreen(QWidget):
 
     def __init__(self, logo_path):
         super().__init__()
-        self.setStyleSheet("QWidget { background:#f3f7fb; }")
+        self.setObjectName("dispensingScreen")
         self.logo_path = logo_path
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
@@ -39,26 +30,26 @@ class DispensingScreen(QWidget):
         root.setSpacing(0)
 
         self.header_container = QFrame()
+        self.header_container.setObjectName("header")
         self.header_container.setFixedHeight(78)
-        self.header_container.setStyleSheet(HEADER_STYLE)
         header = QHBoxLayout(self.header_container)
         header.setContentsMargins(18, 10, 18, 10)
         header.setSpacing(12)
 
         self.logo = QLabel(self.header_container)
+        self.logo.setObjectName("logoLabel")
         self.logo.setFixedSize(150, 54)
         self.logo.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.logo.setStyleSheet("background: transparent;")
         pix = QPixmap(str(logo_path)).scaled(140, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setText("Lupita")
-            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:#ffffff;")
+            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{PRIMARY};")
         else:
             self.logo.setPixmap(pix)
 
         self.header_title = QLabel("Agua Purificada Lupita")
+        self.header_title.setObjectName("headerTitle")
         self.header_title.setAlignment(Qt.AlignCenter)
-        self.header_title.setStyleSheet(PRIMARY_TITLE_STYLE)
 
         header.addWidget(self.logo, 0, Qt.AlignVCenter)
         header.addStretch()
@@ -71,8 +62,8 @@ class DispensingScreen(QWidget):
         root.addWidget(self.header_container)
 
         self.title = QLabel("Proceso")
+        self.title.setObjectName("screenTitle")
         self.title.setAlignment(Qt.AlignCenter)
-        self.title.setStyleSheet(SECTION_TITLE_STYLE)
 
         self.animation = QLabel()
         self.animation.setAlignment(Qt.AlignCenter)
@@ -80,22 +71,20 @@ class DispensingScreen(QWidget):
         self.animation.setMaximumHeight(210)
 
         self.progress = QProgressBar()
+        self.progress.setObjectName("processProgress")
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
         self.progress.setFixedHeight(56)
         self.progress.setFixedWidth(430)
-        self.progress.setStyleSheet(
-            f"QProgressBar{{font-family:{APP_FONT}; font-size:22px; font-weight:700; border:3px solid #0d6efd; "
-            "border-radius:16px; text-align:center; background:#ffffff; color:#1f2937;}"
-            "QProgressBar::chunk{background:#0d6efd; border-radius:12px;}"
-        )
+        self.progress.setStyleSheet(f"QProgressBar{{font-family:{APP_FONT};}}")
 
         self.emergency_btn = QPushButton("Detener")
+        self.emergency_btn.setProperty("variant", "secondary")
         self.emergency_btn.setMinimumHeight(56)
         self.emergency_btn.setMinimumWidth(240)
         self.emergency_btn.setMaximumWidth(320)
         self.emergency_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.emergency_btn.setStyleSheet(STOP_BUTTON_STYLE)
+        self.emergency_btn.setStyleSheet(f"QPushButton{{font-family:{APP_FONT}; font-size:22px;}}")
         self.emergency_btn.clicked.connect(self.emergency_pressed.emit)
         self.emergency_btn.setVisible(False)
 
@@ -127,10 +116,14 @@ class DispensingScreen(QWidget):
             pix = QPixmap(str(image_path)).scaled(width, height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             if pix.isNull():
                 self.animation.setText("[Imagen no disponible]")
-                self.animation.setStyleSheet("font-size:22px; color:#64748b;")
+                self.animation.setProperty("role", "secondary")
+                self.animation.setStyleSheet("font-size:22px;")
+                refresh_style(self.animation)
             else:
                 self.animation.setPixmap(pix)
+                self.animation.setProperty("role", "")
                 self.animation.setStyleSheet("")
+                refresh_style(self.animation)
         elif gif_path:
             self._movie = QMovie(str(gif_path))
             if self._movie.isValid():
@@ -138,7 +131,9 @@ class DispensingScreen(QWidget):
                 self._movie.start()
             else:
                 self.animation.setText("[Animación no disponible]")
-                self.animation.setStyleSheet("font-size:22px; color:#64748b;")
+                self.animation.setProperty("role", "secondary")
+                self.animation.setStyleSheet("font-size:22px;")
+                refresh_style(self.animation)
 
         self._timer.start(200)
 

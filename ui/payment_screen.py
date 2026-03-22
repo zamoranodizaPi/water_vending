@@ -5,25 +5,13 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QMovie, QPixmap
 from PyQt5.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy, QFrame
 
-APP_FONT = "'Roboto','Open Sans','DejaVu Sans'"
-HEADER_STYLE = "QFrame{background:#0d6efd; border-radius:20px;}"
-SCREEN_BG = "QWidget { background:#f3f7fb; }"
-PRIMARY_TITLE_STYLE = f"font-family:{APP_FONT}; font-size:26px; font-weight:700; color:#ffffff;"
-SECTION_TITLE_STYLE = f"font-family:{APP_FONT}; font-size:30px; font-weight:700; color:#0d6efd;"
-BODY_TEXT_STYLE = f"font-family:{APP_FONT}; font-size:19px; font-weight:600; color:#1f2937;"
-PRIMARY_BUTTON_STYLE = (
-    f"QPushButton{{font-family:{APP_FONT}; font-size:22px; font-weight:700; background:#0d6efd; color:white; "
-    "border-radius:16px; border:none; padding:8px 20px;}}"
-    "QPushButton:hover{background:#0b5ed7;}"
-    "QPushButton:pressed{background:#0a58ca;}"
-    "QPushButton:disabled{background:#9ca3af; color:#e5e7eb;}"
-)
+from theme import APP_FONT, PRIMARY, refresh_style
 
 
 class BrandedScreen(QWidget):
     def __init__(self, logo_path):
         super().__init__()
-        self.setStyleSheet(SCREEN_BG)
+        self.setObjectName("screen")
         self.logo_path = logo_path
         self.root = QVBoxLayout(self)
         self.root.setContentsMargins(14, 10, 14, 10)
@@ -32,26 +20,26 @@ class BrandedScreen(QWidget):
 
     def _build_header(self):
         self.header_frame = QFrame()
+        self.header_frame.setObjectName("header")
         self.header_frame.setFixedHeight(78)
-        self.header_frame.setStyleSheet(HEADER_STYLE)
         title_row = QHBoxLayout(self.header_frame)
         title_row.setContentsMargins(18, 10, 18, 10)
         title_row.setSpacing(12)
 
         self.logo = QLabel(self.header_frame)
+        self.logo.setObjectName("logoLabel")
         self.logo.setFixedSize(150, 54)
         self.logo.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.logo.setStyleSheet("background: transparent;")
         pix = QPixmap(str(self.logo_path)).scaled(140, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setText("Lupita")
-            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:#ffffff;")
+            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{PRIMARY};")
         else:
             self.logo.setPixmap(pix)
 
         self.header_title = QLabel("Agua Purificada Lupita")
+        self.header_title.setObjectName("headerTitle")
         self.header_title.setAlignment(Qt.AlignCenter)
-        self.header_title.setStyleSheet(PRIMARY_TITLE_STYLE)
 
         title_row.addWidget(self.logo, 0, Qt.AlignVCenter)
         title_row.addStretch()
@@ -69,6 +57,7 @@ class BrandedScreen(QWidget):
 class PromptScreen(BrandedScreen):
     def __init__(self, logo_path):
         super().__init__(logo_path)
+        self.setObjectName("promptScreen")
         self.ok_pressed = QPushButton("OK")
         self._movie = None
         self._footer_hint_base = "Presione OK cuando este listo"
@@ -76,28 +65,30 @@ class PromptScreen(BrandedScreen):
 
     def _build_ui(self):
         self.title = QLabel("Instrucción")
+        self.title.setObjectName("screenTitle")
         self.title.setAlignment(Qt.AlignCenter)
-        self.title.setStyleSheet(SECTION_TITLE_STYLE)
 
         self.image = QLabel()
         self.image.setAlignment(Qt.AlignCenter)
         self.image.setFixedHeight(190)
 
         self.subtitle = QLabel("")
+        self.subtitle.setObjectName("bodyText")
         self.subtitle.setAlignment(Qt.AlignCenter)
-        self.subtitle.setStyleSheet(BODY_TEXT_STYLE)
         self.subtitle.setWordWrap(True)
 
         self.footer_hint = QLabel(self._footer_hint_base)
+        self.footer_hint.setObjectName("bodyText")
+        self.footer_hint.setProperty("role", "secondary")
         self.footer_hint.setAlignment(Qt.AlignCenter)
-        self.footer_hint.setStyleSheet(BODY_TEXT_STYLE)
         self.footer_hint.setWordWrap(True)
 
+        self.ok_pressed.setProperty("variant", "primary")
         self.ok_pressed.setMinimumHeight(56)
         self.ok_pressed.setMinimumWidth(250)
         self.ok_pressed.setMaximumWidth(340)
         self.ok_pressed.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.ok_pressed.setStyleSheet(PRIMARY_BUTTON_STYLE)
+        self.ok_pressed.setStyleSheet(f"QPushButton{{font-family:{APP_FONT}; font-size:22px;}}")
 
         self.root.addSpacing(12)
         self.root.addWidget(self.title)
@@ -128,30 +119,37 @@ class PromptScreen(BrandedScreen):
                 self._movie.start()
             else:
                 self.image.setText("[Animación no disponible]")
-                self.image.setStyleSheet("font-size:25px; color:#64748b;")
+                self.image.setProperty("role", "secondary")
+                self.image.setStyleSheet("font-size:25px;")
+                refresh_style(self.image)
         else:
             width, height = image_size or (300, 190)
             pix = QPixmap(str(image_path)).scaled(width, height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             if pix.isNull():
                 self.image.setText("[Imagen no disponible]")
-                self.image.setStyleSheet("font-size:25px; color:#64748b;")
+                self.image.setProperty("role", "secondary")
+                self.image.setStyleSheet("font-size:25px;")
+                refresh_style(self.image)
             else:
                 self.image.setPixmap(pix)
+                self.image.setProperty("role", "")
                 self.image.setStyleSheet("")
+                refresh_style(self.image)
         self.subtitle.setText(subtitle)
 
 
 class MessageScreen(BrandedScreen):
     def __init__(self, logo_path):
         super().__init__(logo_path)
+        self.setObjectName("messageScreen")
         self._movie = None
         self.message = QLabel("")
         self.animation = QLabel()
         self._build_ui()
 
     def _build_ui(self):
+        self.message.setObjectName("screenTitle")
         self.message.setAlignment(Qt.AlignCenter)
-        self.message.setStyleSheet(SECTION_TITLE_STYLE)
         self.message.setWordWrap(True)
         self.animation.setAlignment(Qt.AlignCenter)
         self.animation.setFixedHeight(170)
@@ -172,10 +170,14 @@ class MessageScreen(BrandedScreen):
             pix = QPixmap(str(image_path)).scaled(width, height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             if pix.isNull():
                 self.animation.setText("[Imagen no disponible]")
-                self.animation.setStyleSheet("font-size:22px; color:#64748b;")
+                self.animation.setProperty("role", "secondary")
+                self.animation.setStyleSheet("font-size:22px;")
+                refresh_style(self.animation)
             else:
                 self.animation.setPixmap(pix)
+                self.animation.setProperty("role", "")
                 self.animation.setStyleSheet("")
+                refresh_style(self.animation)
         elif gif_path:
             self._movie = QMovie(str(gif_path))
             if self._movie.isValid():
@@ -185,4 +187,6 @@ class MessageScreen(BrandedScreen):
                 self._movie.start()
             else:
                 self.animation.setText("[Animación no disponible]")
-                self.animation.setStyleSheet("font-size:22px; color:#64748b;")
+                self.animation.setProperty("role", "secondary")
+                self.animation.setStyleSheet("font-size:22px;")
+                refresh_style(self.animation)
