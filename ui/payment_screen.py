@@ -219,8 +219,6 @@ class MessageScreen(BrandedScreen):
 
     def _refresh_animation(self):
         target = self.animation.size()
-        if self._thank_you_mode:
-            target.setHeight(target.height() + 100)
         if self._movie and self._movie.isValid():
             self._movie.setScaledSize(target)
             return
@@ -235,8 +233,7 @@ class MessageScreen(BrandedScreen):
     def set_message(self, text: str, gif_path=None, image_path=None, image_size=None, hide_header: bool = False):
         self._thank_you_mode = hide_header
         if hide_header:
-            self.animation.setMinimumSize(0, 0)
-            self.animation.setMaximumSize(16777215, 16777215)
+            self.animation.setFixedSize(375, 550)
         else:
             width, height = image_size or (400, 400)
             self.animation.setFixedSize(width, height)
