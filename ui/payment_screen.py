@@ -69,7 +69,7 @@ class PromptScreen(BrandedScreen):
 
         self.image = QLabel()
         self.image.setAlignment(Qt.AlignCenter)
-        self.image.setFixedHeight(190)
+        self.image.setFixedHeight(300)
 
         self.subtitle = QLabel("")
         self.subtitle.setObjectName("bodyText")
@@ -84,13 +84,12 @@ class PromptScreen(BrandedScreen):
 
         self.ok_pressed.setVisible(False)
 
-        self.content_layout.addStretch(1)
         self.content_layout.addWidget(self.title)
-        self.content_layout.addSpacing(10)
+        self.content_layout.addSpacing(4)
         self.content_layout.addWidget(self.image, alignment=Qt.AlignCenter)
-        self.content_layout.addSpacing(16)
+        self.content_layout.addSpacing(24)
         self.content_layout.addWidget(self.subtitle)
-        self.content_layout.addSpacing(10)
+        self.content_layout.addSpacing(12)
         self.content_layout.addWidget(self.footer_hint)
         self.content_layout.addStretch(1)
 
