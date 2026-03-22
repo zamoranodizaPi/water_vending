@@ -124,7 +124,7 @@ class ProductCard(QPushButton):
         self.price_blink_timer.timeout.connect(self._toggle_price_blink)
 
         body.addWidget(self.image, 1, Qt.AlignHCenter | Qt.AlignBottom)
-        body.addSpacing(10)
+        body.addSpacing(20)
         body.addWidget(self.name)
         body.addWidget(self.volume)
         body.addWidget(self.price)

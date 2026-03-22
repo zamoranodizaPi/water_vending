@@ -233,7 +233,7 @@ class MessageScreen(BrandedScreen):
     def set_message(self, text: str, gif_path=None, image_path=None, image_size=None, hide_header: bool = False):
         self._thank_you_mode = hide_header
         if hide_header:
-            self.animation.setFixedSize(750, 1100)
+            self.animation.setFixedSize(525, 770)
         else:
             width, height = image_size or (400, 400)
             self.animation.setFixedSize(width, height)
