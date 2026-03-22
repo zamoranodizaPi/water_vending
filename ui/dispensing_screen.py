@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QLabel, QProgressBar, QVBoxLayout, QWidget, QPushBut
 
 from theme import APP_FONT, PRIMARY, SURFACE, refresh_style
 
-HEADER_WIDTH = 1024
+HEADER_WIDTH = 1004
 HEADER_HEIGHT = 100
 
 
@@ -46,7 +46,7 @@ class DispensingScreen(QWidget):
         self.logo.setObjectName("logoLabel")
         self.logo.setGeometry(0, 0, HEADER_WIDTH, HEADER_HEIGHT)
         self.logo.setAlignment(Qt.AlignCenter)
-        pix = QPixmap(str(logo_path)).scaled(1024, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(logo_path)).scaled(1004, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setText("Lupita")
             self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:28px; font-weight:700; color:{SURFACE};")

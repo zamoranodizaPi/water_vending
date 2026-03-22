@@ -22,7 +22,7 @@ BADGE_WIDTH = 300
 BADGE_HEIGHT = 60
 BUTTON_WIDTH = 300
 BUTTON_HEIGHT = 60
-HEADER_WIDTH = 1024
+HEADER_WIDTH = 1004
 HEADER_HEIGHT = 100
 
 
@@ -232,7 +232,7 @@ class ProductScreen(QWidget):
         self.logo = QLabel(self.logo_box)
         self.logo.setObjectName("logoLabel")
         self.logo.setAlignment(Qt.AlignCenter)
-        pix = QPixmap(str(self.logo_path)).scaled(1024, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pix = QPixmap(str(self.logo_path)).scaled(1004, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         if pix.isNull():
             self.logo.setGeometry(0, 0, HEADER_WIDTH, HEADER_HEIGHT)
             self.logo.setText("Lupita")
