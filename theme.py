@@ -119,7 +119,7 @@ QLabel[role="warning"] {{
 }}
 
 QLabel[role="price"] {{
-    color: {ACCENT_PINK};
+    color: {TEXT_SECONDARY};
     font-weight: 700;
     font-size: 26px;
 }}
@@ -135,7 +135,7 @@ QFrame#card[selected="true"] QLabel[role="secondary"] {{
 }}
 
 QFrame#card[selected="true"] QLabel[role="price"] {{
-    color: {ACCENT_PINK};
+    color: {TEXT_SECONDARY};
 }}
 
 QFrame#card[selected="true"] QLabel[role="price"][blink="true"] {{
@@ -246,7 +246,7 @@ QProgressBar#processProgress {{
 }}
 
 QProgressBar#processProgress::chunk {{
-    background: {PRIMARY};
+    background: {ACCENT_PINK};
     border-radius: 12px;
 }}
 """
