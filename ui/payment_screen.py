@@ -173,6 +173,7 @@ class MessageScreen(BrandedScreen):
         self.setObjectName("messageScreen")
         self._movie = None
         self._image_pixmap = None
+        self._thank_you_mode = False
         self.message = QLabel("")
         self.animation = QLabel()
         self._build_ui()
@@ -185,9 +186,28 @@ class MessageScreen(BrandedScreen):
         self.animation.setFixedSize(400, 400)
         self.animation.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
-        self.content_layout.addWidget(self.message)
-        self.content_layout.addSpacing(12)
-        self.content_layout.addWidget(self.animation, 1, Qt.AlignCenter)
+        self._apply_layout_mode()
+
+    def _clear_content_layout(self):
+        while self.content_layout.count():
+            item = self.content_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(self.content)
+
+    def _apply_layout_mode(self):
+        self._clear_content_layout()
+        self.header_frame.setVisible(not self._thank_you_mode)
+        if self._thank_you_mode:
+            self.content_layout.addStretch(1)
+            self.content_layout.addWidget(self.animation, 0, Qt.AlignCenter)
+            self.content_layout.addSpacing(14)
+            self.content_layout.addWidget(self.message, 0, Qt.AlignCenter)
+            self.content_layout.addStretch(1)
+        else:
+            self.content_layout.addWidget(self.message)
+            self.content_layout.addSpacing(12)
+            self.content_layout.addWidget(self.animation, 1, Qt.AlignCenter)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -206,8 +226,16 @@ class MessageScreen(BrandedScreen):
             self._image_pixmap.scaled(target, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         )
 
-    def set_message(self, text: str, gif_path=None, image_path=None, image_size=None):
+    def set_message(self, text: str, gif_path=None, image_path=None, image_size=None, hide_header: bool = False):
+        self._thank_you_mode = hide_header
+        self.animation.setFixedSize(*(image_size or ((267, 400) if hide_header else (400, 400))))
+        self._apply_layout_mode()
         self.message.setText(text)
+        if hide_header:
+            self.message.setObjectName("bodyText")
+        else:
+            self.message.setObjectName("screenTitle")
+        refresh_style(self.message)
         self.animation.clear()
         self.animation.setMovie(None)
         self._movie = None

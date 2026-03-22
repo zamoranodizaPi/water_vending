@@ -595,7 +595,12 @@ class MainWindow(QMainWindow):
             self._show_thanks()
 
     def _show_thanks(self):
-        self.message_screen.set_message("Gracias por su Compra!!!", settings.THANKS_GIF)
+        self.message_screen.set_message(
+            "Gracias por su Compra!!!",
+            settings.THANKS_GIF,
+            image_size=(267, 400),
+            hide_header=True,
+        )
         self.stack.setCurrentWidget(self.message_screen)
         self.audio.play("thanks")
         QTimer.singleShot(3000, self._reset_to_home)
