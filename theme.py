@@ -143,8 +143,7 @@ QFrame#card[selected="true"] QLabel[role="price"][blink="true"] {{
 }}
 
 QFrame#card[affordable="false"] QLabel[role="name"],
-QFrame#card[affordable="false"] QLabel[role="secondary"],
-QFrame#card[affordable="false"] QLabel[role="price"] {{
+QFrame#card[affordable="false"] QLabel[role="secondary"] {{
     color: {TEXT_SECONDARY};
 }}
 
