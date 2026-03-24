@@ -3,27 +3,28 @@ from __future__ import annotations
 
 from PyQt5.QtGui import QColor
 
-APP_FONT = "'Roboto','Open Sans','DejaVu Sans'"
+APP_FONT = "'DejaVu Sans','Liberation Sans','Noto Sans','Sans Serif'"
 
-PRIMARY = "#2563EB"
-PRIMARY_HOVER = "#1D4ED8"
-PRIMARY_DARK = "#1E40AF"
-HEADER_BLUE = "#3B82F6"
+PRIMARY = "#ec4899"
+PRIMARY_HOVER = "#f43f5e"
+PRIMARY_DARK = "#db2777"
+ORANGE = "#ff6b35"
 
-ACCENT = "#FACC15"
-ACCENT_LIGHT = "#FFFBEB"
-ACCENT_ORANGE = "#F59E0B"
-ACCENT_PINK = "#E4007C"
+ACCENT = "#f43f5e"
+ACCENT_LIGHT = "#fff1f7"
+ACCENT_ORANGE = ORANGE
+ACCENT_PINK = PRIMARY
 
-BACKGROUND = "#F8FAFC"
-SURFACE = "#FFFFFF"
+BACKGROUND = "#f8fafc"
+SURFACE = "#ffffff"
 
 TEXT_PRIMARY = "#111827"
-TEXT_SECONDARY = "#6B7280"
+TEXT_SECONDARY = "#64748b"
+SECONDARY = TEXT_SECONDARY
 
-BORDER = "#E5E7EB"
-ERROR = "#DC2626"
-ERROR_BG = "#FEE2E2"
+BORDER = "#e2e8f0"
+ERROR = "#dc2626"
+ERROR_BG = "#fee2e2"
 CREDIT_BG = PRIMARY
 
 
@@ -48,8 +49,24 @@ QFrame#header {{
     background-color: {SURFACE};
 }}
 
+QFrame#modernHeader {{
+    border-radius: 18px;
+    background:qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 {PRIMARY},
+        stop:0.55 {PRIMARY_HOVER},
+        stop:1 {ORANGE}
+    );
+}}
+
+QLabel#headerIcon {{
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 16px;
+}}
+
 QFrame#logoBox {{
-    background-color: {HEADER_BLUE};
+    background-color: {PRIMARY_HOVER};
     border-radius: 12px;
 }}
 
@@ -60,6 +77,16 @@ QFrame#credit {{
 
 QFrame#credit[flash="true"] {{
     background-color: {PRIMARY};
+}}
+
+QFrame#creditPill {{
+    background-color: rgba(255, 255, 255, 0.92);
+    border-radius: 18px;
+}}
+
+QFrame#creditPill[flash="true"] {{
+    background-color: #fff7ed;
+    border: 2px solid {ORANGE};
 }}
 
 QFrame#actionBox {{
@@ -80,29 +107,43 @@ QFrame#contentPanel[thankyou="true"] {{
     border-radius: 0px;
 }}
 
-QFrame#card {{
+QFrame#card,
+QFrame#productCard {{
     background-color: {SURFACE};
-    border-radius: 26px;
-    border: 2px solid {TEXT_SECONDARY};
+    border-radius: 18px;
+    border: 1px solid {BORDER};
 }}
 
-QFrame#card[selected="true"] {{
-    border: 3px solid {ACCENT};
+QFrame#productCard[selected="true"] {{
+    border: 2px solid {PRIMARY};
     background-color: {ACCENT_LIGHT};
 }}
 
-QFrame#card[hovered="true"] {{
-    border: 2px solid {PRIMARY_HOVER};
+QFrame#productCard[affordable="false"] {{
+    background-color: #f8fafc;
+    border: 1px solid #dbe3ef;
 }}
 
-QFrame#card[affordable="false"] {{
-    border: 2px solid {BORDER};
-    background-color: {SURFACE};
+QFrame#productCard[attention="true"] {{
+    border: 2px solid {ORANGE};
 }}
 
-QFrame#card[attention="true"] {{
-    border: 3px solid {ACCENT};
-    background-color: {ACCENT_LIGHT};
+QFrame#productCard[selectedScale="true"] {{
+    margin-top: -4px;
+    margin-bottom: 4px;
+}}
+
+QFrame#cardAccentBar {{
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+    background:qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 {PRIMARY},
+        stop:0.55 {PRIMARY_HOVER},
+        stop:1 {ORANGE}
+    );
 }}
 
 QLabel {{
@@ -181,16 +222,17 @@ QLabel#alertLabel {{
     border-radius: 10px;
     font-size: 13px;
     font-weight: 600;
+    padding: 6px 10px;
 }}
 
 QLabel#creditText {{
-    color: {SURFACE};
-    font-size: 18px;
+    color: {TEXT_PRIMARY};
+    font-size: 15px;
     font-weight: 700;
 }}
 
-QLabel#creditText[role="warning"] {{
-    color: {ACCENT};
+QLabel#creditText[warning="true"] {{
+    color: {ERROR};
 }}
 
 QPushButton[variant="primary"] {{
@@ -237,7 +279,7 @@ QPushButton[variant="secondary"]:pressed {{
 QProgressBar#processProgress {{
     font-size: 22px;
     font-weight: 700;
-    border: 3px solid {PRIMARY};
+    border: 2px solid {PRIMARY};
     border-radius: 16px;
     text-align: center;
     background: {SURFACE};
@@ -247,6 +289,59 @@ QProgressBar#processProgress {{
 QProgressBar#processProgress::chunk {{
     background: {ACCENT_PINK};
     border-radius: 12px;
+}}
+
+QPushButton#confirmButton {{
+    min-height: 45px;
+    color: {SURFACE};
+    border: none;
+    border-radius: 12px;
+    padding: 0 20px;
+    font-size: 17px;
+    font-weight: 700;
+    background:qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 {PRIMARY},
+        stop:1 {PRIMARY_HOVER}
+    );
+}}
+
+QPushButton#confirmButton:hover {{
+    background:qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 {PRIMARY_HOVER},
+        stop:1 {ORANGE}
+    );
+}}
+
+QPushButton#confirmButton:pressed {{
+    background:qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 {PRIMARY_DARK},
+        stop:1 {PRIMARY_HOVER}
+    );
+    padding-top: 2px;
+}}
+
+QPushButton#confirmButton:disabled {{
+    background: #cbd5e1;
+    color: #94a3b8;
+}}
+
+QFrame#instructionsPanel {{
+    background-color: #f1f5f9;
+    border: 1px solid {BORDER};
+    border-radius: 18px;
+}}
+
+QFrame#instructionStep {{
+    background: transparent;
+}}
+
+QLabel#heroImage {{
+    background-color: #fff7fb;
+    border: 1px solid #fbcfe8;
+    border-radius: 18px;
 }}
 """
 

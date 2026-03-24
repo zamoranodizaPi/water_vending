@@ -1,14 +1,15 @@
 """Progress screen used for rinse and filling operations."""
 from __future__ import annotations
 
-from PyQt5.QtCore import QTimer, pyqtSignal, Qt
+from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QMovie, QPixmap
-from PyQt5.QtWidgets import QLabel, QProgressBar, QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QSizePolicy, QFrame
+from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QProgressBar, QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
-from theme import APP_FONT, SURFACE, refresh_style
+from theme import APP_FONT, SECONDARY, SURFACE, refresh_style
 
-HEADER_WIDTH = 1004
-HEADER_HEIGHT = 100
+HEADER_HEIGHT = 90
+TITLE_TEXT = "Agua Purificada Lupita"
+SUBTITLE_TEXT = "Proceso en curso"
 
 
 class DispensingScreen(QWidget):
@@ -27,45 +28,62 @@ class DispensingScreen(QWidget):
         self._movie = None
         self._image_pixmap = None
         self._image_offset_y = 0
-        self._build_ui(logo_path)
+        self._build_ui()
 
-    def _build_ui(self, logo_path):
+    def _build_ui(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(10, 5, 10, 16)
-        root.setSpacing(0)
+        root.setContentsMargins(12, 10, 12, 10)
+        root.setSpacing(10)
 
         self.header_container = QFrame()
-        self.header_container.setObjectName("header")
-        self.header_container.setFixedSize(HEADER_WIDTH, HEADER_HEIGHT)
+        self.header_container.setObjectName("modernHeader")
+        self.header_container.setFixedHeight(HEADER_HEIGHT)
         header = QHBoxLayout(self.header_container)
-        header.setContentsMargins(0, 0, 0, 0)
-        header.setSpacing(0)
+        header.setContentsMargins(16, 10, 16, 10)
+        header.setSpacing(14)
 
-        self.logo_box = QFrame()
-        self.logo_box.setObjectName("logoBox")
-        self.logo_box.setFixedSize(HEADER_WIDTH, HEADER_HEIGHT)
-        self.logo = QLabel(self.logo_box)
-        self.logo.setObjectName("logoLabel")
-        self.logo.setGeometry(0, 0, HEADER_WIDTH, HEADER_HEIGHT)
-        self.logo.setAlignment(Qt.AlignCenter)
-        pix = QPixmap(str(logo_path)).scaled(1004, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        header_icon = QLabel()
+        header_icon.setObjectName("headerIcon")
+        header_icon.setAlignment(Qt.AlignCenter)
+        header_icon.setFixedSize(54, 54)
+        pix = QPixmap(str(self.logo_path))
         if pix.isNull():
-            self.logo.setText("Lupita")
-            self.logo.setStyleSheet(f"font-family:{APP_FONT}; font-size:28px; font-weight:700; color:{SURFACE};")
+            header_icon.setText("L")
+            header_icon.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};")
         else:
-            self.logo.setPixmap(pix)
-        header.addWidget(self.logo_box, 0, Qt.AlignCenter)
+            header_icon.setPixmap(pix.scaled(42, 42, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        header.addWidget(header_icon, 0, Qt.AlignVCenter)
+
+        text_col = QVBoxLayout()
+        text_col.setContentsMargins(0, 0, 0, 0)
+        text_col.setSpacing(2)
+        title = QLabel(TITLE_TEXT)
+        title.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};")
+        subtitle = QLabel(SUBTITLE_TEXT)
+        subtitle.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:12px; font-weight:500; color:rgba(255,255,255,0.88);"
+        )
+        text_col.addWidget(title)
+        text_col.addWidget(subtitle)
+        header.addLayout(text_col, 1)
         root.addWidget(self.header_container)
 
         content = QFrame()
         content.setObjectName("contentPanel")
         content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(18, 12, 18, 12)
+        content_layout.setContentsMargins(20, 16, 20, 16)
         content_layout.setSpacing(0)
 
         self.title = QLabel("Proceso")
         self.title.setObjectName("screenTitle")
         self.title.setAlignment(Qt.AlignCenter)
+
+        self.status_hint = QLabel("Mantenga el recipiente en posición y espere a que termine.")
+        self.status_hint.setAlignment(Qt.AlignCenter)
+        self.status_hint.setWordWrap(True)
+        self.status_hint.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:16px; font-weight:600; color:{SECONDARY};"
+        )
 
         self.animation_wrap = QWidget()
         self.animation_wrap_layout = QVBoxLayout(self.animation_wrap)
@@ -73,8 +91,9 @@ class DispensingScreen(QWidget):
         self.animation_wrap_layout.setSpacing(0)
 
         self.animation = QLabel()
+        self.animation.setObjectName("heroImage")
         self.animation.setAlignment(Qt.AlignCenter)
-        self.animation.setFixedSize(400, 400)
+        self.animation.setFixedSize(360, 320)
         self.animation.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.animation_wrap_layout.addWidget(self.animation, 0, Qt.AlignHCenter)
 
@@ -82,13 +101,13 @@ class DispensingScreen(QWidget):
         self.progress.setObjectName("processProgress")
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
-        self.progress.setFixedHeight(56)
-        self.progress.setFixedWidth(430)
+        self.progress.setFixedHeight(52)
+        self.progress.setFixedWidth(460)
         self.progress.setStyleSheet(f"QProgressBar{{font-family:{APP_FONT};}}")
 
         self.emergency_btn = QPushButton("Detener")
         self.emergency_btn.setProperty("variant", "secondary")
-        self.emergency_btn.setMinimumHeight(56)
+        self.emergency_btn.setMinimumHeight(52)
         self.emergency_btn.setMinimumWidth(240)
         self.emergency_btn.setMaximumWidth(320)
         self.emergency_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -97,13 +116,15 @@ class DispensingScreen(QWidget):
         self.emergency_btn.setVisible(False)
 
         content_layout.addWidget(self.title)
-        content_layout.addSpacing(12)
+        content_layout.addSpacing(8)
+        content_layout.addWidget(self.status_hint)
+        content_layout.addSpacing(8)
         content_layout.addWidget(self.animation_wrap, 1)
-        content_layout.addSpacing(30)
+        content_layout.addSpacing(20)
         content_layout.addWidget(self.progress, alignment=Qt.AlignCenter)
-        content_layout.addSpacing(10)
+        content_layout.addSpacing(12)
         content_layout.addWidget(self.emergency_btn, alignment=Qt.AlignCenter)
-        root.addWidget(content)
+        root.addWidget(content, 1)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -118,12 +139,10 @@ class DispensingScreen(QWidget):
         target = self.animation.size()
         if target.width() <= 0 or target.height() <= 0:
             return
-        self.animation.setPixmap(
-            self._image_pixmap.scaled(target, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        )
+        self.animation.setPixmap(self._image_pixmap.scaled(target, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
     def _set_animation_slot(self, image_size=None, offset_y: int = 0):
-        width, height = image_size or (400, 400)
+        width, height = image_size or (360, 320)
         self.animation.setFixedSize(width, height)
         self._image_offset_y = offset_y
         top_margin = max(0, offset_y)
