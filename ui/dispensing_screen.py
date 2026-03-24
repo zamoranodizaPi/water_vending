@@ -115,6 +115,11 @@ class DispensingScreen(QWidget):
         self.emergency_btn.setStyleSheet(f"QPushButton{{font-family:{APP_FONT}; font-size:22px;}}")
         self.emergency_btn.clicked.connect(self.emergency_pressed.emit)
         self.emergency_btn.setVisible(False)
+        bottom_row = QHBoxLayout()
+        bottom_row.setContentsMargins(0, 0, 0, 0)
+        bottom_row.setSpacing(12)
+        bottom_row.addWidget(self.progress, 1, Qt.AlignVCenter)
+        bottom_row.addWidget(self.emergency_btn, 0, Qt.AlignRight | Qt.AlignVCenter)
 
         content_layout.addWidget(self.title)
         content_layout.addSpacing(8)
@@ -124,9 +129,7 @@ class DispensingScreen(QWidget):
         content_layout.addWidget(self.animation_wrap, 0, Qt.AlignCenter)
         content_layout.addStretch(1)
         content_layout.addSpacing(30)
-        content_layout.addWidget(self.progress, alignment=Qt.AlignCenter)
-        content_layout.addSpacing(12)
-        content_layout.addWidget(self.emergency_btn, alignment=Qt.AlignCenter)
+        content_layout.addLayout(bottom_row)
         root.addWidget(content, 1)
 
     def resizeEvent(self, event):

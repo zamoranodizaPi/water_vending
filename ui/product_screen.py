@@ -1,7 +1,7 @@
 """Modern touch-friendly product selection screen for a 1024x600 kiosk."""
 from __future__ import annotations
 
-from PyQt5.QtCore import QTimer, QRect, Qt, pyqtSignal
+from PyQt5.QtCore import QTimer, QRect, Qt, pyqtProperty, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
     QFrame,
@@ -247,34 +247,67 @@ class InstructionStep(QFrame):
     def __init__(self, number: int, text: str):
         super().__init__()
         self.setObjectName("instructionStep")
+        self._scale = 1.0
+        self._base_bubble_size = 36
+        self._base_bubble_radius = 18
+        self._base_bubble_font = 18
+        self._base_label_font = 13
+        self._pulse_timer = QTimer(self)
+        self._pulse_timer.setInterval(240)
+        self._pulse_timer.timeout.connect(self._toggle_pulse)
+        self._pulse_grow = False
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
 
-        bubble = QLabel(str(number))
-        bubble.setAlignment(Qt.AlignCenter)
-        bubble.setFixedSize(36, 36)
-        bubble.setStyleSheet(
+        self.bubble = QLabel(str(number))
+        self.bubble.setAlignment(Qt.AlignCenter)
+        self.label = QLabel(text)
+        self.label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.label.setWordWrap(True)
+
+        layout.addWidget(self.bubble, 0, Qt.AlignVCenter)
+        layout.addWidget(self.label, 1)
+        self._apply_scale()
+
+    def _apply_scale(self):
+        bubble_size = int(self._base_bubble_size * self._scale)
+        radius = int(self._base_bubble_radius * self._scale)
+        bubble_font = int(self._base_bubble_font * self._scale)
+        label_font = int(self._base_label_font * self._scale)
+        self.bubble.setFixedSize(bubble_size, bubble_size)
+        self.bubble.setStyleSheet(
             f"""
             background-color:{SURFACE};
             color:{PRIMARY};
             border:2px solid {PRIMARY};
-            border-radius:18px;
+            border-radius:{radius}px;
             font-family:{APP_FONT};
-            font-size:18px;
+            font-size:{bubble_font}px;
             font-weight:700;
             """
         )
-        label = QLabel(text)
-        label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-        label.setWordWrap(True)
-        label.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:13px; font-weight:600; color:{SECONDARY};"
+        self.label.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:{label_font}px; font-weight:600; color:{SECONDARY};"
         )
 
-        layout.addWidget(bubble, 0, Qt.AlignVCenter)
-        layout.addWidget(label, 1)
+    def _toggle_pulse(self):
+        self._pulse_grow = not self._pulse_grow
+        self._scale = 1.1 if self._pulse_grow else 1.0
+        self._apply_scale()
+
+    def set_active(self, active: bool):
+        if active:
+            if not self._pulse_timer.isActive():
+                self._pulse_grow = False
+                self._pulse_timer.start()
+                self._toggle_pulse()
+            return
+        self._pulse_timer.stop()
+        self._scale = 1.0
+        self._pulse_grow = False
+        self._apply_scale()
 
 
 class ProductScreen(QWidget):
@@ -292,6 +325,7 @@ class ProductScreen(QWidget):
         self.logo_path = logo_path
         self.coin_image_path = coin_image_path
         self.cards = {}
+        self.steps = []
         self._rinse_locked = False
         self._ok_base_text = "Continuar"
         self._build_ui()
@@ -430,7 +464,9 @@ class ProductScreen(QWidget):
             "Presione OK",
         ]
         for index, text in enumerate(steps, start=1):
-            steps_row.addWidget(InstructionStep(index, text), 1)
+            step_widget = InstructionStep(index, text)
+            self.steps.append(step_widget)
+            steps_row.addWidget(step_widget, 1)
         instructions_layout.addLayout(steps_row)
 
         root.addWidget(self.instructions_frame)
@@ -505,6 +541,10 @@ class ProductScreen(QWidget):
             self.ok_btn.setText(self._ok_base_text)
             return
         self.ok_btn.setText(f"{self._ok_base_text} ({seconds}s)")
+
+    def set_instruction_focus(self, step_number: int | None):
+        for index, step in enumerate(self.steps, start=1):
+            step.set_active(index == step_number)
 
     def pulse_credit_attention(self):
         state = {"step": 0}

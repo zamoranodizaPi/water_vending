@@ -250,6 +250,19 @@ class MainWindow(QMainWindow):
             self.credit,
             self.current_product["id"] if self.current_product else None,
         )
+        self._update_instruction_focus()
+
+    def _update_instruction_focus(self):
+        if self.stack.currentWidget() != self.product_screen:
+            self.product_screen.set_instruction_focus(None)
+            return
+        if self.credit > 0 and self.current_product is None:
+            self.product_screen.set_instruction_focus(1)
+            return
+        if self.current_product is not None and self.credit < self.current_product["price"]:
+            self.product_screen.set_instruction_focus(2)
+            return
+        self.product_screen.set_instruction_focus(None)
 
     def _show_credit_insufficient(self):
         self.audio.play("credit_insufficient")
