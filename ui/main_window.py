@@ -583,6 +583,12 @@ class MainWindow(QMainWindow):
             return
         if self.stack.currentWidget() == self.message_screen:
             return
+        if (
+            self.stack.currentWidget() == self.product_screen
+            and self.flow_step is None
+            and self.current_product is None
+        ):
+            return
         if self.flow_step == "filling":
             self._on_emergency_stop()
             return
