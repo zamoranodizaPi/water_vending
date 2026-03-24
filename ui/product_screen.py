@@ -20,6 +20,8 @@ HEADER_HEIGHT = 90
 CARD_HEIGHT = 280
 CARD_MIN_WIDTH = 300
 INSTRUCTIONS_HEIGHT = 120
+CARD_SELECTED_SCALE = 1.1
+CARD_REDUCED_SCALE = 0.9
 
 TITLE_TEXT = "Agua Purificada Lupita"
 
@@ -50,6 +52,8 @@ class ProductCard(QFrame):
         self.product = product
         self._affordable = True
         self._selected = False
+        self._base_min_width = CARD_MIN_WIDTH
+        self._base_height = CARD_HEIGHT
         self._build_ui()
         self._apply_state()
 
@@ -76,13 +80,13 @@ class ProductCard(QFrame):
         root.addWidget(self.accent_bar)
 
         body = QVBoxLayout()
-        body.setContentsMargins(14, 10, 14, 14)
-        body.setSpacing(6)
+        body.setContentsMargins(10, 8, 10, 12)
+        body.setSpacing(4)
         root.addLayout(body, 1)
 
         self.icon = QLabel()
         self.icon.setAlignment(Qt.AlignCenter)
-        self.icon.setFixedHeight(132)
+        self.icon.setFixedHeight(178)
         pixmap = QPixmap(str(self.product["image"]))
         if pixmap.isNull():
             self.icon.setText("Agua")
@@ -90,17 +94,9 @@ class ProductCard(QFrame):
                 f"font-family:{APP_FONT}; font-size:22px; font-weight:700; color:{PRIMARY};"
             )
         else:
-            scaled = pixmap.scaled(156, 132, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            scaled = pixmap.scaled(220, 178, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.icon.setPixmap(scaled)
         body.addWidget(self.icon, 1, Qt.AlignCenter)
-
-        self.name = QLabel(self.product["name"])
-        self.name.setAlignment(Qt.AlignCenter)
-        self.name.setWordWrap(True)
-        self.name.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:20px; font-weight:700; color:{TEXT_PRIMARY};"
-        )
-        body.addWidget(self.name)
 
         self.price = QLabel(f"${self.product['price']:.0f}")
         self.price.setAlignment(Qt.AlignCenter)
@@ -184,6 +180,11 @@ class ProductCard(QFrame):
         return True
 
     def set_visual_scale(self, scale: float):
+        width = int(self._base_min_width * scale)
+        height = int(self._base_height * scale)
+        self.setMinimumWidth(width)
+        self.setMaximumWidth(width)
+        self.setFixedHeight(height)
         if scale >= 1.05:
             self.setProperty("selectedScale", True)
         else:
@@ -294,12 +295,12 @@ class ProductScreen(QWidget):
         icon_box = QLabel()
         icon_box.setObjectName("headerIcon")
         icon_box.setAlignment(Qt.AlignCenter)
-        icon_box.setFixedSize(64, 64)
+        icon_box.setFixedSize(74, 74)
         logo = QPixmap(str(self.logo_path))
         if logo.isNull():
             icon_box.setText("L")
         else:
-            icon_box.setPixmap(logo.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon_box.setPixmap(logo.scaled(74, 74, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         header_layout.addWidget(icon_box, 0, Qt.AlignVCenter)
 
         title_col = QVBoxLayout()
@@ -446,7 +447,12 @@ class ProductScreen(QWidget):
         for pid, card in self.cards.items():
             selected = pid == product_id
             card.setChecked(selected)
-            card.set_visual_scale(1.08 if selected and has_selection else 1.0)
+            if not has_selection:
+                card.set_visual_scale(1.0)
+            elif selected:
+                card.set_visual_scale(CARD_SELECTED_SCALE)
+            else:
+                card.set_visual_scale(CARD_REDUCED_SCALE)
 
     def set_product_enabled(self, product_id: str, enabled: bool):
         self.cards[product_id].setEnabled(enabled)
