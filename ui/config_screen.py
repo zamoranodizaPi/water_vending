@@ -65,7 +65,7 @@ class ConfigHoldScreen(ConfigBaseScreen):
         self.title.setObjectName("screenTitle")
         self.title.setAlignment(Qt.AlignCenter)
 
-        self.help_text = QLabel("Mantenga OK y Garrafón presionados durante 10 segundos")
+        self.help_text = QLabel("Mantenga OK y Cancelar presionados durante 10 segundos")
         self.help_text.setAlignment(Qt.AlignCenter)
         self.help_text.setWordWrap(True)
         self.help_text.setStyleSheet(

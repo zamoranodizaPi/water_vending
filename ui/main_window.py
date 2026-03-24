@@ -212,8 +212,8 @@ class MainWindow(QMainWindow):
         if self._in_config_flow():
             return
         ok_pressed = bool(getattr(self.ok_input, "is_pressed", False))
-        full_pressed = bool(getattr(self.select_full, "is_pressed", False))
-        if self._can_enter_config_mode() and ok_pressed and full_pressed:
+        cancel_pressed = bool(getattr(self.emergency_input, "is_pressed", False))
+        if self._can_enter_config_mode() and ok_pressed and cancel_pressed:
             self._config_hold_elapsed_ms += self._config_hold_timer.interval()
             self.config_hold_screen.set_progress(int((self._config_hold_elapsed_ms / 10000) * 100))
             if self.stack.currentWidget() != self.config_hold_screen:
