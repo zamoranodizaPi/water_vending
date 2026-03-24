@@ -1,4 +1,4 @@
-"""Coin acceptor handler built on pigpio falling-edge callbacks."""
+"""Coin acceptor handler built on pigpio edge callbacks."""
 from __future__ import annotations
 
 import logging
@@ -32,6 +32,7 @@ class CoinAcceptor(QObject):
         self.flush_window_s = flush_window_s
         self.min_pulse_us = min_pulse_us
         self._last_tick = 0
+        self._pulse_start_tick = 0
         self._last_pulse_at = 0.0
         self._pending_pulses = 0
         self._pi = None
@@ -55,14 +56,24 @@ class CoinAcceptor(QObject):
             return
         self._pi.set_mode(self.pin, pigpio.INPUT)
         self._pi.set_pull_up_down(self.pin, pigpio.PUD_UP)
-        self._callback = self._pi.callback(self.pin, pigpio.FALLING_EDGE, self._pulse_callback)
+        self._callback = self._pi.callback(self.pin, pigpio.EITHER_EDGE, self._pulse_callback)
 
     def _pulse_callback(self, gpio: int, level: int, tick: int):
+        if level == 1:
+            if self._pulse_start_tick != 0:
+                width_us = pigpio.tickDiff(self._pulse_start_tick, tick)
+                print(f"Pulso GPIO{gpio}: ancho={width_us}us")
+                self._pulse_start_tick = 0
+            return
         if level != 0:
             return
+
+        self._pulse_start_tick = tick
         if self._last_tick != 0:
             delta = pigpio.tickDiff(self._last_tick, tick)
+            print(f"Pulso GPIO{gpio}: intervalo={delta}us")
             if delta < self.min_pulse_us:
+                print(f"Pulso GPIO{gpio} ignorado por intervalo corto: {delta}us")
                 return
         self._last_tick = tick
         self._pending_pulses += 1
