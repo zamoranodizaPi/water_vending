@@ -32,16 +32,6 @@ CARD_MIN_WIDTH = 300
 INSTRUCTIONS_HEIGHT = 120
 
 TITLE_TEXT = "Agua Purificada Lupita"
-SUBTITLE_TEXT = "Seleccione su presentación y continúe con el pago"
-
-
-def product_description(product: dict) -> str:
-    descriptions = {
-        "full_garrafon": "Recarga completa ideal para uso diario en casa o negocio.",
-        "half_garrafon": "Opción intermedia para recarga rápida con menor volumen.",
-        "gallon": "Presentación compacta y práctica para consumo individual.",
-    }
-    return descriptions.get(product["id"], f"{product['volume_l']} litros de agua purificada.")
 
 
 class TopLeftHotspot(QWidget):
@@ -96,13 +86,13 @@ class ProductCard(QFrame):
         root.addWidget(self.accent_bar)
 
         body = QVBoxLayout()
-        body.setContentsMargins(18, 14, 18, 16)
+        body.setContentsMargins(14, 10, 14, 14)
         body.setSpacing(6)
         root.addLayout(body, 1)
 
         self.icon = QLabel()
         self.icon.setAlignment(Qt.AlignCenter)
-        self.icon.setFixedHeight(82)
+        self.icon.setFixedHeight(132)
         pixmap = QPixmap(str(self.product["image"]))
         if pixmap.isNull():
             self.icon.setText("Agua")
@@ -110,9 +100,9 @@ class ProductCard(QFrame):
                 f"font-family:{APP_FONT}; font-size:22px; font-weight:700; color:{PRIMARY};"
             )
         else:
-            scaled = pixmap.scaled(76, 76, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            scaled = pixmap.scaled(156, 132, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.icon.setPixmap(scaled)
-        body.addWidget(self.icon, 0, Qt.AlignCenter)
+        body.addWidget(self.icon, 1, Qt.AlignCenter)
 
         self.name = QLabel(self.product["name"])
         self.name.setAlignment(Qt.AlignCenter)
@@ -122,14 +112,6 @@ class ProductCard(QFrame):
         )
         body.addWidget(self.name)
 
-        self.description = QLabel(product_description(self.product))
-        self.description.setAlignment(Qt.AlignCenter)
-        self.description.setWordWrap(True)
-        self.description.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:12px; font-weight:500; color:{SECONDARY};"
-        )
-        body.addWidget(self.description)
-
         self.price = QLabel(f"${self.product['price']:.0f}")
         self.price.setAlignment(Qt.AlignCenter)
         self.price.setStyleSheet(
@@ -137,7 +119,7 @@ class ProductCard(QFrame):
         )
         body.addWidget(self.price)
 
-        self.buy_button = QPushButton("Comprar")
+        self.buy_button = QPushButton(self.product["name"])
         self.buy_button.setObjectName("buyButton")
         self.buy_button.setCursor(Qt.PointingHandCursor)
         self.buy_button.setMinimumHeight(46)
@@ -145,7 +127,7 @@ class ProductCard(QFrame):
             f"""
             QPushButton#buyButton {{
                 font-family:{APP_FONT};
-                font-size:17px;
+                font-size:19px;
                 font-weight:700;
                 color:{SURFACE};
                 border:none;
@@ -254,33 +236,33 @@ class InstructionStep(QFrame):
         super().__init__()
         self.setObjectName("instructionStep")
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(6, 8, 6, 8)
-        layout.setSpacing(6)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(8)
 
         bubble = QLabel(str(number))
         bubble.setAlignment(Qt.AlignCenter)
-        bubble.setFixedSize(34, 34)
+        bubble.setFixedSize(36, 36)
         bubble.setStyleSheet(
             f"""
             background-color:{SURFACE};
             color:{PRIMARY};
             border:2px solid {PRIMARY};
-            border-radius:17px;
+            border-radius:18px;
             font-family:{APP_FONT};
-            font-size:16px;
+            font-size:18px;
             font-weight:700;
             """
         )
         label = QLabel(text)
-        label.setAlignment(Qt.AlignCenter)
+        label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         label.setWordWrap(True)
         label.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:11px; font-weight:600; color:{SECONDARY};"
+            f"font-family:{APP_FONT}; font-size:13px; font-weight:600; color:{SECONDARY};"
         )
 
-        layout.addWidget(bubble, 0, Qt.AlignCenter)
-        layout.addWidget(label)
+        layout.addWidget(bubble, 0, Qt.AlignVCenter)
+        layout.addWidget(label, 1)
 
 
 class ProductScreen(QWidget):
@@ -332,19 +314,14 @@ class ProductScreen(QWidget):
 
         title_col = QVBoxLayout()
         title_col.setContentsMargins(0, 0, 0, 0)
-        title_col.setSpacing(2)
+        title_col.setSpacing(0)
+        title_col.addStretch(1)
         title = QLabel(TITLE_TEXT)
         title.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};"
-        )
-        subtitle = QLabel(SUBTITLE_TEXT)
-        subtitle.setStyleSheet(
-            "font-family:{font}; font-size:12px; font-weight:500; color:rgba(255,255,255,0.88);".format(
-                font=APP_FONT
-            )
+            f"font-family:{APP_FONT}; font-size:25px; font-weight:800; color:{SURFACE};"
         )
         title_col.addWidget(title)
-        title_col.addWidget(subtitle)
+        title_col.addStretch(1)
         header_layout.addLayout(title_col, 1)
 
         self.credit_box = ClickableFrame()
@@ -428,7 +405,7 @@ class ProductScreen(QWidget):
 
         instructions_title = QLabel("Instrucciones de uso")
         instructions_title.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:18px; font-weight:800; color:{TEXT_PRIMARY};"
+            f"font-family:{APP_FONT}; font-size:20px; font-weight:800; color:{TEXT_PRIMARY};"
         )
         instructions_layout.addWidget(instructions_title)
 
