@@ -68,7 +68,7 @@ UPRIGHT_IMAGE = ASSETS_DIR / "garrafonbocaarriba.png"
 FILLING_GIF = ASSETS_DIR / "garrafonllenando.gif"
 RINSING_GIF = ASSETS_DIR / "garrafonenjuagando.gif"
 CHANGE_GIF = ASSETS_DIR / "recojasucambio.gif"
-THANKS_GIF = ASSETS_DIR / "agradecimiento.gif"
+THANKS_GIF = ASSETS_DIR / "agradecimiento.png"
 
 AUDIO_FILES = {
     "welcome": AUDIO_DIR / "01_bienvenida.wav",
