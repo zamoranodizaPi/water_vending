@@ -14,17 +14,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from theme import (
-    APP_FONT,
-    ORANGE,
-    PRIMARY,
-    PRIMARY_HOVER,
-    SECONDARY,
-    SURFACE,
-    TEXT_PRIMARY,
-    color_with_alpha,
-    refresh_style,
-)
+from theme import APP_FONT, ORANGE, PRIMARY, PRIMARY_HOVER, SECONDARY, SURFACE, TEXT_PRIMARY, color_with_alpha, refresh_style
 
 HEADER_HEIGHT = 90
 CARD_HEIGHT = 280
@@ -186,12 +176,12 @@ class ProductCard(QFrame):
         self.set_affordable(enabled)
 
     def set_affordable(self, affordable: bool):
-        self._affordable = affordable
-        self.buy_button.setEnabled(affordable)
+        self._affordable = True
+        self.buy_button.setEnabled(True)
         self._apply_state()
 
     def is_affordable(self) -> bool:
-        return self._affordable
+        return True
 
     def set_visual_scale(self, scale: float):
         if scale >= 1.05:
@@ -294,22 +284,22 @@ class ProductScreen(QWidget):
         self.header_frame.setFixedHeight(HEADER_HEIGHT)
         header_layout = QHBoxLayout(self.header_frame)
         header_layout.setContentsMargins(16, 10, 16, 10)
-        header_layout.setSpacing(14)
+        header_layout.setSpacing(0)
 
         self.service_hotspot = TopLeftHotspot()
-        self.service_hotspot.setFixedWidth(20)
+        self.service_hotspot.setFixedWidth(5)
         self.service_hotspot.pressed.connect(self.top_left_corner_pressed.emit)
         header_layout.addWidget(self.service_hotspot, 0)
 
         icon_box = QLabel()
         icon_box.setObjectName("headerIcon")
         icon_box.setAlignment(Qt.AlignCenter)
-        icon_box.setFixedSize(54, 54)
+        icon_box.setFixedSize(64, 64)
         logo = QPixmap(str(self.logo_path))
         if logo.isNull():
             icon_box.setText("L")
         else:
-            icon_box.setPixmap(logo.scaled(42, 42, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon_box.setPixmap(logo.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         header_layout.addWidget(icon_box, 0, Qt.AlignVCenter)
 
         title_col = QVBoxLayout()
