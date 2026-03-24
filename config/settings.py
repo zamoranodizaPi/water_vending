@@ -61,7 +61,7 @@ PRODUCTS = [
     },
 ]
 
-LOGO_IMAGE = ASSETS_DIR / "logo_6.png"
+LOGO_IMAGE = ASSETS_DIR / "logo.png"
 COIN_IMAGE = ASSETS_DIR / "coins.png"
 UPSIDE_DOWN_IMAGE = ASSETS_DIR / "garrafonbocaabajo.png"
 UPRIGHT_IMAGE = ASSETS_DIR / "garrafonbocaarriba.png"
