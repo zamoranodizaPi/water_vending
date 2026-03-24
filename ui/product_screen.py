@@ -53,6 +53,7 @@ class ProductCard(QFrame):
         self._affordable = True
         self._selected = False
         self._has_active_selection = False
+        self._interactive = True
         self._base_min_width = CARD_MIN_WIDTH
         self._base_height = CARD_HEIGHT
         self._build_ui()
@@ -165,7 +166,7 @@ class ProductCard(QFrame):
         self.clicked.emit()
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton and self.isEnabled():
+        if event.button() == Qt.LeftButton and self._interactive:
             self.clicked.emit()
         super().mousePressEvent(event)
 
@@ -183,12 +184,13 @@ class ProductCard(QFrame):
         self._apply_state()
 
     def setEnabled(self, enabled: bool):
+        self._interactive = enabled
         super().setEnabled(True)
-        self.set_affordable(enabled)
+        self.buy_button.setEnabled(enabled)
+        self._apply_state()
 
     def set_affordable(self, affordable: bool):
         self._affordable = True
-        self.buy_button.setEnabled(True)
         self._apply_state()
 
     def is_affordable(self) -> bool:
@@ -228,6 +230,7 @@ class ProductCard(QFrame):
         show_corner_price = self._has_active_selection and not self._selected
         self.price.setVisible(not show_corner_price)
         self.price_corner.setVisible(show_corner_price)
+        self.setWindowOpacity(1.0 if self._interactive else 0.72)
         refresh_style(self)
         if self._selected:
             self._shadow.setBlurRadius(22)
@@ -465,14 +468,17 @@ class ProductScreen(QWidget):
             selected = pid == product_id
             card.set_selection_state(selected, has_selection)
             if not has_selection:
+                card.setEnabled(True)
                 card.set_visual_scale(1.0)
             elif selected:
+                card.setEnabled(True)
                 card.set_visual_scale(CARD_SELECTED_SCALE)
             else:
-                card.set_visual_scale(CARD_REDUCED_SCALE)
+                card.setEnabled(False)
+                card.set_visual_scale(1.0)
 
     def set_product_enabled(self, product_id: str, enabled: bool):
-        self.cards[product_id].setEnabled(enabled)
+        self.cards[product_id].set_affordable(enabled)
 
     def set_ok_enabled(self, enabled: bool):
         self.ok_btn.setEnabled(enabled)
