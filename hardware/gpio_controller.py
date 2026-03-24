@@ -45,6 +45,7 @@ class NullInput:
     def __init__(self, name: str):
         self.name = name
         self.when_pressed: Optional[Callable[[], None]] = None
+        self.when_released: Optional[Callable[[], None]] = None
         self.when_held: Optional[Callable[[], None]] = None
         self.hold_time: float = 1.0
         self.hold_repeat: bool = False

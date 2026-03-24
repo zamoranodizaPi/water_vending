@@ -36,7 +36,7 @@ class InteractionFilter(QObject):
 
 
 class MainWindow(QMainWindow):
-    coin_inserted = pyqtSignal()
+    coin_inserted = pyqtSignal(int)
     hardware_product_selected = pyqtSignal(str)
     hardware_ok_pressed = pyqtSignal()
     hardware_emergency_pressed = pyqtSignal()
@@ -105,8 +105,20 @@ class MainWindow(QMainWindow):
         led_ok = self.gpio.setup_pwm_output(pins["led_ok"], "ok button")
         led_emergency = self.gpio.setup_pwm_output(pins["led_emergency"], "emergency button")
 
-        coin_input_12 = self.gpio.setup_input(pins["coin_pulse"], "coin pulse gpio12", pull_up=True)
-        self.coin_acceptor = CoinAcceptor(self.gpio, coin_input_12, self.coin_inserted.emit)
+        coin_input_12 = self.gpio.setup_input(
+            pins["coin_pulse"],
+            "coin pulse gpio12",
+            pull_up=True,
+            bounce_time=0.01,
+        )
+        self.coin_acceptor = CoinAcceptor(
+            self.gpio,
+            coin_input_12,
+            self.coin_inserted.emit,
+            min_pulse_width_s=0.03,
+            min_interval_s=0.04,
+            pulse_value=1,
+        )
         self.coin_inserted.connect(self._handle_coin)
 
         self.select_full = self.gpio.setup_input(pins["select_full"], "select full", pull_up=True)
@@ -398,16 +410,17 @@ class MainWindow(QMainWindow):
         except GPIOControllerError as exc:
             logger.error(str(exc))
 
-    def _handle_coin(self):
+    def _handle_coin(self, amount: int):
         if self._in_config_flow():
             return
         if not self._accept_input("coin", 0.18):
             return
         self._touch_interaction()
-        self.credit += settings.COIN_VALUE
+        self.credit = min(999.0, self.credit + amount)
         self._update_credit_displays()
         self._sync_selection_countdown()
         self._refresh_product_enablement()
+        print(f"Pulso detectado. Crédito: {int(self.credit)}")
         self.audio.queue(["coin_received", "credit_updated"])
 
     def _accept_input(self, name: str, min_interval_s: float) -> bool:
