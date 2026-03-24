@@ -293,7 +293,6 @@ class ProductScreen(QWidget):
         header_layout.addWidget(self.service_hotspot, 0)
 
         icon_box = QLabel()
-        icon_box.setObjectName("headerIcon")
         icon_box.setAlignment(Qt.AlignCenter)
         icon_box.setFixedSize(94, 94)
         logo = QPixmap(str(self.logo_path))
@@ -301,7 +300,7 @@ class ProductScreen(QWidget):
             icon_box.setText("L")
         else:
             icon_box.setPixmap(logo.scaled(94, 94, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        header_layout.addWidget(icon_box, 0, Qt.AlignVCenter)
+        header_layout.addWidget(icon_box, 0, Qt.AlignTop)
 
         title_col = QVBoxLayout()
         title_col.setContentsMargins(0, 0, 0, 0)
