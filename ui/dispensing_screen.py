@@ -86,6 +86,7 @@ class DispensingScreen(QWidget):
         )
 
         self.animation_wrap = QWidget()
+        self.animation_wrap.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.animation_wrap_layout = QVBoxLayout(self.animation_wrap)
         self.animation_wrap_layout.setContentsMargins(0, 0, 0, 0)
         self.animation_wrap_layout.setSpacing(0)
@@ -119,7 +120,9 @@ class DispensingScreen(QWidget):
         content_layout.addSpacing(8)
         content_layout.addWidget(self.status_hint)
         content_layout.addSpacing(8)
-        content_layout.addWidget(self.animation_wrap, 1)
+        content_layout.addStretch(1)
+        content_layout.addWidget(self.animation_wrap, 0, Qt.AlignCenter)
+        content_layout.addStretch(1)
         content_layout.addSpacing(30)
         content_layout.addWidget(self.progress, alignment=Qt.AlignCenter)
         content_layout.addSpacing(12)
@@ -148,6 +151,7 @@ class DispensingScreen(QWidget):
         top_margin = max(0, offset_y)
         bottom_margin = max(0, -offset_y)
         self.animation_wrap_layout.setContentsMargins(0, top_margin, 0, bottom_margin)
+        self.animation_wrap.setFixedSize(width, height + top_margin + bottom_margin)
         self._refresh_animation()
 
     def set_credit(self, credit: float):
