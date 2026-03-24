@@ -14,34 +14,20 @@ class CoinAcceptor:
         input_device,
         on_coin: Callable[[int], None],
         *,
-        min_pulse_width_s: float = 0.03,
-        min_interval_s: float = 0.04,
+        min_interval_s: float = 0.05,
         pulse_value: int = 1,
     ):
         self.gpio = gpio
         self.input_device = input_device
         self.on_coin = on_coin
-        self.min_pulse_width_s = min_pulse_width_s
         self.min_interval_s = min_interval_s
         self.pulse_value = pulse_value
-        self._pressed_at: float | None = None
-        self._last_accepted_at: float = 0.0
-        self.input_device.when_pressed = self._pulse_started
-        self.input_device.when_released = self._pulse_finished
+        self._last_pulse_at: float = 0.0
+        self.input_device.when_pressed = self._coin_detected
 
-    def _pulse_started(self):
-        self._pressed_at = time.monotonic()
-
-    def _pulse_finished(self):
-        released_at = time.monotonic()
-        if self._pressed_at is None:
+    def _coin_detected(self):
+        now = time.monotonic()
+        if now - self._last_pulse_at < self.min_interval_s:
             return
-        pulse_width = released_at - self._pressed_at
-        interval = released_at - self._last_accepted_at
-        self._pressed_at = None
-        if pulse_width < self.min_pulse_width_s:
-            return
-        if interval <= self.min_interval_s:
-            return
-        self._last_accepted_at = released_at
+        self._last_pulse_at = now
         self.on_coin(self.pulse_value)

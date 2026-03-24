@@ -14,8 +14,8 @@ from config import settings
 from database.sales_db import SalesDB
 from hardware.auxiliary_outputs import AuxiliaryOutputs
 from hardware.button_led_controller import ButtonLedController
+from hardware.coin_acceptor import CoinAcceptor
 from hardware.gpio_controller import GPIOController, GPIOControllerError
-from hardware.uart_coin_acceptor import UARTCoinAcceptor
 from hardware.valve_controller import ValveController
 from ui.audio_manager import AudioManager
 from ui.config_screen import ConfigCodeScreen, ConfigHoldScreen, ConfigMenuScreen, ConfigValueScreen
@@ -105,12 +105,18 @@ class MainWindow(QMainWindow):
         led_ok = self.gpio.setup_pwm_output(pins["led_ok"], "ok button")
         led_emergency = self.gpio.setup_pwm_output(pins["led_emergency"], "emergency button")
 
-        self.coin_acceptor = UARTCoinAcceptor(
+        coin_input_12 = self.gpio.setup_input(
+            pins["coin_pulse"],
+            "coin pulse gpio12",
+            pull_up=True,
+            bounce_time=0.02,
+        )
+        self.coin_acceptor = CoinAcceptor(
+            self.gpio,
+            coin_input_12,
             self.coin_inserted.emit,
-            port=settings.COIN_UART_PORT,
-            baudrate=settings.COIN_UART_BAUDRATE,
-            poll_ms=settings.COIN_UART_POLL_MS,
-            parent=self,
+            min_interval_s=0.05,
+            pulse_value=1,
         )
         self.coin_inserted.connect(self._handle_coin)
 
@@ -883,6 +889,5 @@ class MainWindow(QMainWindow):
         self.prompt_screen.set_prompt_countdown(self._prompt_countdown_remaining)
 
     def closeEvent(self, event):
-        self.coin_acceptor.shutdown()
         self.button_leds.shutdown()
         super().closeEvent(event)
