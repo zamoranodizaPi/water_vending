@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QMovie, QPixmap
-from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QProgressBar, QPushButton, QSizePolicy, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QFrame, QLabel, QProgressBar, QSizePolicy, QVBoxLayout, QWidget
 
 from theme import APP_FONT, SECONDARY, SURFACE, refresh_style
 
@@ -101,21 +101,6 @@ class DispensingScreen(QWidget):
         self.progress.setFixedWidth(460)
         self.progress.setStyleSheet(f"QProgressBar{{font-family:{APP_FONT};}}")
 
-        self.emergency_btn = QPushButton("Detener")
-        self.emergency_btn.setProperty("variant", "secondary")
-        self.emergency_btn.setMinimumHeight(52)
-        self.emergency_btn.setMinimumWidth(240)
-        self.emergency_btn.setMaximumWidth(320)
-        self.emergency_btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.emergency_btn.setStyleSheet(f"QPushButton{{font-family:{APP_FONT}; font-size:22px;}}")
-        self.emergency_btn.clicked.connect(self.emergency_pressed.emit)
-        self.emergency_btn.setVisible(False)
-        bottom_row = QHBoxLayout()
-        bottom_row.setContentsMargins(0, 0, 0, 0)
-        bottom_row.setSpacing(12)
-        bottom_row.addWidget(self.progress, 1, Qt.AlignVCenter)
-        bottom_row.addWidget(self.emergency_btn, 0, Qt.AlignRight | Qt.AlignVCenter)
-
         content_layout.addWidget(self.title)
         content_layout.addSpacing(8)
         content_layout.addWidget(self.status_hint)
@@ -124,7 +109,7 @@ class DispensingScreen(QWidget):
         content_layout.addWidget(self.animation_wrap, 0, Qt.AlignCenter)
         content_layout.addStretch(1)
         content_layout.addSpacing(30)
-        content_layout.addLayout(bottom_row)
+        content_layout.addWidget(self.progress, alignment=Qt.AlignCenter)
         root.addWidget(content, 1)
 
     def resizeEvent(self, event):
@@ -170,7 +155,6 @@ class DispensingScreen(QWidget):
         self._total_ms = max(500, int(total_seconds * 1000))
         self._elapsed_ms = 0
         self.progress.setValue(0)
-        self.emergency_btn.setVisible(emergency_enabled)
         self.animation.clear()
         self.animation.setMovie(None)
         self._movie = None
