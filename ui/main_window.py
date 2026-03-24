@@ -416,8 +416,8 @@ class MainWindow(QMainWindow):
                 "Coloque su embase en la cabina",
                 settings.UPSIDE_DOWN_IMAGE,
                 "Coloque el garrafon boca abajo",
-                image_size=(340, 300),
-                image_offset_y=-30,
+                image_size=(300, 260),
+                image_offset_y=0,
             )
         else:
             self.flow_step = "await_fill_position"
@@ -425,8 +425,8 @@ class MainWindow(QMainWindow):
                 "Coloque su embase en la cabina",
                 self.current_product["image"],
                 "Prepare el envase para llenado",
-                image_size=(350, 320),
-                image_offset_y=-70,
+                image_size=(310, 280),
+                image_offset_y=0,
             )
         self.stack.setCurrentWidget(self.prompt_screen)
 
@@ -442,8 +442,8 @@ class MainWindow(QMainWindow):
             "Coloque su embase en la cabina",
             self.current_product["image"],
             subtitle,
-            image_size=(350, 320),
-            image_offset_y=-70,
+            image_size=(310, 280),
+            image_offset_y=0,
         )
         self.stack.setCurrentWidget(self.prompt_screen)
         self.audio.play("press_ok")
@@ -493,9 +493,9 @@ class MainWindow(QMainWindow):
                 "Llenando",
                 total_s,
                 image_path=self.current_product["image"],
-                image_size=(300, 300),
+                image_size=(260, 260),
                 emergency_enabled=True,
-                image_offset_y=-50,
+                image_offset_y=0,
             )
             self.audio.queue(["starting_fill", "filling"])
         except GPIOControllerError as exc:
