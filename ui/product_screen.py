@@ -52,6 +52,7 @@ class ProductCard(QFrame):
         self.product = product
         self._affordable = True
         self._selected = False
+        self._has_active_selection = False
         self._base_min_width = CARD_MIN_WIDTH
         self._base_height = CARD_HEIGHT
         self._build_ui()
@@ -83,6 +84,14 @@ class ProductCard(QFrame):
         body.setContentsMargins(10, 8, 10, 12)
         body.setSpacing(4)
         root.addLayout(body, 1)
+
+        self.price_corner = QLabel(f"${self.product['price']:.0f}")
+        self.price_corner.setAlignment(Qt.AlignRight | Qt.AlignTop)
+        self.price_corner.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{PRIMARY};"
+        )
+        self.price_corner.setVisible(False)
+        body.addWidget(self.price_corner, 0, Qt.AlignRight | Qt.AlignTop)
 
         self.icon = QLabel()
         self.icon.setAlignment(Qt.AlignCenter)
@@ -162,10 +171,16 @@ class ProductCard(QFrame):
 
     def setChecked(self, checked: bool):
         self._selected = checked
+        self._has_active_selection = checked
         self._apply_state()
 
     def isChecked(self) -> bool:
         return self._selected
+
+    def set_selection_state(self, selected: bool, has_active_selection: bool):
+        self._selected = selected
+        self._has_active_selection = has_active_selection
+        self._apply_state()
 
     def setEnabled(self, enabled: bool):
         super().setEnabled(True)
@@ -210,6 +225,9 @@ class ProductCard(QFrame):
     def _apply_state(self):
         self.setProperty("selected", self._selected)
         self.setProperty("affordable", self._affordable)
+        show_corner_price = self._has_active_selection and not self._selected
+        self.price.setVisible(not show_corner_price)
+        self.price_corner.setVisible(show_corner_price)
         refresh_style(self)
         if self._selected:
             self._shadow.setBlurRadius(22)
@@ -300,7 +318,7 @@ class ProductScreen(QWidget):
             icon_box.setText("L")
         else:
             icon_box.setPixmap(logo.scaled(94, 94, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        header_layout.addWidget(icon_box, 0, Qt.AlignTop)
+        header_layout.addWidget(icon_box, 0, Qt.AlignVCenter)
 
         title_col = QVBoxLayout()
         title_col.setContentsMargins(0, 0, 0, 0)
@@ -445,7 +463,7 @@ class ProductScreen(QWidget):
         has_selection = bool(product_id)
         for pid, card in self.cards.items():
             selected = pid == product_id
-            card.setChecked(selected)
+            card.set_selection_state(selected, has_selection)
             if not has_selection:
                 card.set_visual_scale(1.0)
             elif selected:
