@@ -227,6 +227,13 @@ class MainWindow(QMainWindow):
         self._config_hold_elapsed_ms = 0
         self.config_hold_screen.set_progress(0)
 
+    def _config_entry_combo_pressed(self) -> bool:
+        return (
+            self._can_enter_config_mode()
+            and bool(getattr(self.ok_input, "is_pressed", False))
+            and bool(getattr(self.emergency_input, "is_pressed", False))
+        )
+
     def _start_config_login(self):
         self._config_mode = "login"
         self._config_draft = settings.get_runtime_config()
@@ -567,6 +574,8 @@ class MainWindow(QMainWindow):
             self._on_prompt_ok()
 
     def _handle_emergency_input(self):
+        if self._config_entry_combo_pressed():
+            return
         if self._in_config_flow():
             self._exit_config_to_home()
             return
