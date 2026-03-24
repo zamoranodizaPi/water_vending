@@ -1,10 +1,15 @@
 """Application settings for the water vending machine."""
+from __future__ import annotations
+
+import json
+from copy import deepcopy
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 ASSETS_DIR = BASE_DIR / "assets" / "images"
 AUDIO_DIR = BASE_DIR / "assets" / "audio"
 DB_PATH = BASE_DIR / "database" / "sales.db"
+RUNTIME_CONFIG_PATH = BASE_DIR / "config" / "runtime_settings.json"
 
 WINDOW_TITLE = "Agua Purificada Lupita"
 SCREEN_WIDTH = 1024
@@ -61,6 +66,16 @@ PRODUCTS = [
     },
 ]
 
+DEFAULT_RUNTIME_CONFIG = {
+    "precios": {
+        "garrafon": 12.0,
+        "medio": 8.0,
+        "galon": 5.0,
+    },
+    "tiempo_por_litro": 1.6,
+    "codigo": "1000",
+}
+
 LOGO_IMAGE = ASSETS_DIR / "logo.png"
 COIN_IMAGE = ASSETS_DIR / "coins.png"
 UPSIDE_DOWN_IMAGE = ASSETS_DIR / "garrafonbocaabajo.png"
@@ -87,3 +102,65 @@ AUDIO_FILES = {
     "out_of_service": AUDIO_DIR / "14_fuera_de_servicio.wav",
     "thanks": AUDIO_DIR / "15_gracias.wav",
 }
+
+ACCESS_CODE = DEFAULT_RUNTIME_CONFIG["codigo"]
+
+
+def _sanitize_runtime_config(raw: dict | None) -> dict:
+    config = deepcopy(DEFAULT_RUNTIME_CONFIG)
+    if not isinstance(raw, dict):
+        return config
+    precios = raw.get("precios", {})
+    if isinstance(precios, dict):
+        for key in ("garrafon", "medio", "galon"):
+            value = precios.get(key)
+            if isinstance(value, (int, float)):
+                config["precios"][key] = round(float(value), 2)
+    tiempo = raw.get("tiempo_por_litro")
+    if isinstance(tiempo, (int, float)):
+        config["tiempo_por_litro"] = round(max(0.01, float(tiempo)), 2)
+    codigo = raw.get("codigo")
+    if isinstance(codigo, str) and len(codigo) == 4 and codigo.isdigit():
+        config["codigo"] = codigo
+    return config
+
+
+def load_runtime_config() -> dict:
+    if not RUNTIME_CONFIG_PATH.exists():
+        save_runtime_config(DEFAULT_RUNTIME_CONFIG)
+        return deepcopy(DEFAULT_RUNTIME_CONFIG)
+    with RUNTIME_CONFIG_PATH.open("r", encoding="utf-8") as file:
+        return _sanitize_runtime_config(json.load(file))
+
+
+def save_runtime_config(config: dict) -> dict:
+    sanitized = _sanitize_runtime_config(config)
+    RUNTIME_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with RUNTIME_CONFIG_PATH.open("w", encoding="utf-8") as file:
+        json.dump(sanitized, file, indent=2, ensure_ascii=False)
+    return sanitized
+
+
+def apply_runtime_config(config: dict) -> None:
+    global FILL_SECONDS_PER_LITER, ACCESS_CODE
+    sanitized = _sanitize_runtime_config(config)
+    PRODUCTS[0]["price"] = sanitized["precios"]["garrafon"]
+    PRODUCTS[1]["price"] = sanitized["precios"]["medio"]
+    PRODUCTS[2]["price"] = sanitized["precios"]["galon"]
+    FILL_SECONDS_PER_LITER = sanitized["tiempo_por_litro"]
+    ACCESS_CODE = sanitized["codigo"]
+
+
+def get_runtime_config() -> dict:
+    return {
+        "precios": {
+            "garrafon": float(PRODUCTS[0]["price"]),
+            "medio": float(PRODUCTS[1]["price"]),
+            "galon": float(PRODUCTS[2]["price"]),
+        },
+        "tiempo_por_litro": float(FILL_SECONDS_PER_LITER),
+        "codigo": ACCESS_CODE,
+    }
+
+
+apply_runtime_config(load_runtime_config())

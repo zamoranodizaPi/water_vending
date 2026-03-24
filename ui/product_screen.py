@@ -1,7 +1,7 @@
 """Modern touch-friendly product selection screen for a 1024x600 kiosk."""
 from __future__ import annotations
 
-from PyQt5.QtCore import QTimer, QRect, Qt, pyqtProperty, pyqtSignal
+from PyQt5.QtCore import QTimer, QRect, Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
     QFrame,
@@ -164,6 +164,11 @@ class ProductCard(QFrame):
     def _handle_buy_clicked(self):
         print(f"Producto seleccionado: {self.product['name']}")
         self.clicked.emit()
+
+    def refresh_product_data(self):
+        price_text = f"${self.product['price']:.0f}"
+        self.price.setText(price_text)
+        self.price_corner.setText(price_text)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and self._interactive:
@@ -545,6 +550,10 @@ class ProductScreen(QWidget):
     def set_instruction_focus(self, step_number: int | None):
         for index, step in enumerate(self.steps, start=1):
             step.set_active(index == step_number)
+
+    def refresh_products(self):
+        for card in self.cards.values():
+            card.refresh_product_data()
 
     def pulse_credit_attention(self):
         state = {"step": 0}

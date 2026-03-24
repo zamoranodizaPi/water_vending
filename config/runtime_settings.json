@@ -1,0 +1,9 @@
+{
+  "precios": {
+    "garrafon": 12.0,
+    "medio": 8.0,
+    "galon": 5.0
+  },
+  "tiempo_por_litro": 1.6,
+  "codigo": "1000"
+}

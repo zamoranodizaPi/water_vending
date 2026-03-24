@@ -18,6 +18,7 @@ from hardware.coin_acceptor import CoinAcceptor
 from hardware.gpio_controller import GPIOController, GPIOControllerError
 from hardware.valve_controller import ValveController
 from ui.audio_manager import AudioManager
+from ui.config_screen import ConfigCodeScreen, ConfigHoldScreen, ConfigMenuScreen, ConfigValueScreen
 from ui.dispensing_screen import DispensingScreen
 from ui.payment_screen import MessageScreen, PromptScreen
 from ui.product_screen import ProductScreen
@@ -65,6 +66,22 @@ class MainWindow(QMainWindow):
         self._prompt_countdown_timer.setInterval(1000)
         self._prompt_countdown_timer.timeout.connect(self._tick_prompt_countdown)
         self._prompt_countdown_remaining = 0
+        self._config_hold_timer = QTimer(self)
+        self._config_hold_timer.setInterval(100)
+        self._config_hold_timer.timeout.connect(self._poll_config_activation)
+        self._config_hold_elapsed_ms = 0
+        self._config_mode: str | None = None
+        self._config_draft = settings.get_runtime_config()
+        self._config_menu_options = [
+            "Ajustar precios",
+            "Ajustar tiempo por litro",
+            "Cambiar código",
+            "Guardar y salir",
+            "Cancelar",
+        ]
+        self._config_menu_index = 0
+        self._config_price_index = 0
+        self._config_new_code = ""
 
         self.products = {p["id"]: p for p in settings.PRODUCTS}
         self.sales_db = SalesDB(settings.DB_PATH)
@@ -72,6 +89,7 @@ class MainWindow(QMainWindow):
         self.gpio = GPIOController()
         self._setup_hardware()
         self._setup_ui()
+        self._config_hold_timer.start()
         self._refresh_product_enablement(initial=True)
 
     def _setup_hardware(self):
@@ -133,11 +151,19 @@ class MainWindow(QMainWindow):
         self.prompt_screen = PromptScreen(settings.LOGO_IMAGE)
         self.progress_screen = DispensingScreen(settings.LOGO_IMAGE)
         self.message_screen = MessageScreen(settings.LOGO_IMAGE)
+        self.config_hold_screen = ConfigHoldScreen(settings.LOGO_IMAGE)
+        self.config_code_screen = ConfigCodeScreen(settings.LOGO_IMAGE)
+        self.config_menu_screen = ConfigMenuScreen(settings.LOGO_IMAGE)
+        self.config_value_screen = ConfigValueScreen(settings.LOGO_IMAGE)
 
         self.stack.addWidget(self.product_screen)
         self.stack.addWidget(self.prompt_screen)
         self.stack.addWidget(self.progress_screen)
         self.stack.addWidget(self.message_screen)
+        self.stack.addWidget(self.config_hold_screen)
+        self.stack.addWidget(self.config_code_screen)
+        self.stack.addWidget(self.config_menu_screen)
+        self.stack.addWidget(self.config_value_screen)
 
         self.product_screen.product_selected.connect(self._set_selected_product)
         self.product_screen.ok_pressed.connect(self._on_ok_home)
@@ -167,8 +193,188 @@ class MainWindow(QMainWindow):
             self.show()
 
     def _touch_interaction(self):
+        if self._in_config_flow():
+            return
         self._courtesy_on()
         self.button_leds.note_interaction()
+
+    def _in_config_flow(self) -> bool:
+        return self._config_mode is not None
+
+    def _can_enter_config_mode(self) -> bool:
+        return (
+            self.stack.currentWidget() == self.product_screen
+            and self.flow_step is None
+            and self.current_product is None
+        )
+
+    def _poll_config_activation(self):
+        if self._in_config_flow():
+            return
+        ok_pressed = bool(getattr(self.ok_input, "is_pressed", False))
+        full_pressed = bool(getattr(self.select_full, "is_pressed", False))
+        if self._can_enter_config_mode() and ok_pressed and full_pressed:
+            self._config_hold_elapsed_ms += self._config_hold_timer.interval()
+            self.config_hold_screen.set_progress(int((self._config_hold_elapsed_ms / 10000) * 100))
+            if self.stack.currentWidget() != self.config_hold_screen:
+                self.stack.setCurrentWidget(self.config_hold_screen)
+            if self._config_hold_elapsed_ms >= 10000:
+                self._config_hold_elapsed_ms = 0
+                self._start_config_login()
+            return
+        if self.stack.currentWidget() == self.config_hold_screen:
+            self.stack.setCurrentWidget(self.product_screen)
+        self._config_hold_elapsed_ms = 0
+        self.config_hold_screen.set_progress(0)
+
+    def _start_config_login(self):
+        self._config_mode = "login"
+        self._config_draft = settings.get_runtime_config()
+        self._config_new_code = ""
+        self.config_code_screen.configure("Ingrese código", "Código de acceso", "0000")
+        self.stack.setCurrentWidget(self.config_code_screen)
+
+    def _open_config_menu(self):
+        self._config_mode = "menu"
+        self.config_menu_screen.configure(self._config_menu_options, self._config_menu_index)
+        self.stack.setCurrentWidget(self.config_menu_screen)
+
+    def _open_price_screen(self):
+        self._config_mode = "price"
+        self._config_price_index = 0
+        self._refresh_price_screen()
+        self.stack.setCurrentWidget(self.config_value_screen)
+
+    def _refresh_price_screen(self):
+        labels = [
+            ("Garrafón", "garrafon"),
+            ("Medio", "medio"),
+            ("Galón", "galon"),
+        ]
+        name, key = labels[self._config_price_index]
+        value = self._config_draft["precios"][key]
+        self.config_value_screen.configure(
+            "Ajustar precios",
+            f"{name} - Precio actual",
+            f"${value:.2f}",
+            "P1:+  P2:-  P3:regresar  OK:guardar y seguir",
+        )
+
+    def _open_time_screen(self):
+        self._config_mode = "time"
+        self._refresh_time_screen()
+        self.stack.setCurrentWidget(self.config_value_screen)
+
+    def _refresh_time_screen(self):
+        self.config_value_screen.configure(
+            "Tiempo por litro",
+            "Ajuste de precisión",
+            f"{self._config_draft['tiempo_por_litro']:.2f} seg/L",
+            "P1:+0.01  P2:-0.01  P3:regresar  OK:guardar",
+        )
+
+    def _open_code_change(self):
+        self._config_mode = "code_new"
+        self.config_code_screen.configure("Nuevo código", "Ingrese nuevo código", "0000")
+        self.stack.setCurrentWidget(self.config_code_screen)
+
+    def _save_runtime_settings(self):
+        saved = settings.save_runtime_config(self._config_draft)
+        settings.apply_runtime_config(saved)
+        self.products = {p["id"]: p for p in settings.PRODUCTS}
+        self.product_screen.refresh_products()
+        self.button_leds.products = sorted(settings.PRODUCTS, key=lambda product: product["price"])
+        self._refresh_product_enablement(initial=True)
+
+    def _exit_config_to_home(self):
+        self._config_mode = None
+        self._config_hold_elapsed_ms = 0
+        self.config_hold_screen.set_progress(0)
+        self.stack.setCurrentWidget(self.product_screen)
+        self._refresh_product_enablement(initial=True)
+
+    def _handle_config_product_button(self, product_id: str):
+        if self._config_mode in {"login", "code_new", "code_confirm"}:
+            if product_id == "full_garrafon":
+                self.config_code_screen.increment_digit()
+            elif product_id == "half_garrafon":
+                self.config_code_screen.next_digit()
+            elif product_id == "gallon":
+                self.config_code_screen.previous_digit()
+            return
+        if self._config_mode == "menu":
+            if product_id == "full_garrafon":
+                self.config_menu_screen.move_up()
+            elif product_id == "half_garrafon":
+                self.config_menu_screen.move_down()
+            elif product_id == "gallon":
+                self._exit_config_to_home()
+            return
+        if self._config_mode == "price":
+            price_keys = ["garrafon", "medio", "galon"]
+            key = price_keys[self._config_price_index]
+            if product_id == "full_garrafon":
+                self._config_draft["precios"][key] = round(self._config_draft["precios"][key] + 1, 2)
+            elif product_id == "half_garrafon":
+                self._config_draft["precios"][key] = round(max(0, self._config_draft["precios"][key] - 1), 2)
+            elif product_id == "gallon":
+                self._open_config_menu()
+                return
+            self._refresh_price_screen()
+            return
+        if self._config_mode == "time":
+            if product_id == "full_garrafon":
+                self._config_draft["tiempo_por_litro"] = round(self._config_draft["tiempo_por_litro"] + 0.01, 2)
+            elif product_id == "half_garrafon":
+                self._config_draft["tiempo_por_litro"] = round(max(0.01, self._config_draft["tiempo_por_litro"] - 0.01), 2)
+            elif product_id == "gallon":
+                self._open_config_menu()
+                return
+            self._refresh_time_screen()
+
+    def _handle_config_ok(self):
+        if self._config_mode == "login":
+            if self.config_code_screen.code() == settings.ACCESS_CODE:
+                self._open_config_menu()
+            else:
+                self.config_code_screen.show_error("Código incorrecto")
+            return
+        if self._config_mode == "menu":
+            option = self.config_menu_screen.current_option()
+            self._config_menu_index = self.config_menu_screen.index
+            if option == "Ajustar precios":
+                self._open_price_screen()
+            elif option == "Ajustar tiempo por litro":
+                self._open_time_screen()
+            elif option == "Cambiar código":
+                self._open_code_change()
+            elif option == "Guardar y salir":
+                self._save_runtime_settings()
+                self._exit_config_to_home()
+            elif option == "Cancelar":
+                self._exit_config_to_home()
+            return
+        if self._config_mode == "price":
+            if self._config_price_index < 2:
+                self._config_price_index += 1
+                self._refresh_price_screen()
+            else:
+                self._open_config_menu()
+            return
+        if self._config_mode == "time":
+            self._open_config_menu()
+            return
+        if self._config_mode == "code_new":
+            self._config_new_code = self.config_code_screen.code()
+            self._config_mode = "code_confirm"
+            self.config_code_screen.configure("Confirmar código", "Repita el nuevo código", "0000")
+            return
+        if self._config_mode == "code_confirm":
+            if self.config_code_screen.code() != self._config_new_code:
+                self.config_code_screen.show_error("Los códigos no coinciden")
+                return
+            self._config_draft["codigo"] = self._config_new_code
+            self._open_config_menu()
 
     def _on_idle_attention_started(self):
         if self.stack.currentWidget() != self.product_screen:
@@ -191,6 +397,8 @@ class MainWindow(QMainWindow):
             logger.error(str(exc))
 
     def _handle_coin(self):
+        if self._in_config_flow():
+            return
         if not self._accept_input("coin", 0.18):
             return
         self._touch_interaction()
@@ -210,6 +418,8 @@ class MainWindow(QMainWindow):
         return True
 
     def _add_service_credit(self):
+        if self._in_config_flow():
+            return
         if self.stack.currentWidget() != self.product_screen:
             return
         self.credit += 1.0
@@ -219,6 +429,8 @@ class MainWindow(QMainWindow):
         self.audio.queue(["coin_received", "credit_updated"])
 
     def _add_credit_box_amount(self):
+        if self._in_config_flow():
+            return
         if self.stack.currentWidget() != self.product_screen:
             return
         self.credit += 2.0
@@ -312,6 +524,9 @@ class MainWindow(QMainWindow):
         self._refresh_product_enablement()
 
     def _select_by_gpio(self, product_id: str):
+        if self._in_config_flow():
+            self._handle_config_product_button(product_id)
+            return
         if self.stack.currentWidget() != self.product_screen:
             return
         if not self._accept_input(f"product:{product_id}", 0.2):
@@ -340,6 +555,9 @@ class MainWindow(QMainWindow):
         self._show_preparation_prompt()
 
     def _handle_ok_input(self):
+        if self._in_config_flow():
+            self._handle_config_ok()
+            return
         if not self._accept_input("ok", 0.25):
             return
         if self.stack.currentWidget() == self.product_screen:
@@ -349,6 +567,9 @@ class MainWindow(QMainWindow):
             self._on_prompt_ok()
 
     def _handle_emergency_input(self):
+        if self._in_config_flow():
+            self._exit_config_to_home()
+            return
         if not self._accept_input("emergency", 0.25):
             return
         if self.stack.currentWidget() == self.message_screen:

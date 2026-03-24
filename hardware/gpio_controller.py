@@ -48,6 +48,7 @@ class NullInput:
         self.when_held: Optional[Callable[[], None]] = None
         self.hold_time: float = 1.0
         self.hold_repeat: bool = False
+        self.is_pressed: bool = False
 
 
 class GPIOController:
