@@ -203,7 +203,7 @@ class MainWindow(QMainWindow):
 
     def _can_enter_config_mode(self) -> bool:
         return (
-            self.stack.currentWidget() == self.product_screen
+            self.stack.currentWidget() in {self.product_screen, self.config_hold_screen}
             and self.flow_step is None
             and self.current_product is None
         )
