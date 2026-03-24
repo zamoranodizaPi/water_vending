@@ -9,7 +9,6 @@ from theme import APP_FONT, SECONDARY, SURFACE, TEXT_PRIMARY, refresh_style
 
 HEADER_HEIGHT = 90
 TITLE_TEXT = "Agua Purificada Lupita"
-SUBTITLE_TEXT = "Siga las indicaciones en pantalla para continuar"
 
 
 class BrandedScreen(QWidget):
@@ -35,31 +34,27 @@ class BrandedScreen(QWidget):
 
         title_row = QHBoxLayout(self.header_frame)
         title_row.setContentsMargins(16, 10, 16, 10)
-        title_row.setSpacing(14)
+        title_row.setSpacing(0)
 
         self.header_icon = QLabel()
-        self.header_icon.setObjectName("headerIcon")
         self.header_icon.setAlignment(Qt.AlignCenter)
-        self.header_icon.setFixedSize(54, 54)
+        self.header_icon.setFixedSize(94, 94)
         pix = QPixmap(str(self.logo_path))
         if pix.isNull():
             self.header_icon.setText("L")
             self.header_icon.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};")
         else:
-            self.header_icon.setPixmap(pix.scaled(42, 42, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            self.header_icon.setPixmap(pix.scaled(94, 94, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         title_row.addWidget(self.header_icon, 0, Qt.AlignVCenter)
 
         text_col = QVBoxLayout()
         text_col.setContentsMargins(0, 0, 0, 0)
-        text_col.setSpacing(2)
+        text_col.setSpacing(0)
+        text_col.addStretch(1)
         title = QLabel(TITLE_TEXT)
-        title.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};")
-        subtitle = QLabel(SUBTITLE_TEXT)
-        subtitle.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:12px; font-weight:500; color:rgba(255,255,255,0.88);"
-        )
+        title.setStyleSheet(f"font-family:{APP_FONT}; font-size:25px; font-weight:800; color:{SURFACE};")
         text_col.addWidget(title)
-        text_col.addWidget(subtitle)
+        text_col.addStretch(1)
         title_row.addLayout(text_col, 1)
 
         self.root.addWidget(self.header_frame)

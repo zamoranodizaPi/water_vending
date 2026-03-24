@@ -9,7 +9,6 @@ from theme import APP_FONT, SECONDARY, SURFACE, refresh_style
 
 HEADER_HEIGHT = 90
 TITLE_TEXT = "Agua Purificada Lupita"
-SUBTITLE_TEXT = "Proceso en curso"
 
 
 class DispensingScreen(QWidget):
@@ -40,31 +39,27 @@ class DispensingScreen(QWidget):
         self.header_container.setFixedHeight(HEADER_HEIGHT)
         header = QHBoxLayout(self.header_container)
         header.setContentsMargins(16, 10, 16, 10)
-        header.setSpacing(14)
+        header.setSpacing(0)
 
         header_icon = QLabel()
-        header_icon.setObjectName("headerIcon")
         header_icon.setAlignment(Qt.AlignCenter)
-        header_icon.setFixedSize(54, 54)
+        header_icon.setFixedSize(94, 94)
         pix = QPixmap(str(self.logo_path))
         if pix.isNull():
             header_icon.setText("L")
             header_icon.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};")
         else:
-            header_icon.setPixmap(pix.scaled(42, 42, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            header_icon.setPixmap(pix.scaled(94, 94, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         header.addWidget(header_icon, 0, Qt.AlignVCenter)
 
         text_col = QVBoxLayout()
         text_col.setContentsMargins(0, 0, 0, 0)
-        text_col.setSpacing(2)
+        text_col.setSpacing(0)
+        text_col.addStretch(1)
         title = QLabel(TITLE_TEXT)
-        title.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};")
-        subtitle = QLabel(SUBTITLE_TEXT)
-        subtitle.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:12px; font-weight:500; color:rgba(255,255,255,0.88);"
-        )
+        title.setStyleSheet(f"font-family:{APP_FONT}; font-size:25px; font-weight:800; color:{SURFACE};")
         text_col.addWidget(title)
-        text_col.addWidget(subtitle)
+        text_col.addStretch(1)
         header.addLayout(text_col, 1)
         root.addWidget(self.header_container)
 
