@@ -120,7 +120,7 @@ class DispensingScreen(QWidget):
         content_layout.addWidget(self.status_hint)
         content_layout.addSpacing(8)
         content_layout.addWidget(self.animation_wrap, 1)
-        content_layout.addSpacing(20)
+        content_layout.addSpacing(30)
         content_layout.addWidget(self.progress, alignment=Qt.AlignCenter)
         content_layout.addSpacing(12)
         content_layout.addWidget(self.emergency_btn, alignment=Qt.AlignCenter)
