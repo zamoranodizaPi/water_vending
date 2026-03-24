@@ -108,8 +108,8 @@ class MainWindow(QMainWindow):
         self.coin_acceptor = CoinAcceptor(
             pins["coin_pulse"],
             self.coin_inserted.emit,
-            flush_window_s=0.2,
-            min_pulse_us=30000,
+            flush_window_s=0.3,
+            min_pulse_us=100000,
             poll_ms=50,
             parent=self,
         )

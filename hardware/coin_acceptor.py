@@ -21,8 +21,8 @@ class CoinAcceptor(QObject):
         pin: int,
         on_coin: Callable[[int], None],
         *,
-        flush_window_s: float = 0.2,
-        min_pulse_us: int = 30000,
+        flush_window_s: float = 0.3,
+        min_pulse_us: int = 100000,
         poll_ms: int = 50,
         parent=None,
     ):
