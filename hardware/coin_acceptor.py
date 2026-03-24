@@ -1,4 +1,8 @@
-"""Coin acceptor handler built on pigpio edge callbacks."""
+"""Coin acceptor handler for a normally-open pulse train on GPIO12.
+
+Each coin is reported as a LOW pulse of about 100 ms with the line held HIGH by
+the Raspberry Pi pull-up the rest of the time.
+"""
 from __future__ import annotations
 
 import logging
@@ -16,6 +20,7 @@ except Exception:  # pragma: no cover - optional on non-device environments
 
 
 class CoinAcceptor(QObject):
+    """Read a normally-open coin acceptor that pulls the line LOW per pulse."""
     def __init__(
         self,
         pin: int,
