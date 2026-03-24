@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QMovie, QPixmap
-from PyQt5.QtWidgets import QFrame, QLabel, QProgressBar, QSizePolicy, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QProgressBar, QSizePolicy, QVBoxLayout, QWidget
 
 from theme import APP_FONT, SECONDARY, SURFACE, refresh_style
 
