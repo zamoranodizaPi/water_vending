@@ -105,18 +105,13 @@ class MainWindow(QMainWindow):
         led_ok = self.gpio.setup_pwm_output(pins["led_ok"], "ok button")
         led_emergency = self.gpio.setup_pwm_output(pins["led_emergency"], "emergency button")
 
-        coin_input_12 = self.gpio.setup_input(
-            pins["coin_pulse"],
-            "coin pulse gpio12",
-            pull_up=True,
-            bounce_time=0.02,
-        )
         self.coin_acceptor = CoinAcceptor(
-            self.gpio,
-            coin_input_12,
+            pins["coin_pulse"],
             self.coin_inserted.emit,
-            min_interval_s=0.05,
-            pulse_value=1,
+            flush_window_s=0.2,
+            min_pulse_us=30000,
+            poll_ms=50,
+            parent=self,
         )
         self.coin_inserted.connect(self._handle_coin)
 
@@ -889,5 +884,6 @@ class MainWindow(QMainWindow):
         self.prompt_screen.set_prompt_countdown(self._prompt_countdown_remaining)
 
     def closeEvent(self, event):
+        self.coin_acceptor.shutdown()
         self.button_leds.shutdown()
         super().closeEvent(event)
