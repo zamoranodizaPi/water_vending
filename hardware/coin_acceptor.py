@@ -1,7 +1,7 @@
-"""Coin acceptor handler for a normally-closed pulse train on GPIO19.
+"""Coin acceptor handler for a normally-open pulse train on GPIO19.
 
-Each coin is reported as a HIGH pulse of about 100 ms with the line held LOW by
-the Raspberry Pi pull-down the rest of the time.
+Each coin is reported as a LOW pulse of about 100 ms with the line held HIGH by
+the Raspberry Pi pull-up the rest of the time.
 """
 from __future__ import annotations
 
@@ -20,14 +20,16 @@ except Exception:  # pragma: no cover - optional on non-device environments
 
 
 class CoinAcceptor(QObject):
-    """Read a normally-closed coin acceptor that drives the line HIGH per pulse."""
+    """Read a normally-open coin acceptor that drives the line LOW per pulse."""
     def __init__(
         self,
         pin: int,
         on_coin: Callable[[int], None],
         *,
         flush_window_s: float = 0.3,
-        min_pulse_us: int = 40000,
+        min_gap_us: int = 40000,
+        min_width_us: int = 70000,
+        max_width_us: int = 130000,
         poll_ms: int = 50,
         parent=None,
     ):
@@ -35,8 +37,11 @@ class CoinAcceptor(QObject):
         self.pin = pin
         self.on_coin = on_coin
         self.flush_window_s = flush_window_s
-        self.min_pulse_us = min_pulse_us
-        self._last_tick = 0
+        self.min_gap_us = min_gap_us
+        self.min_width_us = min_width_us
+        self.max_width_us = max_width_us
+        self._pulse_start_tick = 0
+        self._last_count_tick = 0
         self._last_pulse_at = 0.0
         self._pending_pulses = 0
         self._pi = None
@@ -59,23 +64,34 @@ class CoinAcceptor(QObject):
             self._pi = None
             return
         self._pi.set_mode(self.pin, pigpio.INPUT)
-        self._pi.set_pull_up_down(self.pin, pigpio.PUD_DOWN)
-        self._callback = self._pi.callback(self.pin, pigpio.RISING_EDGE, self._pulse_callback)
+        self._pi.set_pull_up_down(self.pin, pigpio.PUD_UP)
+        self._callback = self._pi.callback(self.pin, pigpio.EITHER_EDGE, self._pulse_callback)
 
     def _pulse_callback(self, gpio: int, level: int, tick: int):
         print(f"GPIO: {gpio} Level: {level} Tick: {tick}")
-        print(f"Nivel: {level}")
-        if level != 1:
+        if level == 0:
+            self._pulse_start_tick = tick
             return
 
-        if self._last_tick != 0:
-            delta = pigpio.tickDiff(self._last_tick, tick)
-            print(f"Pulso GPIO{gpio}: intervalo={delta}us")
-            if delta < self.min_pulse_us:
-                print(f"Pulso GPIO{gpio} ignorado por intervalo corto: {delta}us")
+        if level != 1 or self._pulse_start_tick == 0:
+            return
+
+        width_us = pigpio.tickDiff(self._pulse_start_tick, tick)
+        self._pulse_start_tick = 0
+        print(f"Ancho LOW: {width_us}us")
+
+        if width_us < self.min_width_us or width_us > self.max_width_us:
+            print(f"Pulso ignorado por ancho fuera de rango: {width_us}us")
+            return
+
+        if self._last_count_tick != 0:
+            gap_us = pigpio.tickDiff(self._last_count_tick, tick)
+            print(f"Intervalo entre conteos: {gap_us}us")
+            if gap_us < self.min_gap_us:
+                print(f"Pulso ignorado por rebote: {gap_us}us")
                 return
 
-        self._last_tick = tick
+        self._last_count_tick = tick
         self._pending_pulses += 1
         self._last_pulse_at = time.monotonic()
         print(f"Pulso detectado → Crédito pendiente: {self._pending_pulses}")
