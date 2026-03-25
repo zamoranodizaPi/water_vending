@@ -126,3 +126,9 @@ class SalesDB:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(query, params).fetchall()
         return [dict(row) for row in rows]
+
+    def clear_audit_data(self):
+        with self._connect() as conn:
+            conn.execute("DELETE FROM sales")
+            conn.execute("DELETE FROM coin_events")
+            conn.execute("DELETE FROM email_events")

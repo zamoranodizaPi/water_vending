@@ -79,6 +79,10 @@ class MainWindow(QMainWindow):
         self._audit_hold_timer.setInterval(100)
         self._audit_hold_timer.timeout.connect(self._poll_audit_activation)
         self._audit_hold_elapsed_ms = 0
+        self._audit_reset_hold_timer = QTimer(self)
+        self._audit_reset_hold_timer.setInterval(100)
+        self._audit_reset_hold_timer.timeout.connect(self._poll_audit_reset_activation)
+        self._audit_reset_hold_elapsed_ms = 0
         self._service_level_timer = QTimer(self)
         self._service_level_timer.setInterval(150)
         self._service_level_timer.timeout.connect(self._poll_service_level)
@@ -117,6 +121,7 @@ class MainWindow(QMainWindow):
         self._setup_ui()
         self._config_hold_timer.start()
         self._audit_hold_timer.start()
+        self._audit_reset_hold_timer.start()
         self._service_level_timer.start()
         self._refresh_product_enablement(initial=True)
         self._poll_service_level()
@@ -298,6 +303,22 @@ class MainWindow(QMainWindow):
                 self.start_audit_mode()
             return
         self._audit_hold_elapsed_ms = 0
+
+    def _poll_audit_reset_activation(self):
+        if not self._audit_mode_active or self.stack.currentWidget() != self.audit_screen or self._audit_page_index != 0:
+            self._audit_reset_hold_elapsed_ms = 0
+            return
+        ok_pressed = bool(getattr(self.ok_input, "is_pressed", False))
+        cancel_pressed = bool(getattr(self.emergency_input, "is_pressed", False))
+        if ok_pressed and cancel_pressed:
+            self._audit_reset_hold_elapsed_ms += self._audit_reset_hold_timer.interval()
+            if self._audit_reset_hold_elapsed_ms >= 5000:
+                self._audit_reset_hold_elapsed_ms = 0
+                self._config_mode = "audit_reset_login"
+                self.config_code_screen.configure("Borrar auditoría", "Ingrese código", "0000")
+                self.stack.setCurrentWidget(self.config_code_screen)
+            return
+        self._audit_reset_hold_elapsed_ms = 0
 
     def _poll_service_level(self):
         if self._service_lock_active:
@@ -545,7 +566,7 @@ class MainWindow(QMainWindow):
         self._refresh_product_enablement(initial=True)
 
     def _handle_config_product_button(self, product_id: str):
-        if self._config_mode in {"login", "audit_login", "code_new", "code_confirm"}:
+        if self._config_mode in {"login", "audit_login", "audit_reset_login", "code_new", "code_confirm"}:
             if product_id == "full_garrafon":
                 self.config_code_screen.increment_digit()
             elif product_id == "half_garrafon":
@@ -599,6 +620,20 @@ class MainWindow(QMainWindow):
             if self.config_code_screen.code() == settings.AUDIT_CODE:
                 self._config_mode = None
                 self._enter_audit_mode()
+            else:
+                self.config_code_screen.show_error("Código incorrecto")
+            return
+        if self._config_mode == "audit_reset_login":
+            if self.config_code_screen.code() == settings.AUDIT_RESET_CODE:
+                self.sales_db.clear_audit_data()
+                self._config_mode = None
+                self._audit_page_index = 0
+                self._audit_product_index = 0
+                self._audit_coin_day_index = 0
+                self._audit_sales_day_index = 0
+                self._audit_email_day_index = 0
+                self._render_audit_view()
+                self.stack.setCurrentWidget(self.audit_screen)
             else:
                 self.config_code_screen.show_error("Código incorrecto")
             return
@@ -693,6 +728,9 @@ class MainWindow(QMainWindow):
     def _exit_audit_mode(self):
         self._audit_mode_active = False
         self._audit_hold_elapsed_ms = 0
+        self._audit_reset_hold_elapsed_ms = 0
+        if self._config_mode == "audit_reset_login":
+            self._config_mode = None
         self.stack.setCurrentWidget(self.product_screen)
         self._refresh_product_enablement(initial=True)
 
@@ -1125,6 +1163,8 @@ class MainWindow(QMainWindow):
             return
         if self._config_entry_hold_pressed():
             return
+        if self._audit_mode_active and bool(getattr(self.ok_input, "is_pressed", False)):
+            return
         if self._audit_mode_active:
             self._exit_audit_mode()
             return
@@ -1149,6 +1189,11 @@ class MainWindow(QMainWindow):
         self._cancel_to_idle()
 
     def _handle_config_cancel(self):
+        if self._config_mode == "audit_reset_login":
+            self._config_mode = None
+            self.stack.setCurrentWidget(self.audit_screen)
+            self._audit_reset_hold_elapsed_ms = 0
+            return
         if self._config_mode == "audit_login":
             self._config_mode = None
             self._exit_audit_mode()
@@ -1499,6 +1544,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         self._audit_hold_timer.stop()
+        self._audit_reset_hold_timer.stop()
         self._service_level_timer.stop()
         self.coin_acceptor.shutdown()
         self.button_leds.shutdown()
