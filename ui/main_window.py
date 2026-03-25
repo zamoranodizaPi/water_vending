@@ -545,7 +545,7 @@ class MainWindow(QMainWindow):
         self._refresh_product_enablement(initial=True)
 
     def _handle_config_product_button(self, product_id: str):
-        if self._config_mode in {"login", "code_new", "code_confirm"}:
+        if self._config_mode in {"login", "audit_login", "code_new", "code_confirm"}:
             if product_id == "full_garrafon":
                 self.config_code_screen.increment_digit()
             elif product_id == "half_garrafon":
@@ -592,6 +592,13 @@ class MainWindow(QMainWindow):
         if self._config_mode == "login":
             if self.config_code_screen.code() == settings.ACCESS_CODE:
                 self._open_config_menu()
+            else:
+                self.config_code_screen.show_error("Código incorrecto")
+            return
+        if self._config_mode == "audit_login":
+            if self.config_code_screen.code() == settings.AUDIT_CODE:
+                self._config_mode = None
+                self._enter_audit_mode()
             else:
                 self.config_code_screen.show_error("Código incorrecto")
             return
@@ -669,6 +676,11 @@ class MainWindow(QMainWindow):
             self._open_config_menu()
 
     def start_audit_mode(self):
+        self._config_mode = "audit_login"
+        self.config_code_screen.configure("Auditoría", "Ingrese código", "0000")
+        self.stack.setCurrentWidget(self.config_code_screen)
+
+    def _enter_audit_mode(self):
         self._audit_mode_active = True
         self._audit_page_index = 0
         self._audit_product_index = 0
@@ -1130,6 +1142,10 @@ class MainWindow(QMainWindow):
         self._cancel_to_idle()
 
     def _handle_config_cancel(self):
+        if self._config_mode == "audit_login":
+            self._config_mode = None
+            self._exit_audit_mode()
+            return
         if self._config_mode in {"login", "menu"}:
             self._exit_config_to_home()
             return
