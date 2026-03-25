@@ -36,8 +36,9 @@ class CoinAcceptor(QObject):
         self.on_coin = on_coin
         self.flush_window_s = flush_window_s
         self.min_pulse_us = min_pulse_us
+        self.max_gap_us = 120000
+        self._last_state = 1
         self._last_tick = 0
-        self._pulse_start_tick = 0
         self._last_pulse_at = 0.0
         self._pending_pulses = 0
         self._pi = None
@@ -64,26 +65,28 @@ class CoinAcceptor(QObject):
         self._callback = self._pi.callback(self.pin, pigpio.EITHER_EDGE, self._pulse_callback)
 
     def _pulse_callback(self, gpio: int, level: int, tick: int):
-        if level == 1:
-            if self._pulse_start_tick != 0:
-                width_us = pigpio.tickDiff(self._pulse_start_tick, tick)
-                print(f"Pulso GPIO{gpio}: ancho={width_us}us")
-                self._pulse_start_tick = 0
-            return
-        if level != 0:
+        print(f"GPIO: {gpio} Level: {level} Tick: {tick}")
+        if level not in (0, 1):
+            self._last_state = level
             return
 
-        self._pulse_start_tick = tick
-        if self._last_tick != 0:
-            delta = pigpio.tickDiff(self._last_tick, tick)
-            print(f"Pulso GPIO{gpio}: intervalo={delta}us")
-            if delta < self.min_pulse_us:
-                print(f"Pulso GPIO{gpio} ignorado por intervalo corto: {delta}us")
-                return
-        self._last_tick = tick
-        self._pending_pulses += 1
-        self._last_pulse_at = time.monotonic()
-        print(f"Pulso detectado → Crédito pendiente: {self._pending_pulses}")
+        if self._last_state == 1 and level == 0:
+            if self._last_tick != 0:
+                delta = pigpio.tickDiff(self._last_tick, tick)
+                print(f"Pulso GPIO{gpio}: intervalo={delta}us")
+                if delta < self.min_pulse_us:
+                    print(f"Pulso GPIO{gpio} ignorado por intervalo corto: {delta}us")
+                    self._last_state = level
+                    return
+                if delta > self.max_gap_us:
+                    print(f"Pulso GPIO{gpio}: nueva moneda, intervalo={delta}us")
+
+            self._last_tick = tick
+            self._pending_pulses += 1
+            self._last_pulse_at = time.monotonic()
+            print(f"Pulso válido → Crédito pendiente: {self._pending_pulses}")
+
+        self._last_state = level
 
     def _flush_if_ready(self):
         if self._pending_pulses <= 0:
