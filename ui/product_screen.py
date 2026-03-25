@@ -24,6 +24,7 @@ CARD_SELECTED_SCALE = 1.1
 CARD_REDUCED_SCALE = 0.9
 
 TITLE_TEXT = "Agua Purificada Lupita"
+TAGLINE_TEXT = "La pureza que nace de la confianza"
 
 
 class TopLeftHotspot(QWidget):
@@ -364,13 +365,18 @@ class ProductScreen(QWidget):
 
         title_col = QVBoxLayout()
         title_col.setContentsMargins(0, 0, 0, 0)
-        title_col.setSpacing(0)
+        title_col.setSpacing(2)
         title_col.addStretch(1)
         title = QLabel(TITLE_TEXT)
         title.setStyleSheet(
             f"font-family:{APP_FONT}; font-size:25px; font-weight:800; color:{SURFACE};"
         )
         title_col.addWidget(title)
+        subtitle = QLabel(TAGLINE_TEXT)
+        subtitle.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:12px; font-weight:600; color:{SURFACE};"
+        )
+        title_col.addWidget(subtitle)
         title_col.addStretch(1)
         header_layout.addLayout(title_col, 1)
 

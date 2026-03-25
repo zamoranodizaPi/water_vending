@@ -9,6 +9,7 @@ from theme import APP_FONT, SECONDARY, SURFACE, refresh_style
 
 HEADER_HEIGHT = 90
 TITLE_TEXT = "Agua Purificada Lupita"
+TAGLINE_TEXT = "La pureza que nace de la confianza"
 
 
 class DispensingScreen(QWidget):
@@ -54,11 +55,16 @@ class DispensingScreen(QWidget):
 
         text_col = QVBoxLayout()
         text_col.setContentsMargins(0, 0, 0, 0)
-        text_col.setSpacing(0)
+        text_col.setSpacing(2)
         text_col.addStretch(1)
         title = QLabel(TITLE_TEXT)
         title.setStyleSheet(f"font-family:{APP_FONT}; font-size:25px; font-weight:800; color:{SURFACE};")
         text_col.addWidget(title)
+        subtitle = QLabel(TAGLINE_TEXT)
+        subtitle.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:12px; font-weight:600; color:{SURFACE};"
+        )
+        text_col.addWidget(subtitle)
         text_col.addStretch(1)
         header.addLayout(text_col, 1)
         root.addWidget(self.header_container)
