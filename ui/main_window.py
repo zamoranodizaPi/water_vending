@@ -18,6 +18,7 @@ from hardware.coin_acceptor import CoinAcceptor
 from hardware.email_notifier import send_async_email
 from hardware.gpio_controller import GPIOController, GPIOControllerError
 from hardware.valve_controller import ValveController
+from ui.audit_screen import AuditScreen
 from ui.audio_manager import AudioManager
 from ui.config_screen import ConfigCodeScreen, ConfigHoldScreen, ConfigMenuScreen, ConfigTextScreen, ConfigValueScreen
 from ui.dispensing_screen import DispensingScreen
@@ -74,6 +75,10 @@ class MainWindow(QMainWindow):
         self._config_hold_timer.setInterval(100)
         self._config_hold_timer.timeout.connect(self._poll_config_activation)
         self._config_hold_elapsed_ms = 0
+        self._audit_hold_timer = QTimer(self)
+        self._audit_hold_timer.setInterval(100)
+        self._audit_hold_timer.timeout.connect(self._poll_audit_activation)
+        self._audit_hold_elapsed_ms = 0
         self._service_level_timer = QTimer(self)
         self._service_level_timer.setInterval(150)
         self._service_level_timer.timeout.connect(self._poll_service_level)
@@ -97,6 +102,12 @@ class MainWindow(QMainWindow):
         self._config_contact_field = "correo"
         self._config_new_code = ""
         self._config_edit_value = 0.0
+        self._audit_mode_active = False
+        self._audit_page_index = 0
+        self._audit_product_index = 0
+        self._audit_coin_day_index = 0
+        self._audit_sales_day_index = 0
+        self._audit_email_day_index = 0
 
         self.products = {p["id"]: p for p in settings.PRODUCTS}
         self.sales_db = SalesDB(settings.DB_PATH)
@@ -105,6 +116,7 @@ class MainWindow(QMainWindow):
         self._setup_hardware()
         self._setup_ui()
         self._config_hold_timer.start()
+        self._audit_hold_timer.start()
         self._service_level_timer.start()
         self._refresh_product_enablement(initial=True)
         self._poll_service_level()
@@ -178,6 +190,7 @@ class MainWindow(QMainWindow):
         self.prompt_screen = PromptScreen(settings.LOGO_IMAGE)
         self.progress_screen = DispensingScreen(settings.LOGO_IMAGE)
         self.message_screen = MessageScreen(settings.LOGO_IMAGE)
+        self.audit_screen = AuditScreen(settings.LOGO_IMAGE)
         self.config_hold_screen = ConfigHoldScreen(settings.LOGO_IMAGE)
         self.config_code_screen = ConfigCodeScreen(settings.LOGO_IMAGE)
         self.config_menu_screen = ConfigMenuScreen(settings.LOGO_IMAGE)
@@ -188,6 +201,7 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.prompt_screen)
         self.stack.addWidget(self.progress_screen)
         self.stack.addWidget(self.message_screen)
+        self.stack.addWidget(self.audit_screen)
         self.stack.addWidget(self.config_hold_screen)
         self.stack.addWidget(self.config_code_screen)
         self.stack.addWidget(self.config_menu_screen)
@@ -240,6 +254,16 @@ class MainWindow(QMainWindow):
             and self.current_product is None
         )
 
+    def _can_enter_audit_mode(self) -> bool:
+        return (
+            not self._service_lock_active
+            and not self._in_config_flow()
+            and not self._audit_mode_active
+            and self.stack.currentWidget() == self.product_screen
+            and self.flow_step is None
+            and self.current_product is None
+        )
+
     def _poll_config_activation(self):
         if self._service_lock_active:
             return
@@ -260,6 +284,20 @@ class MainWindow(QMainWindow):
             self.stack.setCurrentWidget(self.product_screen)
         self._config_hold_elapsed_ms = 0
         self.config_hold_screen.set_progress(0)
+
+    def _poll_audit_activation(self):
+        if not self._can_enter_audit_mode():
+            self._audit_hold_elapsed_ms = 0
+            return
+        cancel_pressed = bool(getattr(self.emergency_input, "is_pressed", False))
+        ok_pressed = bool(getattr(self.ok_input, "is_pressed", False))
+        if cancel_pressed and not ok_pressed:
+            self._audit_hold_elapsed_ms += self._audit_hold_timer.interval()
+            if self._audit_hold_elapsed_ms >= 5000:
+                self._audit_hold_elapsed_ms = 0
+                self.start_audit_mode()
+            return
+        self._audit_hold_elapsed_ms = 0
 
     def _poll_service_level(self):
         if self._service_lock_active:
@@ -292,7 +330,19 @@ class MainWindow(QMainWindow):
             f"Hora: {now.strftime('%Y-%m-%d %H:%M:%S')}\n"
             "Motivo: sensor de nivel de agua en cero.\n"
         )
-        send_async_email(recipient=recipient, subject=subject, body=body)
+        timestamp = now.isoformat(timespec="seconds")
+        send_async_email(
+            recipient=recipient,
+            subject=subject,
+            body=body,
+            on_result=lambda sent: self.sales_db.log_email_event(
+                timestamp,
+                "out_of_service",
+                recipient,
+                subject,
+                "sent" if sent else "failed",
+            ),
+        )
 
     def _activate_out_of_service(self):
         if self._service_lock_active:
@@ -618,6 +668,200 @@ class MainWindow(QMainWindow):
             self._config_draft["codigo"] = self._config_new_code
             self._open_config_menu()
 
+    def start_audit_mode(self):
+        self._audit_mode_active = True
+        self._audit_page_index = 0
+        self._audit_product_index = 0
+        self._audit_coin_day_index = 0
+        self._audit_sales_day_index = 0
+        self._audit_email_day_index = 0
+        self._render_audit_view()
+        self.stack.setCurrentWidget(self.audit_screen)
+
+    def _exit_audit_mode(self):
+        self._audit_mode_active = False
+        self._audit_hold_elapsed_ms = 0
+        self.stack.setCurrentWidget(self.product_screen)
+        self._refresh_product_enablement(initial=True)
+
+    def _handle_audit_product_button(self, product_id: str):
+        if not self._audit_mode_active:
+            return
+        if product_id == "gallon":
+            self._audit_page_index = (self._audit_page_index + 1) % 4
+            self._render_audit_view()
+            return
+        step = -1 if product_id == "full_garrafon" else 1
+        if self._audit_page_index == 0:
+            max_index = len(settings.PRODUCTS)
+            self._audit_product_index = (self._audit_product_index + step) % (max_index + 1)
+        elif self._audit_page_index == 1:
+            self._audit_coin_day_index = self._next_audit_day_index(self._audit_coin_day_index, step)
+        elif self._audit_page_index == 2:
+            self._audit_sales_day_index = self._next_audit_day_index(self._audit_sales_day_index, step)
+        else:
+            self._audit_email_day_index = self._next_audit_day_index(self._audit_email_day_index, step)
+        self._render_audit_view()
+
+    def _handle_audit_ok(self):
+        if not self._audit_mode_active:
+            return
+        if self._audit_page_index == 0:
+            self._audit_product_index = 0
+        elif self._audit_page_index == 1:
+            self._audit_coin_day_index = 0
+        elif self._audit_page_index == 2:
+            self._audit_sales_day_index = 0
+        else:
+            self._audit_email_day_index = 0
+        self._render_audit_view()
+
+    def _audit_days(self) -> list[str]:
+        days = set()
+        for row in self.sales_db.fetch_sales():
+            days.add(str(row["timestamp"])[:10])
+        for row in self.sales_db.fetch_coin_events():
+            days.add(str(row["timestamp"])[:10])
+        for row in self.sales_db.fetch_email_events("out_of_service"):
+            days.add(str(row["timestamp"])[:10])
+        return sorted(days, reverse=True)
+
+    def _next_audit_day_index(self, current: int, step: int) -> int:
+        max_index = len(self._audit_days())
+        return (current + step) % (max_index + 1)
+
+    def _selected_audit_day(self, index: int) -> str | None:
+        days = self._audit_days()
+        if index <= 0 or index > len(days):
+            return None
+        return days[index - 1]
+
+    def _filter_rows_by_day(self, rows: list[dict], day: str | None) -> list[dict]:
+        if not day:
+            return rows
+        return [row for row in rows if str(row["timestamp"]).startswith(day)]
+
+    def _render_audit_view(self):
+        if not self._audit_mode_active:
+            return
+        if self._audit_page_index == 0:
+            self._render_audit_summary_page()
+        elif self._audit_page_index == 1:
+            self._render_audit_coin_page()
+        elif self._audit_page_index == 2:
+            self._render_audit_sales_page()
+        else:
+            self._render_audit_email_page()
+
+    def _render_audit_summary_page(self):
+        sales = self.sales_db.fetch_sales()
+        labels = [("Total", None)] + [(product["name"], product["name"]) for product in settings.PRODUCTS]
+        label, product_name = labels[self._audit_product_index]
+        filtered = sales if product_name is None else [row for row in sales if row["product"] == product_name]
+        total_liters = sum(float(row["volume"]) for row in filtered)
+        total_sales = len(filtered)
+        total_revenue = sum(float(row["price"]) for row in filtered)
+        rows = []
+        total_volume_all = 0.0
+        total_sales_all = 0
+        for product in settings.PRODUCTS:
+            product_sales = [row for row in sales if row["product"] == product["name"]]
+            liters = sum(float(row["volume"]) for row in product_sales)
+            count = len(product_sales)
+            total_volume_all += liters
+            total_sales_all += count
+            rows.append([product["name"], f"{liters:.2f} L", str(count)])
+        rows.append(["Total general", f"{total_volume_all:.2f} L", str(total_sales_all)])
+        self.audit_screen.set_view(
+            title="Auditoría",
+            subtitle="Agua servida y ventas por producto",
+            filter_text=f"Filtro producto: {label}",
+            summary_lines=[
+                f"Litros servidos: {total_liters:.2f} L",
+                f"Ventas registradas: {total_sales}",
+                f"Ingreso cobrado: ${total_revenue:.2f}",
+            ],
+            headers=["Producto", "Litros", "Ventas"],
+            rows=rows,
+        )
+
+    def _render_audit_coin_page(self):
+        day = self._selected_audit_day(self._audit_coin_day_index)
+        events = self._filter_rows_by_day(self.sales_db.fetch_coin_events(), day)
+        total_pulses = sum(int(row["pulses"]) for row in events)
+        total_amount = sum(float(row["amount"]) for row in events)
+        rows = [[str(row["timestamp"]).replace("T", " "), f"${float(row['amount']):.0f}", str(int(row["pulses"]))] for row in events[:20]]
+        if not rows:
+            rows = [["Sin registros", "-", "-"]]
+        self.audit_screen.set_view(
+            title="Auditoría",
+            subtitle="Monedas y pulsos contabilizados",
+            filter_text=f"Filtro día: {day or 'Todos'}",
+            summary_lines=[
+                f"Pulsos válidos: {total_pulses}",
+                f"Crédito acumulado: ${total_amount:.2f}",
+                "Denominación activa: 1 pulso = 1 peso",
+            ],
+            headers=["Fecha y hora", "Monto", "Pulsos"],
+            rows=rows,
+        )
+
+    def _render_audit_sales_page(self):
+        day = self._selected_audit_day(self._audit_sales_day_index)
+        sales = self._filter_rows_by_day(self.sales_db.fetch_sales(), day)
+        rows = [
+            [
+                str(row["timestamp"]).replace("T", " "),
+                str(row["product"]),
+                f"{float(row['volume']):.2f} L",
+                f"${float(row['price']):.2f}",
+            ]
+            for row in sales[:20]
+        ]
+        if not rows:
+            rows = [["Sin ventas", "-", "-", "-"]]
+        self.audit_screen.set_view(
+            title="Auditoría",
+            subtitle="Fechas y horarios de cada venta",
+            filter_text=f"Filtro día: {day or 'Todos'}",
+            summary_lines=[
+                f"Ventas mostradas: {len(sales)}",
+                f"Litros mostrados: {sum(float(row['volume']) for row in sales):.2f} L",
+                f"Importe mostrado: ${sum(float(row['price']) for row in sales):.2f}",
+            ],
+            headers=["Fecha y hora", "Producto", "Volumen", "Cobro"],
+            rows=rows,
+        )
+
+    def _render_audit_email_page(self):
+        day = self._selected_audit_day(self._audit_email_day_index)
+        emails = self._filter_rows_by_day(self.sales_db.fetch_email_events("out_of_service"), day)
+        sent_count = sum(1 for row in emails if row["status"] == "sent")
+        failed_count = sum(1 for row in emails if row["status"] != "sent")
+        rows = [
+            [
+                str(row["timestamp"]).replace("T", " "),
+                str(row["status"]),
+                str(row["recipient"]),
+                str(row["subject"]),
+            ]
+            for row in emails[:20]
+        ]
+        if not rows:
+            rows = [["Sin correos", "-", "-", "-"]]
+        self.audit_screen.set_view(
+            title="Auditoría",
+            subtitle="Correos enviados por falta de agua",
+            filter_text=f"Filtro día: {day or 'Todos'}",
+            summary_lines=[
+                f"Correos enviados: {sent_count}",
+                f"Correos fallidos: {failed_count}",
+                f"Eventos registrados: {len(emails)}",
+            ],
+            headers=["Fecha y hora", "Estado", "Destino", "Asunto"],
+            rows=rows,
+        )
+
     def _on_idle_attention_started(self):
         if self.stack.currentWidget() != self.product_screen:
             return
@@ -641,11 +885,14 @@ class MainWindow(QMainWindow):
     def _handle_coin(self, amount: int):
         if self._service_lock_active:
             return
+        if self._audit_mode_active:
+            return
         if self._in_config_flow():
             return
         if not self._accept_input("coin", 0.18):
             return
         self._touch_interaction()
+        self.sales_db.log_coin_event(datetime.now().isoformat(timespec="seconds"), amount, 1)
         self.credit = min(999.0, self.credit + amount)
         self._update_credit_displays()
         self._sync_selection_countdown()
@@ -802,6 +1049,9 @@ class MainWindow(QMainWindow):
     def _select_by_gpio(self, product_id: str):
         if self._service_lock_active:
             return
+        if self._audit_mode_active:
+            self._handle_audit_product_button(product_id)
+            return
         if self._in_config_flow():
             self._handle_config_product_button(product_id)
             return
@@ -837,6 +1087,9 @@ class MainWindow(QMainWindow):
     def _handle_ok_input(self):
         if self._service_lock_active:
             return
+        if self._audit_mode_active:
+            self._handle_audit_ok()
+            return
         if self._in_config_flow():
             self._handle_config_ok()
             return
@@ -852,6 +1105,9 @@ class MainWindow(QMainWindow):
         if self._service_lock_active:
             return
         if self._config_entry_hold_pressed():
+            return
+        if self._audit_mode_active:
+            self._exit_audit_mode()
             return
         if self._in_config_flow():
             self._handle_config_cancel()
@@ -1219,6 +1475,7 @@ class MainWindow(QMainWindow):
         self.prompt_screen.set_prompt_countdown(self._prompt_countdown_remaining)
 
     def closeEvent(self, event):
+        self._audit_hold_timer.stop()
         self._service_level_timer.stop()
         self.coin_acceptor.shutdown()
         self.button_leds.shutdown()

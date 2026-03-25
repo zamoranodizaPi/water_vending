@@ -6,19 +6,30 @@ import smtplib
 import ssl
 import threading
 from email.message import EmailMessage
+from typing import Callable
 
 from config import settings
 
 logger = logging.getLogger(__name__)
 
 
-def send_async_email(*, recipient: str, subject: str, body: str) -> bool:
+def send_async_email(
+    *,
+    recipient: str,
+    subject: str,
+    body: str,
+    on_result: Callable[[bool], None] | None = None,
+) -> bool:
     recipient = (recipient or "").strip()
     if not recipient:
         logger.warning("No recipient configured for alert email")
+        if on_result:
+            on_result(False)
         return False
     if not settings.SMTP_HOST or not settings.SMTP_FROM:
         logger.warning("SMTP settings are incomplete; skipping alert email")
+        if on_result:
+            on_result(False)
         return False
 
     thread = threading.Thread(
@@ -27,6 +38,7 @@ def send_async_email(*, recipient: str, subject: str, body: str) -> bool:
             "recipient": recipient,
             "subject": subject,
             "body": body,
+            "on_result": on_result,
         },
         daemon=True,
         name="email-notifier",
@@ -35,7 +47,13 @@ def send_async_email(*, recipient: str, subject: str, body: str) -> bool:
     return True
 
 
-def _send_email(*, recipient: str, subject: str, body: str) -> None:
+def _send_email(
+    *,
+    recipient: str,
+    subject: str,
+    body: str,
+    on_result: Callable[[bool], None] | None = None,
+) -> None:
     message = EmailMessage()
     message["From"] = settings.SMTP_FROM
     message["To"] = recipient
@@ -55,5 +73,9 @@ def _send_email(*, recipient: str, subject: str, body: str) -> None:
                     server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
                 server.send_message(message)
         logger.info("Out-of-service alert email sent to %s", recipient)
+        if on_result:
+            on_result(True)
     except Exception:
         logger.exception("Failed to send out-of-service alert email")
+        if on_result:
+            on_result(False)
