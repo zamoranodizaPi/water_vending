@@ -732,8 +732,6 @@ class MainWindow(QMainWindow):
         days = set()
         for row in self.sales_db.fetch_sales():
             days.add(str(row["timestamp"])[:10])
-        for row in self.sales_db.fetch_coin_events():
-            days.add(str(row["timestamp"])[:10])
         for row in self.sales_db.fetch_email_events("out_of_service"):
             days.add(str(row["timestamp"])[:10])
         return sorted(days, reverse=True)
@@ -799,22 +797,32 @@ class MainWindow(QMainWindow):
 
     def _render_audit_coin_page(self):
         day = self._selected_audit_day(self._audit_coin_day_index)
-        events = self._filter_rows_by_day(self.sales_db.fetch_coin_events(), day)
-        total_pulses = sum(int(row["pulses"]) for row in events)
-        total_amount = sum(float(row["amount"]) for row in events)
-        rows = [[str(row["timestamp"]).replace("T", " "), f"${float(row['amount']):.0f}", str(int(row["pulses"]))] for row in events[:20]]
+        sales = self._filter_rows_by_day(self.sales_db.fetch_sales(), day)
+        total_ingreso = sum(float(row["payment_received"]) for row in sales)
+        total_cobro = sum(float(row["price"]) for row in sales)
+        total_egreso = sum(max(0.0, float(row["payment_received"]) - float(row["price"])) for row in sales)
+        rows = [
+            [
+                str(row["timestamp"]).replace("T", " "),
+                str(row["product"]),
+                f"${float(row['payment_received']):.2f}",
+                f"${float(row['price']):.2f}",
+                f"-${max(0.0, float(row['payment_received']) - float(row['price'])):.2f}",
+            ]
+            for row in sales[:20]
+        ]
         if not rows:
-            rows = [["Sin registros", "-", "-"]]
+            rows = [["Sin transacciones", "-", "-", "-", "-"]]
         self.audit_screen.set_view(
             title="Auditoría",
-            subtitle="Monedas y pulsos contabilizados",
+            subtitle="Ingresos y egresos por transacción",
             filter_text=f"Filtro día: {day or 'Todos'}",
             summary_lines=[
-                f"Pulsos válidos: {total_pulses}",
-                f"Crédito acumulado: ${total_amount:.2f}",
-                "Denominación activa: 1 pulso = 1 peso",
+                f"Ingreso: ${total_ingreso:.2f}",
+                f"Cobrado: ${total_cobro:.2f}",
+                f"Egreso: -${total_egreso:.2f}",
             ],
-            headers=["Fecha y hora", "Monto", "Pulsos"],
+            headers=["Fecha y hora", "Producto", "Ingreso", "Cobro", "Egreso"],
             rows=rows,
         )
 
@@ -904,7 +912,6 @@ class MainWindow(QMainWindow):
         if not self._accept_input("coin", 0.18):
             return
         self._touch_interaction()
-        self.sales_db.log_coin_event(datetime.now().isoformat(timespec="seconds"), amount, 1)
         self.credit = min(999.0, self.credit + amount)
         self._update_credit_displays()
         self._sync_selection_countdown()
