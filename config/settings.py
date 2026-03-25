@@ -19,7 +19,7 @@ COURTESY_LIGHT_TIMEOUT_MS = 15000
 
 PINS = {
     "water_valve": 17,
-    "coin_pulse": 12,
+    "coin_pulse": 19,
     "rinse_valve": 22,
     "courtesy_light": 27,
     "ozone": 6,
