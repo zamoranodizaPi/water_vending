@@ -1106,11 +1106,11 @@ class MainWindow(QMainWindow):
     def _select_by_gpio(self, product_id: str):
         if self._service_lock_active:
             return
-        if self._audit_mode_active:
-            self._handle_audit_product_button(product_id)
-            return
         if self._in_config_flow():
             self._handle_config_product_button(product_id)
+            return
+        if self._audit_mode_active:
+            self._handle_audit_product_button(product_id)
             return
         if self.stack.currentWidget() != self.product_screen:
             return
@@ -1144,11 +1144,11 @@ class MainWindow(QMainWindow):
     def _handle_ok_input(self):
         if self._service_lock_active:
             return
-        if self._audit_mode_active:
-            self._handle_audit_ok()
-            return
         if self._in_config_flow():
             self._handle_config_ok()
+            return
+        if self._audit_mode_active:
+            self._handle_audit_ok()
             return
         if not self._accept_input("ok", 0.25):
             return
@@ -1163,13 +1163,13 @@ class MainWindow(QMainWindow):
             return
         if self._config_entry_hold_pressed():
             return
+        if self._in_config_flow():
+            self._handle_config_cancel()
+            return
         if self._audit_mode_active and bool(getattr(self.ok_input, "is_pressed", False)):
             return
         if self._audit_mode_active:
             self._exit_audit_mode()
-            return
-        if self._in_config_flow():
-            self._handle_config_cancel()
             return
         if not self._accept_input("emergency", 0.25):
             return
