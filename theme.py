@@ -109,19 +109,23 @@ QFrame#contentPanel[thankyou="true"] {{
 
 QFrame#card,
 QFrame#productCard {{
-    background-color: {SURFACE};
+    background:qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 {PRIMARY},
+        stop:0.55 {PRIMARY_HOVER},
+        stop:1 {ORANGE}
+    );
     border-radius: 18px;
-    border: 1px solid {BORDER};
+    border: 1px solid rgba(255, 255, 255, 0.22);
 }}
 
 QFrame#productCard[selected="true"] {{
-    border: 2px solid {PRIMARY};
-    background-color: {ACCENT_LIGHT};
+    border: 2px solid rgba(255, 255, 255, 0.7);
 }}
 
 QFrame#productCard[affordable="false"] {{
-    background-color: #f8fafc;
-    border: 1px solid #dbe3ef;
+    background:#cbd5e1;
+    border: 1px solid #cbd5e1;
 }}
 
 QFrame#productCard[attention="true"] {{
