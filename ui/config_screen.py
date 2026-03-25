@@ -181,11 +181,13 @@ class ConfigCodeScreen(ConfigBaseScreen):
 
 
 class ConfigTextScreen(ConfigBaseScreen):
-    CHARSET = list(" ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÁÉÍÓÚáéíóúÑñ0123456789.-")
+    CHARSET = list(" ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÁÉÍÓÚáéíóúÑñ0123456789.-_@+()")
 
     def __init__(self, logo_path):
         super().__init__(logo_path)
-        self.max_length = 18
+        self.max_length = 24
+        self.active_length = 18
+        self.empty_value = "Producto"
         self.characters = [" "] * self.max_length
         self.cursor_index = 0
 
@@ -202,16 +204,16 @@ class ConfigTextScreen(ConfigBaseScreen):
 
         self.row = QHBoxLayout()
         self.row.setContentsMargins(0, 0, 0, 0)
-        self.row.setSpacing(4)
+        self.row.setSpacing(3)
         self.char_labels = []
         for _ in range(self.max_length):
             label = QLabel(" ")
             label.setAlignment(Qt.AlignCenter)
-            label.setFixedSize(34, 56)
+            label.setFixedSize(30, 52)
             self.char_labels.append(label)
             self.row.addWidget(label)
 
-        self.help = QLabel("P1:+letra  P2:-letra  P3:siguiente  OK:guardar")
+        self.help = QLabel("P1:+  P2:-  P3:siguiente  OK:guardar  Cancelar:volver")
         self.help.setAlignment(Qt.AlignCenter)
         self.help.setWordWrap(True)
         self.help.setStyleSheet(
@@ -226,10 +228,20 @@ class ConfigTextScreen(ConfigBaseScreen):
         self.panel_layout.addWidget(self.help)
         self._refresh()
 
-    def configure(self, title: str, subtitle: str, value: str):
+    def configure(
+        self,
+        title: str,
+        subtitle: str,
+        value: str,
+        *,
+        max_length: int = 18,
+        empty_value: str = "Producto",
+    ):
         self.title.setText(title)
         self.subtitle.setText(subtitle)
-        text = (value or "")[: self.max_length].ljust(self.max_length)
+        self.active_length = max(1, min(max_length, self.max_length))
+        self.empty_value = empty_value
+        text = (value or "")[: self.active_length].ljust(self.max_length)
         self.characters = list(text)
         self.cursor_index = 0
         self._refresh()
@@ -257,10 +269,14 @@ class ConfigTextScreen(ConfigBaseScreen):
         self._refresh()
 
     def text(self) -> str:
-        return "".join(self.characters).rstrip() or "Producto"
+        return "".join(self.characters[: self.active_length]).rstrip() or self.empty_value
 
     def _refresh(self):
         for index, label in enumerate(self.char_labels):
+            visible = index < self.active_length
+            label.setVisible(visible)
+            if not visible:
+                continue
             selected = index == self.cursor_index
             border_color = ACCENT_ORANGE if selected else "#cbd5e1"
             background = SURFACE if selected else "#f8fafc"

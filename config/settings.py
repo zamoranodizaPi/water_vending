@@ -20,6 +20,7 @@ COURTESY_LIGHT_TIMEOUT_MS = 15000
 PINS = {
     "water_valve": 17,
     "coin_pulse": 18,
+    "service_level": 12,
     "rinse_valve": 22,
     "courtesy_light": 27,
     "ozone": 6,
@@ -84,6 +85,10 @@ DEFAULT_RUNTIME_CONFIG = {
     },
     "tiempo_por_litro": 1.6,
     "codigo": "1000",
+    "contacto": {
+        "correo": "zamoranodiza@hotmail.com",
+        "telefono": "7771033646",
+    },
 }
 
 LOGO_IMAGE = ASSETS_DIR / "logo.png"
@@ -94,6 +99,7 @@ FILLING_GIF = ASSETS_DIR / "garrafonllenando.gif"
 RINSING_GIF = ASSETS_DIR / "garrafonenjuagando.gif"
 CHANGE_GIF = ASSETS_DIR / "recojasucambio.gif"
 THANKS_GIF = ASSETS_DIR / "agradecimiento.png"
+SORRY_IMAGE = ASSETS_DIR / "losentimos.png"
 
 AUDIO_FILES = {
     "welcome": AUDIO_DIR / "01_bienvenida.wav",
@@ -114,6 +120,8 @@ AUDIO_FILES = {
 }
 
 ACCESS_CODE = DEFAULT_RUNTIME_CONFIG["codigo"]
+CONTACT_EMAIL = DEFAULT_RUNTIME_CONFIG["contacto"]["correo"]
+CONTACT_PHONE = DEFAULT_RUNTIME_CONFIG["contacto"]["telefono"]
 
 
 def _sanitize_runtime_config(raw: dict | None) -> dict:
@@ -146,6 +154,14 @@ def _sanitize_runtime_config(raw: dict | None) -> dict:
     codigo = raw.get("codigo")
     if isinstance(codigo, str) and len(codigo) == 4 and codigo.isdigit():
         config["codigo"] = codigo
+    contacto = raw.get("contacto", {})
+    if isinstance(contacto, dict):
+        correo = contacto.get("correo")
+        if isinstance(correo, str):
+            config["contacto"]["correo"] = correo.strip()[:24]
+        telefono = contacto.get("telefono")
+        if isinstance(telefono, str):
+            config["contacto"]["telefono"] = telefono.strip()[:20]
     return config
 
 
@@ -166,7 +182,7 @@ def save_runtime_config(config: dict) -> dict:
 
 
 def apply_runtime_config(config: dict) -> None:
-    global FILL_SECONDS_PER_LITER, ACCESS_CODE
+    global FILL_SECONDS_PER_LITER, ACCESS_CODE, CONTACT_EMAIL, CONTACT_PHONE
     sanitized = _sanitize_runtime_config(config)
     PRODUCTS[0]["price"] = sanitized["precios"]["garrafon"]
     PRODUCTS[1]["price"] = sanitized["precios"]["medio"]
@@ -179,6 +195,8 @@ def apply_runtime_config(config: dict) -> None:
     PRODUCTS[2]["volume_l"] = sanitized["volumenes"]["galon"]
     FILL_SECONDS_PER_LITER = sanitized["tiempo_por_litro"]
     ACCESS_CODE = sanitized["codigo"]
+    CONTACT_EMAIL = sanitized["contacto"]["correo"]
+    CONTACT_PHONE = sanitized["contacto"]["telefono"]
 
 
 def get_runtime_config() -> dict:
@@ -200,6 +218,10 @@ def get_runtime_config() -> dict:
         },
         "tiempo_por_litro": float(FILL_SECONDS_PER_LITER),
         "codigo": ACCESS_CODE,
+        "contacto": {
+            "correo": CONTACT_EMAIL,
+            "telefono": CONTACT_PHONE,
+        },
     }
 
 
