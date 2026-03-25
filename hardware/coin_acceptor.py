@@ -1,7 +1,7 @@
-"""Coin acceptor handler for a normally-open pulse train on GPIO12.
+"""Coin acceptor handler for a normally-closed pulse train on GPIO12.
 
-Each coin is reported as a LOW pulse of about 100 ms with the line held HIGH by
-the Raspberry Pi pull-up the rest of the time.
+Each coin is reported as a HIGH pulse of about 100 ms with the line held LOW by
+the Raspberry Pi pull-down the rest of the time.
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ except Exception:  # pragma: no cover - optional on non-device environments
 
 
 class CoinAcceptor(QObject):
-    """Read a normally-open coin acceptor that pulls the line LOW per pulse."""
+    """Read a normally-closed coin acceptor that drives the line HIGH per pulse."""
     def __init__(
         self,
         pin: int,
@@ -37,7 +37,7 @@ class CoinAcceptor(QObject):
         self.flush_window_s = flush_window_s
         self.min_pulse_us = min_pulse_us
         self.max_gap_us = 120000
-        self._last_state = 1
+        self._last_state = 0
         self._last_tick = 0
         self._last_pulse_at = 0.0
         self._pending_pulses = 0
@@ -61,7 +61,7 @@ class CoinAcceptor(QObject):
             self._pi = None
             return
         self._pi.set_mode(self.pin, pigpio.INPUT)
-        self._pi.set_pull_up_down(self.pin, pigpio.PUD_UP)
+        self._pi.set_pull_up_down(self.pin, pigpio.PUD_DOWN)
         self._callback = self._pi.callback(self.pin, pigpio.EITHER_EDGE, self._pulse_callback)
 
     def _pulse_callback(self, gpio: int, level: int, tick: int):
@@ -70,7 +70,7 @@ class CoinAcceptor(QObject):
             self._last_state = level
             return
 
-        if self._last_state == 1 and level == 0:
+        if self._last_state == 0 and level == 1:
             if self._last_tick != 0:
                 delta = pigpio.tickDiff(self._last_tick, tick)
                 print(f"Pulso GPIO{gpio}: intervalo={delta}us")
