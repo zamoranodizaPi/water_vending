@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from copy import deepcopy
 from pathlib import Path
 
@@ -85,6 +86,7 @@ DEFAULT_RUNTIME_CONFIG = {
     },
     "tiempo_por_litro": 1.6,
     "codigo": "1000",
+    "nombre_sistema": "Vending 1",
     "contacto": {
         "correo": "zamoranodiza@hotmail.com",
         "telefono": "7771033646",
@@ -120,8 +122,15 @@ AUDIO_FILES = {
 }
 
 ACCESS_CODE = DEFAULT_RUNTIME_CONFIG["codigo"]
+SYSTEM_NAME = DEFAULT_RUNTIME_CONFIG["nombre_sistema"]
 CONTACT_EMAIL = DEFAULT_RUNTIME_CONFIG["contacto"]["correo"]
 CONTACT_PHONE = DEFAULT_RUNTIME_CONFIG["contacto"]["telefono"]
+SMTP_HOST = os.getenv("VENDING_SMTP_HOST", "")
+SMTP_PORT = int(os.getenv("VENDING_SMTP_PORT", "587"))
+SMTP_USERNAME = os.getenv("VENDING_SMTP_USERNAME", "")
+SMTP_PASSWORD = os.getenv("VENDING_SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("VENDING_SMTP_FROM", SMTP_USERNAME)
+SMTP_USE_TLS = os.getenv("VENDING_SMTP_USE_TLS", "1") != "0"
 
 
 def _sanitize_runtime_config(raw: dict | None) -> dict:
@@ -154,6 +163,11 @@ def _sanitize_runtime_config(raw: dict | None) -> dict:
     codigo = raw.get("codigo")
     if isinstance(codigo, str) and len(codigo) == 4 and codigo.isdigit():
         config["codigo"] = codigo
+    nombre_sistema = raw.get("nombre_sistema")
+    if isinstance(nombre_sistema, str):
+        cleaned = nombre_sistema.strip()
+        if cleaned:
+            config["nombre_sistema"] = cleaned[:20]
     contacto = raw.get("contacto", {})
     if isinstance(contacto, dict):
         correo = contacto.get("correo")
@@ -182,7 +196,7 @@ def save_runtime_config(config: dict) -> dict:
 
 
 def apply_runtime_config(config: dict) -> None:
-    global FILL_SECONDS_PER_LITER, ACCESS_CODE, CONTACT_EMAIL, CONTACT_PHONE
+    global FILL_SECONDS_PER_LITER, ACCESS_CODE, SYSTEM_NAME, CONTACT_EMAIL, CONTACT_PHONE
     sanitized = _sanitize_runtime_config(config)
     PRODUCTS[0]["price"] = sanitized["precios"]["garrafon"]
     PRODUCTS[1]["price"] = sanitized["precios"]["medio"]
@@ -195,6 +209,7 @@ def apply_runtime_config(config: dict) -> None:
     PRODUCTS[2]["volume_l"] = sanitized["volumenes"]["galon"]
     FILL_SECONDS_PER_LITER = sanitized["tiempo_por_litro"]
     ACCESS_CODE = sanitized["codigo"]
+    SYSTEM_NAME = sanitized["nombre_sistema"]
     CONTACT_EMAIL = sanitized["contacto"]["correo"]
     CONTACT_PHONE = sanitized["contacto"]["telefono"]
 
@@ -218,6 +233,7 @@ def get_runtime_config() -> dict:
         },
         "tiempo_por_litro": float(FILL_SECONDS_PER_LITER),
         "codigo": ACCESS_CODE,
+        "nombre_sistema": SYSTEM_NAME,
         "contacto": {
             "correo": CONTACT_EMAIL,
             "telefono": CONTACT_PHONE,

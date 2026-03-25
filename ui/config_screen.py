@@ -256,7 +256,7 @@ class ConfigTextScreen(ConfigBaseScreen):
         self._refresh()
 
     def next_char(self):
-        self.cursor_index = (self.cursor_index + 1) % self.max_length
+        self.cursor_index = (self.cursor_index + 1) % self.active_length
         self._refresh()
 
     def decrement_char(self):

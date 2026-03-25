@@ -15,6 +15,7 @@ from database.sales_db import SalesDB
 from hardware.auxiliary_outputs import AuxiliaryOutputs
 from hardware.button_led_controller import ButtonLedController
 from hardware.coin_acceptor import CoinAcceptor
+from hardware.email_notifier import send_async_email
 from hardware.gpio_controller import GPIOController, GPIOControllerError
 from hardware.valve_controller import ValveController
 from ui.audio_manager import AudioManager
@@ -82,6 +83,7 @@ class MainWindow(QMainWindow):
             "Ajustar precios",
             "Cambiar nombres",
             "Cambiar volúmenes",
+            "Cambiar nombre sistema",
             "Cambiar contacto",
             "Ajustar tiempo por litro",
             "Cambiar código",
@@ -277,6 +279,21 @@ class MainWindow(QMainWindow):
             f"{phone}"
         )
 
+    def _send_out_of_service_email(self):
+        recipient = settings.CONTACT_EMAIL
+        if not recipient:
+            return
+        now = datetime.now()
+        system_name = settings.SYSTEM_NAME or "Vending 1"
+        subject = f"Fuera de servicio - {system_name} - {now.strftime('%Y-%m-%d %H:%M:%S')}"
+        body = (
+            "Alerta de fuera de servicio\n\n"
+            f"Sistema: {system_name}\n"
+            f"Hora: {now.strftime('%Y-%m-%d %H:%M:%S')}\n"
+            "Motivo: sensor de nivel de agua en cero.\n"
+        )
+        send_async_email(recipient=recipient, subject=subject, body=body)
+
     def _activate_out_of_service(self):
         if self._service_lock_active:
             if self.stack.currentWidget() != self.message_screen:
@@ -319,6 +336,7 @@ class MainWindow(QMainWindow):
         )
         self.stack.setCurrentWidget(self.message_screen)
         self.audio.play("out_of_service")
+        self._send_out_of_service_email()
 
     def _config_entry_hold_pressed(self) -> bool:
         return (
@@ -417,6 +435,17 @@ class MainWindow(QMainWindow):
         self._refresh_contact_screen()
         self.stack.setCurrentWidget(self.config_text_screen)
 
+    def _open_system_name_screen(self):
+        self._config_mode = "system_name"
+        self.config_text_screen.configure(
+            "Nombre del sistema",
+            "Identificación del vending",
+            self._config_draft["nombre_sistema"],
+            max_length=20,
+            empty_value="Vending 1",
+        )
+        self.stack.setCurrentWidget(self.config_text_screen)
+
     def _refresh_contact_screen(self):
         if self._config_contact_field == "correo":
             self._config_mode = "contact_email"
@@ -487,7 +516,7 @@ class MainWindow(QMainWindow):
                 self._config_edit_value = round(max(0, self._config_edit_value - 1), 2)
             self._refresh_price_screen()
             return
-        if self._config_mode in {"name", "contact_email", "contact_phone"}:
+        if self._config_mode in {"name", "system_name", "contact_email", "contact_phone"}:
             if product_id == "full_garrafon":
                 self.config_text_screen.increment_char()
             elif product_id == "half_garrafon":
@@ -525,6 +554,8 @@ class MainWindow(QMainWindow):
                 self._open_name_screen()
             elif option == "Cambiar volúmenes":
                 self._open_volume_screen()
+            elif option == "Cambiar nombre sistema":
+                self._open_system_name_screen()
             elif option == "Cambiar contacto":
                 self._open_contact_screen()
             elif option == "Ajustar tiempo por litro":
@@ -545,6 +576,10 @@ class MainWindow(QMainWindow):
         if self._config_mode == "name":
             name_keys = ["garrafon", "medio", "galon"]
             self._config_draft["nombres"][name_keys[self._config_name_index]] = self.config_text_screen.text()
+            self._open_config_menu()
+            return
+        if self._config_mode == "system_name":
+            self._config_draft["nombre_sistema"] = self.config_text_screen.text()
             self._open_config_menu()
             return
         if self._config_mode == "contact_email":
@@ -842,7 +877,7 @@ class MainWindow(QMainWindow):
         if self._config_mode in {"login", "menu"}:
             self._exit_config_to_home()
             return
-        if self._config_mode in {"price", "name", "contact_email", "contact_phone", "volume", "time", "code_new"}:
+        if self._config_mode in {"price", "name", "system_name", "contact_email", "contact_phone", "volume", "time", "code_new"}:
             self._open_config_menu()
             return
         if self._config_mode == "code_confirm":
