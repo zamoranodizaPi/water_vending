@@ -1,7 +1,7 @@
 """Modern touch-friendly product selection screen for a 1024x600 kiosk."""
 from __future__ import annotations
 
-from PyQt5.QtCore import QTimer, QRect, Qt, pyqtSignal
+from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
     QFrame,
@@ -332,7 +332,6 @@ class ProductScreen(QWidget):
         self.cards = {}
         self.steps = []
         self._rinse_locked = False
-        self._ok_base_text = "Continuar"
         self._build_ui()
 
     def _build_ui(self):
@@ -376,7 +375,7 @@ class ProductScreen(QWidget):
 
         self.credit_box = ClickableFrame()
         self.credit_box.setObjectName("creditPill")
-        self.credit_box.setFixedSize(160, 56)
+        self.credit_box.setFixedSize(190, 56)
         self.credit_box.pressed.connect(self.credit_box_pressed.emit)
         credit_layout = QHBoxLayout(self.credit_box)
         credit_layout.setContentsMargins(12, 8, 12, 8)
@@ -393,7 +392,7 @@ class ProductScreen(QWidget):
             )
         else:
             coin.setPixmap(coin_pix.scaled(28, 28, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        self.credit_label = QLabel("Crédito\n$0")
+        self.credit_label = QLabel("Crédito $0")
         self.credit_label.setObjectName("creditText")
         self.credit_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         credit_layout.addWidget(coin)
@@ -417,13 +416,14 @@ class ProductScreen(QWidget):
         self.section_label.setProperty("warning", False)
         top_row.addWidget(self.section_label, 1)
 
-        self.ok_btn = QPushButton(self._ok_base_text)
-        self.ok_btn.setObjectName("confirmButton")
-        self.ok_btn.setCursor(Qt.PointingHandCursor)
-        self.ok_btn.setMinimumHeight(48)
-        self.ok_btn.setMinimumWidth(180)
-        self.ok_btn.clicked.connect(self.ok_pressed.emit)
-        top_row.addWidget(self.ok_btn, 0, Qt.AlignRight)
+        self.countdown_label = QLabel("")
+        self.countdown_label.setObjectName("selectionCountdown")
+        self.countdown_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.countdown_label.setVisible(False)
+        self.countdown_label.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:18px; font-weight:800; color:{PRIMARY};"
+        )
+        top_row.addWidget(self.countdown_label, 0, Qt.AlignRight)
         section_layout.addLayout(top_row)
 
         self.alert_label = QLabel("")
@@ -476,23 +476,15 @@ class ProductScreen(QWidget):
 
         root.addWidget(self.instructions_frame)
 
-    def mousePressEvent(self, event):
-        if not self.ok_btn.isEnabled():
-            top_left = self.ok_btn.mapTo(self, self.ok_btn.rect().topLeft())
-            rect = QRect(top_left, self.ok_btn.size())
-            if rect.contains(event.pos()):
-                self.disabled_control_touched.emit("ok")
-        super().mousePressEvent(event)
-
     def set_credit(self, credit: float):
         self.credit_label.setProperty("warning", False)
         refresh_style(self.credit_label)
-        self.credit_label.setText(f"Crédito\n${credit:.0f}")
+        self.credit_label.setText(f"Crédito ${credit:.0f}")
 
     def show_credit_warning(self, text: str):
         self.credit_label.setProperty("warning", True)
         refresh_style(self.credit_label)
-        self.credit_label.setText(text.replace(": ", "\n"))
+        self.credit_label.setText(text.replace(": ", " "))
 
     def show_alert(self, text: str, ms: int = 3000):
         self.alert_label.setText(text)
@@ -522,7 +514,7 @@ class ProductScreen(QWidget):
         self.cards[product_id].set_affordable(enabled)
 
     def set_ok_enabled(self, enabled: bool):
-        self.ok_btn.setEnabled(enabled)
+        return
 
     def set_rinse_enabled(self, enabled: bool):
         return
@@ -543,9 +535,11 @@ class ProductScreen(QWidget):
 
     def set_countdown(self, seconds: int | None):
         if seconds is None:
-            self.ok_btn.setText(self._ok_base_text)
+            self.countdown_label.clear()
+            self.countdown_label.setVisible(False)
             return
-        self.ok_btn.setText(f"{self._ok_base_text} ({seconds}s)")
+        self.countdown_label.setText(f"Regreso en {seconds}s")
+        self.countdown_label.setVisible(True)
 
     def set_instruction_focus(self, step_number: int | None):
         for index, step in enumerate(self.steps, start=1):

@@ -227,7 +227,7 @@ QLabel#alertLabel {{
 
 QLabel#creditText {{
     color: {TEXT_PRIMARY};
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 700;
 }}
 

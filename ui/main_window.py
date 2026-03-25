@@ -50,6 +50,7 @@ class MainWindow(QMainWindow):
         self.credit = 0.0
         self.flow_step = None
         self.current_fill_percent = 0
+        self._rinse_charge_pending = False
         self._played_75_audio = False
         self._last_input_at: dict[str, float] = {}
         self._selection_reset_timer = QTimer(self)
@@ -622,6 +623,7 @@ class MainWindow(QMainWindow):
         self._refresh_product_enablement(initial=True)
 
     def _cancel_to_idle(self):
+        self._charge_rinse_fee_if_needed()
         self._prompt_timeout_timer.stop()
         self._prompt_countdown_timer.stop()
         self._prompt_countdown_remaining = 0
@@ -632,6 +634,7 @@ class MainWindow(QMainWindow):
         self.flow_step = None
         self.current_product = None
         self.current_fill_percent = 0
+        self._rinse_charge_pending = False
         self.product_screen.clear_alert()
         self.product_screen.set_selected(None)
         self.product_screen.set_countdown(None)
@@ -688,6 +691,7 @@ class MainWindow(QMainWindow):
         self._prompt_timeout_timer.start(60000)
         self.button_leds.set_prompt_ready()
         self.flow_step = "await_fill_position"
+        self._rinse_charge_pending = True
         subtitle = "Presione OK Cuando Termine"
         if self.current_product["id"] == "full_garrafon":
             subtitle = "Gire el garrafon boca arriba"
@@ -735,6 +739,7 @@ class MainWindow(QMainWindow):
         self._prompt_countdown_remaining = 0
         self.prompt_screen.set_prompt_countdown(None)
         self.flow_step = "filling"
+        self._rinse_charge_pending = False
         self.current_fill_percent = 0
         self._played_75_audio = False
         self.button_leds.set_processing()
@@ -861,6 +866,7 @@ class MainWindow(QMainWindow):
         self.current_product = None
         self.flow_step = None
         self.current_fill_percent = 0
+        self._rinse_charge_pending = False
         self.product_screen.set_selected(None)
         self._refresh_product_enablement()
         self.stack.setCurrentWidget(self.product_screen)
@@ -870,6 +876,16 @@ class MainWindow(QMainWindow):
         if self.stack.currentWidget() != self.prompt_screen:
             return
         self._cancel_to_idle()
+
+    def _charge_rinse_fee_if_needed(self):
+        if not self._rinse_charge_pending:
+            return
+        fee = min(3.0, self.credit)
+        if fee > 0:
+            self.credit = round(self.credit - fee, 2)
+            self._update_credit_displays()
+            self.product_screen.show_alert(f"Se cobraron ${fee:.0f} por enjuague", ms=3000)
+        self._rinse_charge_pending = False
 
     def _start_prompt_countdown(self):
         self._prompt_countdown_remaining = 60
