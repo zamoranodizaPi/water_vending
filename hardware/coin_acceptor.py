@@ -1,4 +1,4 @@
-"""Coin acceptor handler for a normally-closed pulse train on GPIO12.
+"""Coin acceptor handler for a normally-closed pulse train on GPIO19.
 
 Each coin is reported as a HIGH pulse of about 100 ms with the line held LOW by
 the Raspberry Pi pull-down the rest of the time.
@@ -27,7 +27,7 @@ class CoinAcceptor(QObject):
         on_coin: Callable[[int], None],
         *,
         flush_window_s: float = 0.3,
-        min_pulse_us: int = 100000,
+        min_pulse_us: int = 40000,
         poll_ms: int = 50,
         parent=None,
     ):
@@ -36,8 +36,6 @@ class CoinAcceptor(QObject):
         self.on_coin = on_coin
         self.flush_window_s = flush_window_s
         self.min_pulse_us = min_pulse_us
-        self.max_gap_us = 120000
-        self._last_state = 0
         self._last_tick = 0
         self._last_pulse_at = 0.0
         self._pending_pulses = 0
@@ -62,31 +60,25 @@ class CoinAcceptor(QObject):
             return
         self._pi.set_mode(self.pin, pigpio.INPUT)
         self._pi.set_pull_up_down(self.pin, pigpio.PUD_DOWN)
-        self._callback = self._pi.callback(self.pin, pigpio.EITHER_EDGE, self._pulse_callback)
+        self._callback = self._pi.callback(self.pin, pigpio.RISING_EDGE, self._pulse_callback)
 
     def _pulse_callback(self, gpio: int, level: int, tick: int):
         print(f"GPIO: {gpio} Level: {level} Tick: {tick}")
-        if level not in (0, 1):
-            self._last_state = level
+        print(f"Nivel: {level}")
+        if level != 1:
             return
 
-        if self._last_state == 0 and level == 1:
-            if self._last_tick != 0:
-                delta = pigpio.tickDiff(self._last_tick, tick)
-                print(f"Pulso GPIO{gpio}: intervalo={delta}us")
-                if delta < self.min_pulse_us:
-                    print(f"Pulso GPIO{gpio} ignorado por intervalo corto: {delta}us")
-                    self._last_state = level
-                    return
-                if delta > self.max_gap_us:
-                    print(f"Pulso GPIO{gpio}: nueva moneda, intervalo={delta}us")
+        if self._last_tick != 0:
+            delta = pigpio.tickDiff(self._last_tick, tick)
+            print(f"Pulso GPIO{gpio}: intervalo={delta}us")
+            if delta < self.min_pulse_us:
+                print(f"Pulso GPIO{gpio} ignorado por intervalo corto: {delta}us")
+                return
 
-            self._last_tick = tick
-            self._pending_pulses += 1
-            self._last_pulse_at = time.monotonic()
-            print(f"Pulso válido → Crédito pendiente: {self._pending_pulses}")
-
-        self._last_state = level
+        self._last_tick = tick
+        self._pending_pulses += 1
+        self._last_pulse_at = time.monotonic()
+        print(f"Pulso detectado → Crédito pendiente: {self._pending_pulses}")
 
     def _flush_if_ready(self):
         if self._pending_pulses <= 0:
