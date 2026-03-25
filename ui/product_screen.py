@@ -89,7 +89,7 @@ class ProductCard(QFrame):
         self.price_corner = QLabel(f"${self.product['price']:.0f}")
         self.price_corner.setAlignment(Qt.AlignRight | Qt.AlignTop)
         self.price_corner.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{PRIMARY};"
+            f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};"
         )
         self.price_corner.setVisible(False)
         body.addWidget(self.price_corner, 0, Qt.AlignRight | Qt.AlignTop)
@@ -101,7 +101,7 @@ class ProductCard(QFrame):
         if pixmap.isNull():
             self.icon.setText("Agua")
             self.icon.setStyleSheet(
-                f"font-family:{APP_FONT}; font-size:22px; font-weight:700; color:{PRIMARY};"
+                f"font-family:{APP_FONT}; font-size:22px; font-weight:700; color:{SURFACE};"
             )
         else:
             scaled = pixmap.scaled(220, 178, Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -111,7 +111,7 @@ class ProductCard(QFrame):
         self.price = QLabel(f"${self.product['price']:.0f}")
         self.price.setAlignment(Qt.AlignCenter)
         self.price.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:28px; font-weight:800; color:{PRIMARY};"
+            f"font-family:{APP_FONT}; font-size:28px; font-weight:800; color:{SURFACE};"
         )
         body.addWidget(self.price)
 
@@ -169,6 +169,7 @@ class ProductCard(QFrame):
         price_text = f"${self.product['price']:.0f}"
         self.price.setText(price_text)
         self.price_corner.setText(price_text)
+        self.buy_button.setText(self.product["name"])
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and self._interactive:

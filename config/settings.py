@@ -72,6 +72,16 @@ DEFAULT_RUNTIME_CONFIG = {
         "medio": 8.0,
         "galon": 5.0,
     },
+    "nombres": {
+        "garrafon": "Garrafón Completo",
+        "medio": "Medio Garrafón",
+        "galon": "Galón",
+    },
+    "volumenes": {
+        "garrafon": 19.0,
+        "medio": 10.0,
+        "galon": 3.8,
+    },
     "tiempo_por_litro": 1.6,
     "codigo": "1000",
 }
@@ -116,6 +126,20 @@ def _sanitize_runtime_config(raw: dict | None) -> dict:
             value = precios.get(key)
             if isinstance(value, (int, float)):
                 config["precios"][key] = round(float(value), 2)
+    nombres = raw.get("nombres", {})
+    if isinstance(nombres, dict):
+        for key in ("garrafon", "medio", "galon"):
+            value = nombres.get(key)
+            if isinstance(value, str):
+                cleaned = value.strip()
+                if cleaned:
+                    config["nombres"][key] = cleaned[:18]
+    volumenes = raw.get("volumenes", {})
+    if isinstance(volumenes, dict):
+        for key in ("garrafon", "medio", "galon"):
+            value = volumenes.get(key)
+            if isinstance(value, (int, float)):
+                config["volumenes"][key] = round(max(0.1, float(value)), 2)
     tiempo = raw.get("tiempo_por_litro")
     if isinstance(tiempo, (int, float)):
         config["tiempo_por_litro"] = round(max(0.01, float(tiempo)), 2)
@@ -147,6 +171,12 @@ def apply_runtime_config(config: dict) -> None:
     PRODUCTS[0]["price"] = sanitized["precios"]["garrafon"]
     PRODUCTS[1]["price"] = sanitized["precios"]["medio"]
     PRODUCTS[2]["price"] = sanitized["precios"]["galon"]
+    PRODUCTS[0]["name"] = sanitized["nombres"]["garrafon"]
+    PRODUCTS[1]["name"] = sanitized["nombres"]["medio"]
+    PRODUCTS[2]["name"] = sanitized["nombres"]["galon"]
+    PRODUCTS[0]["volume_l"] = sanitized["volumenes"]["garrafon"]
+    PRODUCTS[1]["volume_l"] = sanitized["volumenes"]["medio"]
+    PRODUCTS[2]["volume_l"] = sanitized["volumenes"]["galon"]
     FILL_SECONDS_PER_LITER = sanitized["tiempo_por_litro"]
     ACCESS_CODE = sanitized["codigo"]
 
@@ -157,6 +187,16 @@ def get_runtime_config() -> dict:
             "garrafon": float(PRODUCTS[0]["price"]),
             "medio": float(PRODUCTS[1]["price"]),
             "galon": float(PRODUCTS[2]["price"]),
+        },
+        "nombres": {
+            "garrafon": str(PRODUCTS[0]["name"]),
+            "medio": str(PRODUCTS[1]["name"]),
+            "galon": str(PRODUCTS[2]["name"]),
+        },
+        "volumenes": {
+            "garrafon": float(PRODUCTS[0]["volume_l"]),
+            "medio": float(PRODUCTS[1]["volume_l"]),
+            "galon": float(PRODUCTS[2]["volume_l"]),
         },
         "tiempo_por_litro": float(FILL_SECONDS_PER_LITER),
         "codigo": ACCESS_CODE,

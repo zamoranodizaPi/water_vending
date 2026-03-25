@@ -180,6 +180,95 @@ class ConfigCodeScreen(ConfigBaseScreen):
         self.message.setStyleSheet(f"font-family:{APP_FONT}; font-size:18px; font-weight:700; color:{PRIMARY};")
 
 
+class ConfigTextScreen(ConfigBaseScreen):
+    CHARSET = list(" ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÁÉÍÓÚáéíóúÑñ0123456789.-")
+
+    def __init__(self, logo_path):
+        super().__init__(logo_path)
+        self.max_length = 18
+        self.characters = [" "] * self.max_length
+        self.cursor_index = 0
+
+        self.title = QLabel(CONFIG_TITLE)
+        self.title.setObjectName("screenTitle")
+        self.title.setAlignment(Qt.AlignCenter)
+
+        self.subtitle = QLabel("")
+        self.subtitle.setAlignment(Qt.AlignCenter)
+        self.subtitle.setWordWrap(True)
+        self.subtitle.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:18px; font-weight:600; color:{SECONDARY};"
+        )
+
+        self.row = QHBoxLayout()
+        self.row.setContentsMargins(0, 0, 0, 0)
+        self.row.setSpacing(4)
+        self.char_labels = []
+        for _ in range(self.max_length):
+            label = QLabel(" ")
+            label.setAlignment(Qt.AlignCenter)
+            label.setFixedSize(34, 56)
+            self.char_labels.append(label)
+            self.row.addWidget(label)
+
+        self.help = QLabel("P1:+letra  P2:siguiente  P3:regresar  OK:guardar y seguir")
+        self.help.setAlignment(Qt.AlignCenter)
+        self.help.setWordWrap(True)
+        self.help.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:16px; font-weight:600; color:{SECONDARY};"
+        )
+
+        self.panel_layout.addWidget(self.title)
+        self.panel_layout.addWidget(self.subtitle)
+        self.panel_layout.addStretch(1)
+        self.panel_layout.addLayout(self.row)
+        self.panel_layout.addStretch(1)
+        self.panel_layout.addWidget(self.help)
+        self._refresh()
+
+    def configure(self, title: str, subtitle: str, value: str):
+        self.title.setText(title)
+        self.subtitle.setText(subtitle)
+        text = (value or "")[: self.max_length].ljust(self.max_length)
+        self.characters = list(text)
+        self.cursor_index = 0
+        self._refresh()
+
+    def increment_char(self):
+        current = self.characters[self.cursor_index]
+        try:
+            index = self.CHARSET.index(current)
+        except ValueError:
+            index = 0
+        self.characters[self.cursor_index] = self.CHARSET[(index + 1) % len(self.CHARSET)]
+        self._refresh()
+
+    def next_char(self):
+        self.cursor_index = (self.cursor_index + 1) % self.max_length
+        self._refresh()
+
+    def text(self) -> str:
+        return "".join(self.characters).rstrip() or "Producto"
+
+    def _refresh(self):
+        for index, label in enumerate(self.char_labels):
+            selected = index == self.cursor_index
+            border_color = ACCENT_ORANGE if selected else "#cbd5e1"
+            background = SURFACE if selected else "#f8fafc"
+            label.setText(self.characters[index] if self.characters[index] != " " else "·")
+            label.setStyleSheet(
+                f"""
+                font-family:{APP_FONT};
+                font-size:24px;
+                font-weight:800;
+                color:{TEXT_PRIMARY};
+                background-color:{background};
+                border:3px solid {border_color};
+                border-radius:10px;
+                """
+            )
+
+
 class ConfigMenuScreen(ConfigBaseScreen):
     def __init__(self, logo_path):
         super().__init__(logo_path)

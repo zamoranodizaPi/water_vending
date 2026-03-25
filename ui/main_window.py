@@ -18,7 +18,7 @@ from hardware.coin_acceptor import CoinAcceptor
 from hardware.gpio_controller import GPIOController, GPIOControllerError
 from hardware.valve_controller import ValveController
 from ui.audio_manager import AudioManager
-from ui.config_screen import ConfigCodeScreen, ConfigHoldScreen, ConfigMenuScreen, ConfigValueScreen
+from ui.config_screen import ConfigCodeScreen, ConfigHoldScreen, ConfigMenuScreen, ConfigTextScreen, ConfigValueScreen
 from ui.dispensing_screen import DispensingScreen
 from ui.payment_screen import MessageScreen, PromptScreen
 from ui.product_screen import ProductScreen
@@ -75,6 +75,8 @@ class MainWindow(QMainWindow):
         self._config_draft = settings.get_runtime_config()
         self._config_menu_options = [
             "Ajustar precios",
+            "Cambiar nombres",
+            "Cambiar volúmenes",
             "Ajustar tiempo por litro",
             "Cambiar código",
             "Guardar y salir",
@@ -82,6 +84,8 @@ class MainWindow(QMainWindow):
         ]
         self._config_menu_index = 0
         self._config_price_index = 0
+        self._config_name_index = 0
+        self._config_volume_index = 0
         self._config_new_code = ""
 
         self.products = {p["id"]: p for p in settings.PRODUCTS}
@@ -163,6 +167,7 @@ class MainWindow(QMainWindow):
         self.config_hold_screen = ConfigHoldScreen(settings.LOGO_IMAGE)
         self.config_code_screen = ConfigCodeScreen(settings.LOGO_IMAGE)
         self.config_menu_screen = ConfigMenuScreen(settings.LOGO_IMAGE)
+        self.config_text_screen = ConfigTextScreen(settings.LOGO_IMAGE)
         self.config_value_screen = ConfigValueScreen(settings.LOGO_IMAGE)
 
         self.stack.addWidget(self.product_screen)
@@ -172,6 +177,7 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.config_hold_screen)
         self.stack.addWidget(self.config_code_screen)
         self.stack.addWidget(self.config_menu_screen)
+        self.stack.addWidget(self.config_text_screen)
         self.stack.addWidget(self.config_value_screen)
 
         self.product_screen.product_selected.connect(self._set_selected_product)
@@ -281,6 +287,46 @@ class MainWindow(QMainWindow):
         self._refresh_time_screen()
         self.stack.setCurrentWidget(self.config_value_screen)
 
+    def _open_name_screen(self):
+        self._config_mode = "name"
+        self._config_name_index = 0
+        self._refresh_name_screen()
+        self.stack.setCurrentWidget(self.config_text_screen)
+
+    def _refresh_name_screen(self):
+        labels = [
+            ("Garrafón", "garrafon"),
+            ("Medio", "medio"),
+            ("Galón", "galon"),
+        ]
+        name, key = labels[self._config_name_index]
+        self.config_text_screen.configure(
+            "Cambiar nombres",
+            f"{name} - Nombre visible",
+            self._config_draft["nombres"][key],
+        )
+
+    def _open_volume_screen(self):
+        self._config_mode = "volume"
+        self._config_volume_index = 0
+        self._refresh_volume_screen()
+        self.stack.setCurrentWidget(self.config_value_screen)
+
+    def _refresh_volume_screen(self):
+        labels = [
+            ("Garrafón", "garrafon"),
+            ("Medio", "medio"),
+            ("Galón", "galon"),
+        ]
+        name, key = labels[self._config_volume_index]
+        value = self._config_draft["volumenes"][key]
+        self.config_value_screen.configure(
+            "Cambiar volúmenes",
+            f"{name} - Volumen actual",
+            f"{value:.2f} L",
+            "P1:+0.1  P2:-0.1  P3:regresar  OK:guardar y seguir",
+        )
+
     def _refresh_time_screen(self):
         self.config_value_screen.configure(
             "Tiempo por litro",
@@ -338,6 +384,29 @@ class MainWindow(QMainWindow):
                 return
             self._refresh_price_screen()
             return
+        if self._config_mode == "name":
+            if product_id == "full_garrafon":
+                self.config_text_screen.increment_char()
+            elif product_id == "half_garrafon":
+                self.config_text_screen.next_char()
+            elif product_id == "gallon":
+                self._open_config_menu()
+                return
+            name_keys = ["garrafon", "medio", "galon"]
+            self._config_draft["nombres"][name_keys[self._config_name_index]] = self.config_text_screen.text()
+            return
+        if self._config_mode == "volume":
+            volume_keys = ["garrafon", "medio", "galon"]
+            key = volume_keys[self._config_volume_index]
+            if product_id == "full_garrafon":
+                self._config_draft["volumenes"][key] = round(self._config_draft["volumenes"][key] + 0.1, 2)
+            elif product_id == "half_garrafon":
+                self._config_draft["volumenes"][key] = round(max(0.1, self._config_draft["volumenes"][key] - 0.1), 2)
+            elif product_id == "gallon":
+                self._open_config_menu()
+                return
+            self._refresh_volume_screen()
+            return
         if self._config_mode == "time":
             if product_id == "full_garrafon":
                 self._config_draft["tiempo_por_litro"] = round(self._config_draft["tiempo_por_litro"] + 0.01, 2)
@@ -360,6 +429,10 @@ class MainWindow(QMainWindow):
             self._config_menu_index = self.config_menu_screen.index
             if option == "Ajustar precios":
                 self._open_price_screen()
+            elif option == "Cambiar nombres":
+                self._open_name_screen()
+            elif option == "Cambiar volúmenes":
+                self._open_volume_screen()
             elif option == "Ajustar tiempo por litro":
                 self._open_time_screen()
             elif option == "Cambiar código":
@@ -374,6 +447,22 @@ class MainWindow(QMainWindow):
             if self._config_price_index < 2:
                 self._config_price_index += 1
                 self._refresh_price_screen()
+            else:
+                self._open_config_menu()
+            return
+        if self._config_mode == "name":
+            name_keys = ["garrafon", "medio", "galon"]
+            self._config_draft["nombres"][name_keys[self._config_name_index]] = self.config_text_screen.text()
+            if self._config_name_index < 2:
+                self._config_name_index += 1
+                self._refresh_name_screen()
+            else:
+                self._open_config_menu()
+            return
+        if self._config_mode == "volume":
+            if self._config_volume_index < 2:
+                self._config_volume_index += 1
+                self._refresh_volume_screen()
             else:
                 self._open_config_menu()
             return
