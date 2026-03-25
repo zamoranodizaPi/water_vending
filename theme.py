@@ -137,19 +137,6 @@ QFrame#productCard[selectedScale="true"] {{
     margin-bottom: 4px;
 }}
 
-QFrame#cardAccentBar {{
-    border-top-left-radius: 18px;
-    border-top-right-radius: 18px;
-    border-bottom-left-radius: 0px;
-    border-bottom-right-radius: 0px;
-    background:qlineargradient(
-        x1:0, y1:0, x2:1, y2:0,
-        stop:0 {PRIMARY},
-        stop:0.55 {PRIMARY_HOVER},
-        stop:1 {ORANGE}
-    );
-}}
-
 QLabel {{
     color: {TEXT_PRIMARY};
     background-color: transparent;

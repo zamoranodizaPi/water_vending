@@ -101,7 +101,7 @@ class ConfigCodeScreen(ConfigBaseScreen):
         self.title.setObjectName("screenTitle")
         self.title.setAlignment(Qt.AlignCenter)
 
-        self.hint = QLabel("P1:+  P2:siguiente  P3:anterior  OK:confirmar")
+        self.hint = QLabel("P1:+  P2:-  P3:siguiente  OK:confirmar")
         self.hint.setAlignment(Qt.AlignCenter)
         self.hint.setStyleSheet(
             f"font-family:{APP_FONT}; font-size:16px; font-weight:600; color:{SECONDARY};"
@@ -164,8 +164,8 @@ class ConfigCodeScreen(ConfigBaseScreen):
         self.cursor_index = min(3, self.cursor_index + 1)
         self._refresh_digits()
 
-    def previous_digit(self):
-        self.cursor_index = max(0, self.cursor_index - 1)
+    def decrement_digit(self):
+        self.digits[self.cursor_index] = str((int(self.digits[self.cursor_index]) - 1) % 10)
         self._refresh_digits()
 
     def code(self) -> str:
@@ -211,7 +211,7 @@ class ConfigTextScreen(ConfigBaseScreen):
             self.char_labels.append(label)
             self.row.addWidget(label)
 
-        self.help = QLabel("P1:+letra  P2:siguiente  P3:regresar  OK:guardar y seguir")
+        self.help = QLabel("P1:+letra  P2:-letra  P3:siguiente  OK:guardar")
         self.help.setAlignment(Qt.AlignCenter)
         self.help.setWordWrap(True)
         self.help.setStyleSheet(
@@ -247,6 +247,15 @@ class ConfigTextScreen(ConfigBaseScreen):
         self.cursor_index = (self.cursor_index + 1) % self.max_length
         self._refresh()
 
+    def decrement_char(self):
+        current = self.characters[self.cursor_index]
+        try:
+            index = self.CHARSET.index(current)
+        except ValueError:
+            index = 0
+        self.characters[self.cursor_index] = self.CHARSET[(index - 1) % len(self.CHARSET)]
+        self._refresh()
+
     def text(self) -> str:
         return "".join(self.characters).rstrip() or "Producto"
 
@@ -277,7 +286,7 @@ class ConfigMenuScreen(ConfigBaseScreen):
         self.title = QLabel(CONFIG_TITLE)
         self.title.setObjectName("screenTitle")
         self.title.setAlignment(Qt.AlignCenter)
-        self.hint = QLabel("P1:subir  P2:bajar  P3:volver  OK:seleccionar")
+        self.hint = QLabel("P1:subir  P2:bajar  OK:seleccionar  Cancelar:volver")
         self.hint.setAlignment(Qt.AlignCenter)
         self.hint.setStyleSheet(
             f"font-family:{APP_FONT}; font-size:16px; font-weight:600; color:{SECONDARY};"

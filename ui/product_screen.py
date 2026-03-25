@@ -76,11 +76,6 @@ class ProductCard(QFrame):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        self.accent_bar = QFrame()
-        self.accent_bar.setObjectName("cardAccentBar")
-        self.accent_bar.setFixedHeight(4)
-        root.addWidget(self.accent_bar)
-
         body = QVBoxLayout()
         body.setContentsMargins(10, 8, 10, 12)
         body.setSpacing(4)
@@ -158,6 +153,11 @@ class ProductCard(QFrame):
             """
         )
         self.buy_button.clicked.connect(self._handle_buy_clicked)
+        button_shadow = QGraphicsDropShadowEffect(self.buy_button)
+        button_shadow.setBlurRadius(16)
+        button_shadow.setOffset(0, 4)
+        button_shadow.setColor(color_with_alpha("#0f172a", 55))
+        self.buy_button.setGraphicsEffect(button_shadow)
         body.addSpacing(4)
         body.addWidget(self.buy_button)
 
