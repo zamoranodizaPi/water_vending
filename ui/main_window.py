@@ -444,7 +444,13 @@ class MainWindow(QMainWindow):
         if self._config_mode == "volume":
             volume_keys = ["garrafon", "medio", "galon"]
             self._config_draft["volumenes"][volume_keys[self._config_volume_index]] = self._config_edit_value
-            self._open_config_menu()
+            if self._config_volume_index < 2:
+                self._config_volume_index += 1
+                next_key = volume_keys[self._config_volume_index]
+                self._config_edit_value = float(self._config_draft["volumenes"][next_key])
+                self._refresh_volume_screen()
+            else:
+                self._open_config_menu()
             return
         if self._config_mode == "time":
             self._config_draft["tiempo_por_litro"] = self._config_edit_value
