@@ -7,6 +7,7 @@ Type=simple
 User=pi
 WorkingDirectory=/opt/water_vending
 Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/opt/water_vending/deploy/vending_email.env
 ExecStart=/opt/water_vending/.venv/bin/python /opt/water_vending/main.py
 Restart=always
 RestartSec=3

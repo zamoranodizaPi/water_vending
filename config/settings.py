@@ -125,9 +125,9 @@ ACCESS_CODE = DEFAULT_RUNTIME_CONFIG["codigo"]
 SYSTEM_NAME = DEFAULT_RUNTIME_CONFIG["nombre_sistema"]
 CONTACT_EMAIL = DEFAULT_RUNTIME_CONFIG["contacto"]["correo"]
 CONTACT_PHONE = DEFAULT_RUNTIME_CONFIG["contacto"]["telefono"]
-SMTP_HOST = os.getenv("VENDING_SMTP_HOST", "")
+SMTP_HOST = os.getenv("VENDING_SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("VENDING_SMTP_PORT", "587"))
-SMTP_USERNAME = os.getenv("VENDING_SMTP_USERNAME", "")
+SMTP_USERNAME = os.getenv("VENDING_SMTP_USERNAME", "zamoranodiza@gmail.com")
 SMTP_PASSWORD = os.getenv("VENDING_SMTP_PASSWORD", "")
 SMTP_FROM = os.getenv("VENDING_SMTP_FROM", SMTP_USERNAME)
 SMTP_USE_TLS = os.getenv("VENDING_SMTP_USE_TLS", "1") != "0"
