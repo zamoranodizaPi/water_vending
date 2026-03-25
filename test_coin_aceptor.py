@@ -10,9 +10,9 @@ import time
 import pigpio
 
 GPIO_PIN = 19
-MIN_GAP_US = 40000
-MIN_WIDTH_US = 70000
-MAX_WIDTH_US = 130000
+MIN_GAP_US = 30000
+MIN_WIDTH_US = 30000
+MAX_WIDTH_US = 220000
 
 
 class CoinPulseMonitor:
