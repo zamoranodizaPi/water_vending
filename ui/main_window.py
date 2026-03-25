@@ -109,9 +109,9 @@ class MainWindow(QMainWindow):
             pins["coin_pulse"],
             self.coin_inserted.emit,
             flush_window_s=0.3,
-            min_gap_us=40000,
-            min_width_us=70000,
-            max_width_us=130000,
+            min_gap_us=30000,
+            min_width_us=30000,
+            max_width_us=220000,
             poll_ms=50,
             parent=self,
         )
