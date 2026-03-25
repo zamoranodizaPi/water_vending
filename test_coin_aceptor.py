@@ -10,7 +10,9 @@ import time
 import pigpio
 
 GPIO_PIN = 19
-MIN_PULSE_US = 40000
+MIN_GAP_US = 40000
+MIN_WIDTH_US = 70000
+MAX_WIDTH_US = 130000
 
 
 class CoinPulseMonitor:
@@ -26,21 +28,36 @@ class CoinPulseMonitor:
 
         self.pi.set_mode(GPIO_PIN, pigpio.INPUT)
         self.pi.set_pull_up_down(GPIO_PIN, pigpio.PUD_UP)
-        self.callback = self.pi.callback(GPIO_PIN, pigpio.FALLING_EDGE, self._on_pulse)
+        self.pulse_start_tick = 0
+        self.last_count_tick = 0
+        self.callback = self.pi.callback(GPIO_PIN, pigpio.EITHER_EDGE, self._on_pulse)
 
     def _on_pulse(self, gpio: int, level: int, tick: int):
         print(f"GPIO: {gpio} Level: {level} Tick: {tick}")
-        if level != 0:
+
+        if level == 0:
+            self.pulse_start_tick = tick
             return
 
-        if self.last_tick != 0:
-            delta = pigpio.tickDiff(self.last_tick, tick)
-            print(f"Intervalo: {delta}us")
-            if delta < MIN_PULSE_US:
-                print(f"Pulso ignorado por rebote: {delta}us")
+        if level != 1 or self.pulse_start_tick == 0:
+            return
+
+        width_us = pigpio.tickDiff(self.pulse_start_tick, tick)
+        self.pulse_start_tick = 0
+        print(f"Ancho LOW: {width_us}us")
+
+        if width_us < MIN_WIDTH_US or width_us > MAX_WIDTH_US:
+            print(f"Pulso ignorado por ancho fuera de rango: {width_us}us")
+            return
+
+        if self.last_count_tick != 0:
+            gap_us = pigpio.tickDiff(self.last_count_tick, tick)
+            print(f"Intervalo entre conteos: {gap_us}us")
+            if gap_us < MIN_GAP_US:
+                print(f"Pulso ignorado por rebote: {gap_us}us")
                 return
 
-        self.last_tick = tick
+        self.last_count_tick = tick
         self.count += 1
         print(f"Conteos: {self.count}")
 
