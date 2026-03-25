@@ -770,6 +770,8 @@ class MainWindow(QMainWindow):
         days = set()
         for row in self.sales_db.fetch_sales():
             days.add(str(row["timestamp"])[:10])
+        for row in self.sales_db.fetch_rinse_events():
+            days.add(str(row["timestamp"])[:10])
         for row in self.sales_db.fetch_email_events("out_of_service"):
             days.add(str(row["timestamp"])[:10])
         return sorted(days, reverse=True)
@@ -803,12 +805,16 @@ class MainWindow(QMainWindow):
 
     def _render_audit_summary_page(self):
         sales = self.sales_db.fetch_sales()
+        rinse_events = self.sales_db.fetch_rinse_events()
         labels = [("Total", None)] + [(product["name"], product["name"]) for product in settings.PRODUCTS]
         label, product_name = labels[self._audit_product_index]
         filtered = sales if product_name is None else [row for row in sales if row["product"] == product_name]
         total_liters = sum(float(row["volume"]) for row in filtered)
         total_sales = len(filtered)
         total_revenue = sum(float(row["price"]) for row in filtered)
+        rinse_count = len(rinse_events)
+        liters_per_rinse = round(settings.RINSE_SECONDS / settings.FILL_SECONDS_PER_LITER, 2)
+        total_rinse_liters = sum(float(row["liters"]) for row in rinse_events)
         rows = []
         total_volume_all = 0.0
         total_sales_all = 0
@@ -820,6 +826,7 @@ class MainWindow(QMainWindow):
             total_sales_all += count
             rows.append([product["name"], f"{liters:.2f} L", str(count)])
         rows.append(["Total general", f"{total_volume_all:.2f} L", str(total_sales_all)])
+        rows.append(["Enjuagues", f"{total_rinse_liters:.2f} L", str(rinse_count)])
         self.audit_screen.set_view(
             title="Auditoría",
             subtitle="Agua servida y ventas por producto",
@@ -828,6 +835,8 @@ class MainWindow(QMainWindow):
                 f"Litros servidos: {total_liters:.2f} L",
                 f"Ventas registradas: {total_sales}",
                 f"Ingreso cobrado: ${total_revenue:.2f}",
+                f"Cantidad de enjuagues: {rinse_count}",
+                f"Litros por enjuague: {liters_per_rinse:.2f} L",
             ],
             headers=["Producto", "Litros", "Ventas"],
             rows=rows,
@@ -1412,6 +1421,10 @@ class MainWindow(QMainWindow):
                 self.audio.play("error")
                 self._reset_to_home()
                 return
+            self.sales_db.log_rinse_event(
+                datetime.now().isoformat(timespec="seconds"),
+                round(settings.RINSE_SECONDS / settings.FILL_SECONDS_PER_LITER, 2),
+            )
             self._show_upright_prompt()
             return
 

@@ -51,6 +51,15 @@ class SalesDB:
                 )
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS rinse_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    liters REAL NOT NULL
+                )
+                """
+            )
 
     def log_sale(self, sale: Dict):
         with self._connect() as conn:
@@ -86,6 +95,16 @@ class SalesDB:
                 VALUES (?, ?, ?, ?, ?)
                 """,
                 (timestamp, event_type, recipient, subject, status),
+            )
+
+    def log_rinse_event(self, timestamp: str, liters: float):
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO rinse_events(timestamp, liters)
+                VALUES (?, ?)
+                """,
+                (timestamp, float(liters)),
             )
 
     def fetch_sales(self) -> list[dict]:
@@ -127,8 +146,21 @@ class SalesDB:
             rows = conn.execute(query, params).fetchall()
         return [dict(row) for row in rows]
 
+    def fetch_rinse_events(self) -> list[dict]:
+        with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                """
+                SELECT timestamp, liters
+                FROM rinse_events
+                ORDER BY timestamp DESC
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def clear_audit_data(self):
         with self._connect() as conn:
             conn.execute("DELETE FROM sales")
             conn.execute("DELETE FROM coin_events")
             conn.execute("DELETE FROM email_events")
+            conn.execute("DELETE FROM rinse_events")
