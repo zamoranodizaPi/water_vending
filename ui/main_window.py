@@ -491,6 +491,9 @@ class MainWindow(QMainWindow):
         if self.current_product is not None and self.credit < self.current_product["price"]:
             self.product_screen.set_instruction_focus(2)
             return
+        if self.current_product is not None and self.credit >= self.current_product["price"]:
+            self.product_screen.set_instruction_focus(3)
+            return
         self.product_screen.set_instruction_focus(None)
 
     def _show_credit_insufficient(self):
@@ -509,15 +512,23 @@ class MainWindow(QMainWindow):
         if not self.current_product:
             return
         if self.credit >= self.current_product["price"]:
-            had_countdown = self._selection_reset_timer.isActive()
             self._selection_reset_timer.stop()
             self._selection_countdown_timer.stop()
             self._selection_countdown_remaining = 0
             self.product_screen.set_countdown(None)
             self._update_credit_displays()
-            if had_countdown and self.stack.currentWidget() == self.product_screen:
-                self.audio.queue(["select_product", "press_ok"])
-                self._show_preparation_prompt()
+            if self.stack.currentWidget() == self.product_screen:
+                QTimer.singleShot(1000, self._notify_ready_for_ok)
+
+    def _notify_ready_for_ok(self):
+        if self.stack.currentWidget() != self.product_screen:
+            return
+        if not self.current_product:
+            return
+        if self.credit < self.current_product["price"]:
+            return
+        self.audio.queue(["select_product", "press_ok"])
+        self.product_screen.show_alert("Crédito completo. Presione OK", ms=2000)
 
     def _tick_selection_countdown(self):
         if self._selection_countdown_remaining <= 1:

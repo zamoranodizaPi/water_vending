@@ -465,7 +465,6 @@ class ProductScreen(QWidget):
         steps = [
             "Seleccione producto",
             "Ingrese crédito",
-            "Coloque garrafón",
             "Presione OK",
         ]
         for index, text in enumerate(steps, start=1):

@@ -6,10 +6,9 @@ the Raspberry Pi pull-up the rest of the time.
 from __future__ import annotations
 
 import logging
-import time
 from typing import Callable
 
-from PyQt5.QtCore import QObject, QTimer
+from PyQt5.QtCore import QObject
 
 logger = logging.getLogger(__name__)
 
@@ -42,17 +41,10 @@ class CoinAcceptor(QObject):
         self.max_width_us = max_width_us
         self._pulse_start_tick = 0
         self._last_count_tick = 0
-        self._last_pulse_at = 0.0
-        self._pending_pulses = 0
         self._pi = None
         self._callback = None
 
-        self._flush_timer = QTimer(self)
-        self._flush_timer.setInterval(poll_ms)
-        self._flush_timer.timeout.connect(self._flush_if_ready)
-
         self._setup_pigpio()
-        self._flush_timer.start()
 
     def _setup_pigpio(self):
         if pigpio is None:
@@ -92,21 +84,10 @@ class CoinAcceptor(QObject):
                 return
 
         self._last_count_tick = tick
-        self._pending_pulses += 1
-        self._last_pulse_at = time.monotonic()
-        print(f"Pulso detectado → Crédito pendiente: {self._pending_pulses}")
-
-    def _flush_if_ready(self):
-        if self._pending_pulses <= 0:
-            return
-        if (time.monotonic() - self._last_pulse_at) < self.flush_window_s:
-            return
-        amount = self._pending_pulses
-        self._pending_pulses = 0
-        self.on_coin(amount)
+        print("Pulso detectado → Crédito +1")
+        self.on_coin(1)
 
     def shutdown(self):
-        self._flush_timer.stop()
         if self._callback is not None:
             self._callback.cancel()
             self._callback = None
