@@ -9,7 +9,7 @@ DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent / "config.json"
 @dataclass
 class AppConfig:
     # GPIO mapping
-    coin_pulse_gpio_pin: int = 19
+    coin_pulse_gpio_pin: int = 18
     select_full_gpio_pin: int = 16
     select_half_gpio_pin: int = 20
     select_gallon_gpio_pin: int = 21

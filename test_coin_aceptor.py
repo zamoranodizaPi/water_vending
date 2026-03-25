@@ -9,7 +9,7 @@ import time
 
 import pigpio
 
-GPIO_PIN = 19
+GPIO_PIN = 18
 MIN_GAP_US = 30000
 MIN_WIDTH_US = 30000
 MAX_WIDTH_US = 220000

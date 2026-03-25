@@ -1,5 +1,5 @@
 {
-  "coin_pulse_gpio_pin": 19,
+  "coin_pulse_gpio_pin": 18,
   "select_full_gpio_pin": 16,
   "select_half_gpio_pin": 20,
   "select_gallon_gpio_pin": 21,
