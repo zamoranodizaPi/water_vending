@@ -54,6 +54,7 @@ PINS = {
 COIN_VALUE = 1.0
 FILL_SECONDS_PER_LITER = 1.6
 RINSE_SECONDS = 3
+RINSE_LITERS = round(RINSE_SECONDS / FILL_SECONDS_PER_LITER, 2)
 EMERGENCY_RATE_PER_LITER = 1.0
 
 PRODUCTS = [
@@ -97,6 +98,7 @@ DEFAULT_RUNTIME_CONFIG = {
         "galon": 3.8,
     },
     "tiempo_por_litro": 1.6,
+    "litros_por_enjuague": round(RINSE_SECONDS / FILL_SECONDS_PER_LITER, 2),
     "codigo": "1000",
     "codigo_auditoria": "2000",
     "tema": "sunset_energy",
@@ -205,6 +207,9 @@ def _sanitize_runtime_config(raw: dict | None) -> dict:
     tiempo = raw.get("tiempo_por_litro")
     if isinstance(tiempo, (int, float)):
         config["tiempo_por_litro"] = round(max(0.01, float(tiempo)), 2)
+    litros_enjuague = raw.get("litros_por_enjuague")
+    if isinstance(litros_enjuague, (int, float)):
+        config["litros_por_enjuague"] = round(max(0.1, float(litros_enjuague)), 2)
     codigo = raw.get("codigo")
     if isinstance(codigo, str) and len(codigo) == 4 and codigo.isdigit():
         config["codigo"] = codigo
@@ -264,7 +269,7 @@ def save_runtime_config(config: dict) -> dict:
 
 
 def apply_runtime_config(config: dict) -> None:
-    global FILL_SECONDS_PER_LITER, ACCESS_CODE, AUDIT_CODE, UI_THEME, UI_MODE, BRAND_TITLE, BRAND_TAGLINE, SYSTEM_NAME, CONTACT_EMAIL, CONTACT_PHONE
+    global FILL_SECONDS_PER_LITER, RINSE_LITERS, RINSE_SECONDS, ACCESS_CODE, AUDIT_CODE, UI_THEME, UI_MODE, BRAND_TITLE, BRAND_TAGLINE, SYSTEM_NAME, CONTACT_EMAIL, CONTACT_PHONE
     sanitized = _sanitize_runtime_config(config)
     PRODUCTS[0]["price"] = sanitized["precios"]["garrafon"]
     PRODUCTS[1]["price"] = sanitized["precios"]["medio"]
@@ -276,6 +281,8 @@ def apply_runtime_config(config: dict) -> None:
     PRODUCTS[1]["volume_l"] = sanitized["volumenes"]["medio"]
     PRODUCTS[2]["volume_l"] = sanitized["volumenes"]["galon"]
     FILL_SECONDS_PER_LITER = sanitized["tiempo_por_litro"]
+    RINSE_LITERS = sanitized["litros_por_enjuague"]
+    RINSE_SECONDS = round(RINSE_LITERS * FILL_SECONDS_PER_LITER, 2)
     ACCESS_CODE = sanitized["codigo"]
     AUDIT_CODE = sanitized["codigo_auditoria"]
     UI_THEME = sanitized["tema"]
@@ -305,6 +312,7 @@ def get_runtime_config() -> dict:
             "galon": float(PRODUCTS[2]["volume_l"]),
         },
         "tiempo_por_litro": float(FILL_SECONDS_PER_LITER),
+        "litros_por_enjuague": float(RINSE_LITERS),
         "codigo": ACCESS_CODE,
         "codigo_auditoria": AUDIT_CODE,
         "tema": UI_THEME,

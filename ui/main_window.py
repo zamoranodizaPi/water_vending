@@ -96,6 +96,7 @@ class MainWindow(QMainWindow):
             "Cambiar nombres",
             "Cambiar volúmenes",
             "Ajustar tiempo por litro",
+            "Ajustar litros por enjuague",
             "Configuración general",
             "Guardar y salir",
             "Cancelar",
@@ -123,6 +124,7 @@ class MainWindow(QMainWindow):
         self._config_contact_field = "correo"
         self._config_new_code = ""
         self._config_edit_value = 0.0
+        self._config_rinse_edit_value = 0.0
         self._audit_mode_active = False
         self._audit_page_index = 0
         self._audit_product_index = 0
@@ -536,6 +538,13 @@ class MainWindow(QMainWindow):
         self._refresh_time_screen()
         self.stack.setCurrentWidget(self.config_value_screen)
 
+    def _open_rinse_liters_screen(self):
+        self._set_config_return_menu()
+        self._config_mode = "rinse_liters"
+        self._config_rinse_edit_value = float(self._config_draft.get("litros_por_enjuague", settings.RINSE_LITERS))
+        self._refresh_rinse_liters_screen()
+        self.stack.setCurrentWidget(self.config_value_screen)
+
     def _open_name_screen(self):
         self._set_config_return_menu()
         self._config_mode = "name"
@@ -626,6 +635,14 @@ class MainWindow(QMainWindow):
             "Ajuste de precisión",
             f"{self._config_edit_value:.2f} seg/L",
             "P1:+0.01  P2:-0.01  OK:guardar  Cancelar:volver",
+        )
+
+    def _refresh_rinse_liters_screen(self):
+        self.config_value_screen.configure(
+            "Litros por enjuague",
+            "Cantidad usada en cada enjuague",
+            f"{self._config_rinse_edit_value:.2f} L",
+            "P1:+0.05  P2:-0.05  OK:guardar  Cancelar:volver",
         )
 
     def _open_code_change(self):
@@ -721,6 +738,13 @@ class MainWindow(QMainWindow):
             elif product_id == "half_garrafon":
                 self._config_edit_value = round(max(0.01, self._config_edit_value - 0.01), 2)
             self._refresh_time_screen()
+            return
+        if self._config_mode == "rinse_liters":
+            if product_id == "full_garrafon":
+                self._config_rinse_edit_value = round(self._config_rinse_edit_value + 0.05, 2)
+            elif product_id == "half_garrafon":
+                self._config_rinse_edit_value = round(max(0.1, self._config_rinse_edit_value - 0.05), 2)
+            self._refresh_rinse_liters_screen()
 
     def _handle_config_ok(self):
         if self._config_mode == "login":
@@ -776,6 +800,8 @@ class MainWindow(QMainWindow):
                 self._open_contact_screen()
             elif option == "Ajustar tiempo por litro":
                 self._open_time_screen()
+            elif option == "Ajustar litros por enjuague":
+                self._open_rinse_liters_screen()
             elif option == "Cambiar código":
                 self._open_code_change()
             elif option == "Guardar y salir":
@@ -834,6 +860,10 @@ class MainWindow(QMainWindow):
             return
         if self._config_mode == "time":
             self._config_draft["tiempo_por_litro"] = self._config_edit_value
+            self._return_to_config_menu()
+            return
+        if self._config_mode == "rinse_liters":
+            self._config_draft["litros_por_enjuague"] = self._config_rinse_edit_value
             self._return_to_config_menu()
             return
         if self._config_mode == "code_new":
@@ -951,7 +981,7 @@ class MainWindow(QMainWindow):
         total_sales = len(filtered)
         total_revenue = sum(float(row["price"]) for row in filtered)
         rinse_count = len(rinse_events)
-        liters_per_rinse = round(settings.RINSE_SECONDS / settings.FILL_SECONDS_PER_LITER, 2)
+        liters_per_rinse = float(settings.RINSE_LITERS)
         total_rinse_liters = sum(float(row["liters"]) for row in rinse_events)
         total_water_used = total_liters + total_rinse_liters
         rows = []
@@ -1353,7 +1383,7 @@ class MainWindow(QMainWindow):
         if self._config_mode in {"login", "menu"}:
             self._exit_config_to_home()
             return
-        if self._config_mode in {"theme", "theme_mode", "price", "name", "system_name", "contact_email", "contact_phone", "volume", "time", "code_new"}:
+        if self._config_mode in {"theme", "theme_mode", "price", "name", "system_name", "contact_email", "contact_phone", "volume", "time", "rinse_liters", "code_new"}:
             self._return_to_config_menu()
             return
         if self._config_mode == "code_confirm":
@@ -1566,7 +1596,7 @@ class MainWindow(QMainWindow):
                 return
             self.sales_db.log_rinse_event(
                 datetime.now().isoformat(timespec="seconds"),
-                round(settings.RINSE_SECONDS / settings.FILL_SECONDS_PER_LITER, 2),
+                float(settings.RINSE_LITERS),
             )
             self._show_upright_prompt()
             return

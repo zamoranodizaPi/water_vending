@@ -101,13 +101,15 @@ class ProductCard(QFrame):
         body.addSpacing(-10)
         self.icon = QLabel()
         self.icon.setAlignment(Qt.AlignCenter)
-        self.icon.setFixedHeight(204)
+        image_height = 214 if self.product["id"] == "full_garrafon" else 204
+        self.icon.setFixedHeight(image_height)
         pixmap = QPixmap(str(self.product["image"]))
         if pixmap.isNull():
             self.icon.setText("Agua")
             self.icon.setObjectName("productFallback")
         else:
-            scaled = pixmap.scaled(236, 204, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            image_width = 246 if self.product["id"] == "full_garrafon" else 236
+            scaled = pixmap.scaled(image_width, image_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.icon.setPixmap(scaled)
         body.addWidget(self.icon, 1, Qt.AlignCenter)
 
