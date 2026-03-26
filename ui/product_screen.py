@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from config import settings
 from theme import APP_FONT, ORANGE, PRIMARY, PRIMARY_HOVER, SECONDARY, SURFACE, TEXT_PRIMARY, color_with_alpha, refresh_style
 
 HEADER_HEIGHT = 90
@@ -22,10 +23,6 @@ CARD_MIN_WIDTH = 300
 INSTRUCTIONS_HEIGHT = 120
 CARD_SELECTED_SCALE = 1.1
 CARD_REDUCED_SCALE = 0.9
-
-TITLE_TEXT = "Agua Purificada Lupita"
-TAGLINE_TEXT = "La pureza que nace de la confianza"
-
 
 class TopLeftHotspot(QWidget):
     pressed = pyqtSignal()
@@ -367,12 +364,12 @@ class ProductScreen(QWidget):
         title_col.setContentsMargins(0, 0, 0, 0)
         title_col.setSpacing(2)
         title_col.addStretch(1)
-        title = QLabel(TITLE_TEXT)
+        title = QLabel(settings.BRAND_TITLE)
         title.setStyleSheet(
             f"font-family:{APP_FONT}; font-size:25px; font-weight:800; color:{SURFACE};"
         )
         title_col.addWidget(title)
-        subtitle = QLabel(TAGLINE_TEXT)
+        subtitle = QLabel(settings.BRAND_TAGLINE)
         subtitle.setStyleSheet(
             f"font-family:{APP_FONT}; font-size:12px; font-weight:600; color:{SURFACE};"
         )

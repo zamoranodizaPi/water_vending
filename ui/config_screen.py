@@ -5,10 +5,10 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QProgressBar, QVBoxLayout, QWidget
 
+from config import settings
 from theme import ACCENT_ORANGE, APP_FONT, PRIMARY, SECONDARY, SURFACE, TEXT_PRIMARY, refresh_style
 
 HEADER_HEIGHT = 90
-TITLE_TEXT = "Agua Purificada Lupita"
 CONFIG_TITLE = "Modo configuración"
 
 
@@ -43,9 +43,14 @@ class ConfigBaseScreen(QWidget):
         title_col.setContentsMargins(0, 0, 0, 0)
         title_col.setSpacing(0)
         title_col.addStretch(1)
-        title = QLabel(TITLE_TEXT)
+        title = QLabel(settings.BRAND_TITLE)
         title.setStyleSheet(f"font-family:{APP_FONT}; font-size:25px; font-weight:800; color:{SURFACE};")
         title_col.addWidget(title)
+        subtitle = QLabel(settings.BRAND_TAGLINE)
+        subtitle.setStyleSheet(
+            f"font-family:{APP_FONT}; font-size:12px; font-weight:600; color:{SURFACE};"
+        )
+        title_col.addWidget(subtitle)
         title_col.addStretch(1)
         header_layout.addLayout(title_col, 1)
         root.addWidget(self.header)

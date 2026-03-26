@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(settings.WINDOW_TITLE)
+        self.setWindowTitle(settings.BRAND_TITLE)
         self.setCursor(QCursor(Qt.BlankCursor))
         self.current_product = None
         self.credit = 0.0

@@ -87,6 +87,9 @@ DEFAULT_RUNTIME_CONFIG = {
     "tiempo_por_litro": 1.6,
     "codigo": "1000",
     "codigo_auditoria": "2000",
+    "tema": "pink",
+    "titulo": "Agua Purificada Lupita",
+    "eslogan": "pureza y bendicion en cada gota",
     "nombre_sistema": "Vending 1",
     "contacto": {
         "correo": "zamoranodiza@hotmail.com",
@@ -125,6 +128,9 @@ AUDIO_FILES = {
 ACCESS_CODE = DEFAULT_RUNTIME_CONFIG["codigo"]
 AUDIT_CODE = DEFAULT_RUNTIME_CONFIG["codigo_auditoria"]
 AUDIT_RESET_CODE = "3000"
+UI_THEME = DEFAULT_RUNTIME_CONFIG["tema"]
+BRAND_TITLE = DEFAULT_RUNTIME_CONFIG["titulo"]
+BRAND_TAGLINE = DEFAULT_RUNTIME_CONFIG["eslogan"]
 SYSTEM_NAME = DEFAULT_RUNTIME_CONFIG["nombre_sistema"]
 CONTACT_EMAIL = DEFAULT_RUNTIME_CONFIG["contacto"]["correo"]
 CONTACT_PHONE = DEFAULT_RUNTIME_CONFIG["contacto"]["telefono"]
@@ -169,6 +175,21 @@ def _sanitize_runtime_config(raw: dict | None) -> dict:
     codigo_auditoria = raw.get("codigo_auditoria")
     if isinstance(codigo_auditoria, str) and len(codigo_auditoria) == 4 and codigo_auditoria.isdigit():
         config["codigo_auditoria"] = codigo_auditoria
+    tema = raw.get("tema")
+    if isinstance(tema, str):
+        cleaned = tema.strip().lower()
+        if cleaned:
+            config["tema"] = cleaned[:16]
+    titulo = raw.get("titulo")
+    if isinstance(titulo, str):
+        cleaned = titulo.strip()
+        if cleaned:
+            config["titulo"] = cleaned[:40]
+    eslogan = raw.get("eslogan")
+    if isinstance(eslogan, str):
+        cleaned = eslogan.strip()
+        if cleaned:
+            config["eslogan"] = cleaned[:56]
     nombre_sistema = raw.get("nombre_sistema")
     if isinstance(nombre_sistema, str):
         cleaned = nombre_sistema.strip()
@@ -202,7 +223,7 @@ def save_runtime_config(config: dict) -> dict:
 
 
 def apply_runtime_config(config: dict) -> None:
-    global FILL_SECONDS_PER_LITER, ACCESS_CODE, AUDIT_CODE, SYSTEM_NAME, CONTACT_EMAIL, CONTACT_PHONE
+    global FILL_SECONDS_PER_LITER, ACCESS_CODE, AUDIT_CODE, UI_THEME, BRAND_TITLE, BRAND_TAGLINE, SYSTEM_NAME, CONTACT_EMAIL, CONTACT_PHONE
     sanitized = _sanitize_runtime_config(config)
     PRODUCTS[0]["price"] = sanitized["precios"]["garrafon"]
     PRODUCTS[1]["price"] = sanitized["precios"]["medio"]
@@ -216,6 +237,9 @@ def apply_runtime_config(config: dict) -> None:
     FILL_SECONDS_PER_LITER = sanitized["tiempo_por_litro"]
     ACCESS_CODE = sanitized["codigo"]
     AUDIT_CODE = sanitized["codigo_auditoria"]
+    UI_THEME = sanitized["tema"]
+    BRAND_TITLE = sanitized["titulo"]
+    BRAND_TAGLINE = sanitized["eslogan"]
     SYSTEM_NAME = sanitized["nombre_sistema"]
     CONTACT_EMAIL = sanitized["contacto"]["correo"]
     CONTACT_PHONE = sanitized["contacto"]["telefono"]
@@ -241,6 +265,9 @@ def get_runtime_config() -> dict:
         "tiempo_por_litro": float(FILL_SECONDS_PER_LITER),
         "codigo": ACCESS_CODE,
         "codigo_auditoria": AUDIT_CODE,
+        "tema": UI_THEME,
+        "titulo": BRAND_TITLE,
+        "eslogan": BRAND_TAGLINE,
         "nombre_sistema": SYSTEM_NAME,
         "contacto": {
             "correo": CONTACT_EMAIL,

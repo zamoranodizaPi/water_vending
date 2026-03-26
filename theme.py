@@ -3,12 +3,25 @@ from __future__ import annotations
 
 from PyQt5.QtGui import QColor
 
+from config import settings
+
 APP_FONT = "'DejaVu Sans','Liberation Sans','Noto Sans','Sans Serif'"
 
-PRIMARY = "#ec4899"
-PRIMARY_HOVER = "#f43f5e"
-PRIMARY_DARK = "#db2777"
-ORANGE = "#ff6b35"
+THEMES = {
+    "pink": {
+        "PRIMARY": "#ec4899",
+        "PRIMARY_HOVER": "#f43f5e",
+        "PRIMARY_DARK": "#db2777",
+        "ORANGE": "#ff6b35",
+    }
+}
+
+_theme = THEMES.get(settings.UI_THEME, THEMES["pink"])
+
+PRIMARY = _theme["PRIMARY"]
+PRIMARY_HOVER = _theme["PRIMARY_HOVER"]
+PRIMARY_DARK = _theme["PRIMARY_DARK"]
+ORANGE = _theme["ORANGE"]
 
 ACCENT = "#f43f5e"
 ACCENT_LIGHT = "#fff1f7"

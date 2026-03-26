@@ -5,11 +5,10 @@ from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QMovie, QPixmap
 from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QProgressBar, QSizePolicy, QVBoxLayout, QWidget
 
+from config import settings
 from theme import APP_FONT, SECONDARY, SURFACE, refresh_style
 
 HEADER_HEIGHT = 90
-TITLE_TEXT = "Agua Purificada Lupita"
-TAGLINE_TEXT = "La pureza que nace de la confianza"
 
 
 class DispensingScreen(QWidget):
@@ -57,10 +56,10 @@ class DispensingScreen(QWidget):
         text_col.setContentsMargins(0, 0, 0, 0)
         text_col.setSpacing(2)
         text_col.addStretch(1)
-        title = QLabel(TITLE_TEXT)
+        title = QLabel(settings.BRAND_TITLE)
         title.setStyleSheet(f"font-family:{APP_FONT}; font-size:25px; font-weight:800; color:{SURFACE};")
         text_col.addWidget(title)
-        subtitle = QLabel(TAGLINE_TEXT)
+        subtitle = QLabel(settings.BRAND_TAGLINE)
         subtitle.setStyleSheet(
             f"font-family:{APP_FONT}; font-size:12px; font-weight:600; color:{SURFACE};"
         )
