@@ -14,6 +14,32 @@ class ThemeManager:
     current_mode = settings.UI_MODE
 
     THEMES = {
+        "arcade_mario": {
+            "light": {
+                "background": ("#00AEEF", "#7EDBFF", "#FFD700"),
+                "card_color": (255, 246, 214),
+                "primary": "#FF0000",
+                "secondary": "#00AEEF",
+                "accent": "#00FF00",
+                "text": "#2b1608",
+                "text_secondary": "#8B4513",
+                "price": "#c40000",
+                "button_gradient": ("#FF0000", "#FFD700", "#00AEEF"),
+                "glass_opacity": 0.82,
+            },
+            "dark": {
+                "background": ("#13284f", "#1e3a6b", "#8B4513"),
+                "card_color": (31, 24, 18),
+                "primary": "#FF4D4D",
+                "secondary": "#4DD7FF",
+                "accent": "#FFD700",
+                "text": "#FFF6D6",
+                "text_secondary": "#FFD56A",
+                "price": "#FFD700",
+                "button_gradient": ("#FF0000", "#00AEEF", "#FFD700"),
+                "glass_opacity": 0.34,
+            },
+        },
         "blue_ocean": {
             "light": {
                 "background": ("#dbeafe", "#eff6ff", "#fde68a"),
@@ -218,6 +244,17 @@ def build_stylesheet() -> str:
     button_pressed2 = _mix(button2, "#000000", 0.12)
     disabled_bg = rgba_from_rgb((148, 163, 184), 0.35)
     disabled_text = "rgba(255, 255, 255, 0.6)" if ThemeManager.current_mode == "dark" else "#94a3b8"
+    arcade_mode = ThemeManager.current_theme == "arcade_mario"
+    panel_radius = 10 if arcade_mode else 22
+    card_radius = 12 if arcade_mode else 24
+    button_radius = 8 if arcade_mode else 16
+    card_border = "rgba(255, 255, 255, 0.28)" if arcade_mode else bright_border
+    background_overlay = """
+    background-image:
+      linear-gradient(0deg, transparent 24%, rgba(255,255,255,0.12) 25%, rgba(255,255,255,0.12) 26%, transparent 27%, transparent 74%, rgba(255,255,255,0.12) 75%, rgba(255,255,255,0.12) 76%, transparent 77%, transparent),
+      linear-gradient(90deg, transparent 24%, rgba(255,255,255,0.12) 25%, rgba(255,255,255,0.12) 26%, transparent 27%, transparent 74%, rgba(255,255,255,0.12) 75%, rgba(255,255,255,0.12) 76%, transparent 77%, transparent);
+    background-size: 24px 24px;
+    """ if arcade_mode else ""
 
     return f"""
 QWidget {{
@@ -239,6 +276,7 @@ QMainWindow {{
         stop:0.5 {bg1},
         stop:1 {bg2}
     );
+    {background_overlay}
 }}
 
 QFrame#modernHeader,
@@ -253,8 +291,8 @@ QFrame#card {{
         stop:0 {glass_high},
         stop:1 {glass}
     );
-    border: 1px solid {bright_border};
-    border-radius: 22px;
+    border: {3 if arcade_mode else 1}px solid {card_border};
+    border-radius: {panel_radius}px;
 }}
 
 QFrame#modernHeader {{
@@ -264,11 +302,11 @@ QFrame#modernHeader {{
         stop:0.55 {button1},
         stop:1 {button2}
     );
-    border: 1px solid rgba(255, 255, 255, 0.32);
+    border: {4 if arcade_mode else 1}px solid rgba(255, 255, 255, 0.32);
 }}
 
 QFrame#creditPill {{
-    border-radius: 20px;
+    border-radius: {panel_radius}px;
 }}
 
 QFrame#creditPill[flash="true"] {{
@@ -287,7 +325,7 @@ QFrame#contentPanel[thankyou="true"] {{
 
 QFrame#productCard,
 QFrame#card {{
-    border-radius: 24px;
+    border-radius: {card_radius}px;
 }}
 
 QFrame#productCard[selected="true"],
@@ -416,8 +454,8 @@ QPushButton[variant="primary"],
 QPushButton#confirmButton,
 QPushButton#buyButton {{
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 16px;
+    border: {4 if arcade_mode else 1}px solid rgba(255, 255, 255, 0.2);
+    border-radius: {button_radius}px;
     padding: 10px 18px;
     font-size: 18px;
     font-weight: 800;
@@ -432,7 +470,7 @@ QPushButton#buyButton {{
 QPushButton#buyButton {{
     min-height: 22px;
     font-size: 19px;
-    border-radius: 18px;
+    border-radius: {button_radius}px;
 }}
 
 QPushButton[variant="primary"]:hover,

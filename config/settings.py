@@ -18,6 +18,7 @@ SCREEN_HEIGHT = 600
 FULLSCREEN = True
 COURTESY_LIGHT_TIMEOUT_MS = 15000
 AVAILABLE_THEMES = (
+    "arcade_mario",
     "blue_ocean",
     "yellow_industrial",
     "green_nature",
