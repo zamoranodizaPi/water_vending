@@ -355,12 +355,12 @@ class ProductScreen(QWidget):
 
         icon_box = QLabel()
         icon_box.setAlignment(Qt.AlignCenter)
-        icon_box.setFixedSize(94, 94)
+        icon_box.setFixedSize(72, 72)
         logo = QPixmap(str(self.logo_path))
         if logo.isNull():
             icon_box.setText("L")
         else:
-            icon_box.setPixmap(logo.scaled(94, 94, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon_box.setPixmap(logo.scaled(72, 72, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         header_layout.addWidget(icon_box, 0, Qt.AlignVCenter)
 
         title_col = QVBoxLayout()

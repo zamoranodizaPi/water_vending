@@ -815,6 +815,7 @@ class MainWindow(QMainWindow):
         rinse_count = len(rinse_events)
         liters_per_rinse = round(settings.RINSE_SECONDS / settings.FILL_SECONDS_PER_LITER, 2)
         total_rinse_liters = sum(float(row["liters"]) for row in rinse_events)
+        total_water_used = total_liters + total_rinse_liters
         rows = []
         total_volume_all = 0.0
         total_sales_all = 0
@@ -833,6 +834,7 @@ class MainWindow(QMainWindow):
             filter_text=f"Filtro producto: {label}",
             summary_lines=[
                 f"Litros servidos: {total_liters:.2f} L",
+                f"Total agua usada: {total_water_used:.2f} L",
                 f"Ventas registradas: {total_sales}",
                 f"Ingreso cobrado: ${total_revenue:.2f}",
                 f"Cantidad de enjuagues: {rinse_count}",

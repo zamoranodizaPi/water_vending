@@ -39,13 +39,13 @@ class BrandedScreen(QWidget):
 
         self.header_icon = QLabel()
         self.header_icon.setAlignment(Qt.AlignCenter)
-        self.header_icon.setFixedSize(94, 94)
+        self.header_icon.setFixedSize(72, 72)
         pix = QPixmap(str(self.logo_path))
         if pix.isNull():
             self.header_icon.setText("L")
             self.header_icon.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};")
         else:
-            self.header_icon.setPixmap(pix.scaled(94, 94, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            self.header_icon.setPixmap(pix.scaled(72, 72, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         title_row.addWidget(self.header_icon, 0, Qt.AlignVCenter)
 
         text_col = QVBoxLayout()

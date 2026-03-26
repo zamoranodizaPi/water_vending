@@ -44,13 +44,13 @@ class DispensingScreen(QWidget):
 
         header_icon = QLabel()
         header_icon.setAlignment(Qt.AlignCenter)
-        header_icon.setFixedSize(94, 94)
+        header_icon.setFixedSize(72, 72)
         pix = QPixmap(str(self.logo_path))
         if pix.isNull():
             header_icon.setText("L")
             header_icon.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};")
         else:
-            header_icon.setPixmap(pix.scaled(94, 94, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            header_icon.setPixmap(pix.scaled(72, 72, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         header.addWidget(header_icon, 0, Qt.AlignVCenter)
 
         text_col = QVBoxLayout()
