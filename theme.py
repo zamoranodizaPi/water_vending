@@ -172,8 +172,8 @@ def _mix(color_a: str, color_b: str, factor: float) -> str:
 
 def _refresh_exports() -> dict:
     palette = ThemeManager.get_theme()
-    card_text = _mix(palette["text"], "#000000", 0.12) if ThemeManager.current_mode == "light" else "#fffaf0"
-    card_meta = _mix(palette["text"], "#000000", 0.04) if ThemeManager.current_mode == "light" else "rgba(255, 248, 235, 0.96)"
+    card_text = _mix(palette["primary"], "#000000", 0.28) if ThemeManager.current_mode == "light" else _mix(palette["primary"], "#ffffff", 0.24)
+    card_meta = _mix(palette["primary"], "#ffffff", 0.22) if ThemeManager.current_mode == "light" else _mix(palette["primary"], "#ffffff", 0.5)
     globals().update(
         {
             "PRIMARY": palette["primary"],
@@ -401,7 +401,7 @@ QLabel#productPriceCorner {{
 
 QLabel#productVolume {{
     color: {CARD_TEXT_META};
-    font-size: 24px;
+    font-size: 15px;
     font-weight: 800;
 }}
 
