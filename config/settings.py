@@ -17,7 +17,18 @@ SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 600
 FULLSCREEN = True
 COURTESY_LIGHT_TIMEOUT_MS = 15000
-AVAILABLE_THEMES = ("pink", "blue")
+AVAILABLE_THEMES = (
+    "blue_ocean",
+    "yellow_industrial",
+    "green_nature",
+    "sunset_energy",
+    "purple_modern",
+)
+AVAILABLE_MODES = ("light", "dark")
+LEGACY_THEME_ALIASES = {
+    "pink": "sunset_energy",
+    "blue": "blue_ocean",
+}
 
 PINS = {
     "water_valve": 17,
@@ -88,7 +99,8 @@ DEFAULT_RUNTIME_CONFIG = {
     "tiempo_por_litro": 1.6,
     "codigo": "1000",
     "codigo_auditoria": "2000",
-    "tema": "pink",
+    "tema": "sunset_energy",
+    "modo": "light",
     "titulo": "Agua Purificada Lupita",
     "eslogan": "pureza y bendicion en cada gota",
     "nombre_sistema": "Vending 1",
@@ -130,6 +142,7 @@ ACCESS_CODE = DEFAULT_RUNTIME_CONFIG["codigo"]
 AUDIT_CODE = DEFAULT_RUNTIME_CONFIG["codigo_auditoria"]
 AUDIT_RESET_CODE = "3000"
 UI_THEME = DEFAULT_RUNTIME_CONFIG["tema"]
+UI_MODE = DEFAULT_RUNTIME_CONFIG["modo"]
 BRAND_TITLE = DEFAULT_RUNTIME_CONFIG["titulo"]
 BRAND_TAGLINE = DEFAULT_RUNTIME_CONFIG["eslogan"]
 SYSTEM_NAME = DEFAULT_RUNTIME_CONFIG["nombre_sistema"]
@@ -176,11 +189,16 @@ def _sanitize_runtime_config(raw: dict | None) -> dict:
     codigo_auditoria = raw.get("codigo_auditoria")
     if isinstance(codigo_auditoria, str) and len(codigo_auditoria) == 4 and codigo_auditoria.isdigit():
         config["codigo_auditoria"] = codigo_auditoria
-    tema = raw.get("tema")
+    tema = raw.get("tema") or raw.get("theme")
     if isinstance(tema, str):
-        cleaned = tema.strip().lower()
+        cleaned = LEGACY_THEME_ALIASES.get(tema.strip().lower(), tema.strip().lower())
         if cleaned in AVAILABLE_THEMES:
             config["tema"] = cleaned
+    modo = raw.get("modo") or raw.get("mode")
+    if isinstance(modo, str):
+        cleaned = modo.strip().lower()
+        if cleaned in AVAILABLE_MODES:
+            config["modo"] = cleaned
     titulo = raw.get("titulo")
     if isinstance(titulo, str):
         cleaned = titulo.strip()
@@ -224,7 +242,7 @@ def save_runtime_config(config: dict) -> dict:
 
 
 def apply_runtime_config(config: dict) -> None:
-    global FILL_SECONDS_PER_LITER, ACCESS_CODE, AUDIT_CODE, UI_THEME, BRAND_TITLE, BRAND_TAGLINE, SYSTEM_NAME, CONTACT_EMAIL, CONTACT_PHONE
+    global FILL_SECONDS_PER_LITER, ACCESS_CODE, AUDIT_CODE, UI_THEME, UI_MODE, BRAND_TITLE, BRAND_TAGLINE, SYSTEM_NAME, CONTACT_EMAIL, CONTACT_PHONE
     sanitized = _sanitize_runtime_config(config)
     PRODUCTS[0]["price"] = sanitized["precios"]["garrafon"]
     PRODUCTS[1]["price"] = sanitized["precios"]["medio"]
@@ -239,6 +257,7 @@ def apply_runtime_config(config: dict) -> None:
     ACCESS_CODE = sanitized["codigo"]
     AUDIT_CODE = sanitized["codigo_auditoria"]
     UI_THEME = sanitized["tema"]
+    UI_MODE = sanitized["modo"]
     BRAND_TITLE = sanitized["titulo"]
     BRAND_TAGLINE = sanitized["eslogan"]
     SYSTEM_NAME = sanitized["nombre_sistema"]
@@ -267,6 +286,7 @@ def get_runtime_config() -> dict:
         "codigo": ACCESS_CODE,
         "codigo_auditoria": AUDIT_CODE,
         "tema": UI_THEME,
+        "modo": UI_MODE,
         "titulo": BRAND_TITLE,
         "eslogan": BRAND_TAGLINE,
         "nombre_sistema": SYSTEM_NAME,

@@ -6,7 +6,7 @@ from PyQt5.QtGui import QMovie, QPixmap
 from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QProgressBar, QSizePolicy, QVBoxLayout, QWidget
 
 from config import settings
-from theme import APP_FONT, SECONDARY, SURFACE, refresh_style
+from theme import refresh_style
 
 HEADER_HEIGHT = 90
 
@@ -47,7 +47,7 @@ class DispensingScreen(QWidget):
         pix = QPixmap(str(self.logo_path))
         if pix.isNull():
             header_icon.setText("L")
-            header_icon.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};")
+            header_icon.setObjectName("imageFallback")
         else:
             header_icon.setPixmap(pix.scaled(72, 72, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         header.addWidget(header_icon, 0, Qt.AlignVCenter)
@@ -57,12 +57,10 @@ class DispensingScreen(QWidget):
         text_col.setSpacing(2)
         text_col.addStretch(1)
         title = QLabel(settings.BRAND_TITLE)
-        title.setStyleSheet(f"font-family:{APP_FONT}; font-size:25px; font-weight:800; color:{SURFACE};")
+        title.setObjectName("headerTitle")
         text_col.addWidget(title)
         subtitle = QLabel(settings.BRAND_TAGLINE)
-        subtitle.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:12px; font-weight:600; color:{SURFACE};"
-        )
+        subtitle.setObjectName("headerSubtitle")
         text_col.addWidget(subtitle)
         text_col.addStretch(1)
         header.addLayout(text_col, 1)
@@ -79,11 +77,9 @@ class DispensingScreen(QWidget):
         self.title.setAlignment(Qt.AlignCenter)
 
         self.status_hint = QLabel("Mantenga el recipiente en posición y espere a que termine.")
+        self.status_hint.setObjectName("statusHint")
         self.status_hint.setAlignment(Qt.AlignCenter)
         self.status_hint.setWordWrap(True)
-        self.status_hint.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:16px; font-weight:600; color:{SECONDARY};"
-        )
 
         self.animation_wrap = QWidget()
         self.animation_wrap.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -104,7 +100,6 @@ class DispensingScreen(QWidget):
         self.progress.setValue(0)
         self.progress.setFixedHeight(52)
         self.progress.setFixedWidth(460)
-        self.progress.setStyleSheet(f"QProgressBar{{font-family:{APP_FONT};}}")
 
         content_layout.addWidget(self.title)
         content_layout.addSpacing(8)
@@ -170,12 +165,12 @@ class DispensingScreen(QWidget):
             if pix.isNull():
                 self.animation.setText("[Imagen no disponible]")
                 self.animation.setProperty("role", "secondary")
-                self.animation.setStyleSheet("font-size:22px;")
+                self.animation.setObjectName("imageFallback")
                 refresh_style(self.animation)
             else:
                 self._image_pixmap = pix
                 self.animation.setProperty("role", "")
-                self.animation.setStyleSheet("")
+                self.animation.setObjectName("heroImage")
                 refresh_style(self.animation)
                 self._refresh_animation()
         elif gif_path:
@@ -187,7 +182,7 @@ class DispensingScreen(QWidget):
             else:
                 self.animation.setText("[Animación no disponible]")
                 self.animation.setProperty("role", "secondary")
-                self.animation.setStyleSheet("font-size:22px;")
+                self.animation.setObjectName("imageFallback")
                 refresh_style(self.animation)
 
         self._timer.start(200)

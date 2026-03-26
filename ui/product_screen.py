@@ -1,7 +1,7 @@
 """Modern touch-friendly product selection screen for a 1024x600 kiosk."""
 from __future__ import annotations
 
-from PyQt5.QtCore import QTimer, Qt, pyqtSignal
+from PyQt5.QtCore import QEasingCurve, QPropertyAnimation, QTimer, Qt, pyqtProperty, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
     QFrame,
@@ -15,15 +15,14 @@ from PyQt5.QtWidgets import (
 )
 
 from config import settings
-from theme import APP_FONT, ORANGE, PRIMARY, PRIMARY_HOVER, SECONDARY, SURFACE, TEXT_PRIMARY, color_with_alpha, refresh_style
+import theme
+from theme import color_with_alpha, refresh_style
 
 HEADER_HEIGHT = 90
 CARD_HEIGHT = 280
 CARD_MIN_WIDTH = 300
 INSTRUCTIONS_HEIGHT = 120
 CARD_SELECTED_SCALE = 1.1
-CARD_REDUCED_SCALE = 0.9
-
 class TopLeftHotspot(QWidget):
     pressed = pyqtSignal()
 
@@ -54,7 +53,12 @@ class ProductCard(QFrame):
         self._interactive = True
         self._base_min_width = CARD_MIN_WIDTH
         self._base_height = CARD_HEIGHT
+        self._hovered = False
+        self._card_scale = 1.0
         self._build_ui()
+        self._scale_animation = QPropertyAnimation(self, b"cardScale", self)
+        self._scale_animation.setDuration(180)
+        self._scale_animation.setEasingCurve(QEasingCurve.OutCubic)
         self._apply_state()
 
     def _build_ui(self):
@@ -80,10 +84,8 @@ class ProductCard(QFrame):
         root.addLayout(body, 1)
 
         self.price_corner = QLabel(f"${self.product['price']:.0f}")
+        self.price_corner.setObjectName("productPriceCorner")
         self.price_corner.setAlignment(Qt.AlignRight | Qt.AlignTop)
-        self.price_corner.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};"
-        )
         self.price_corner.setVisible(False)
         body.addWidget(self.price_corner, 0, Qt.AlignRight | Qt.AlignTop)
 
@@ -93,9 +95,7 @@ class ProductCard(QFrame):
         pixmap = QPixmap(str(self.product["image"]))
         if pixmap.isNull():
             self.icon.setText("Agua")
-            self.icon.setStyleSheet(
-                f"font-family:{APP_FONT}; font-size:22px; font-weight:700; color:{SURFACE};"
-            )
+            self.icon.setObjectName("productFallback")
         else:
             scaled = pixmap.scaled(220, 178, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.icon.setPixmap(scaled)
@@ -103,53 +103,13 @@ class ProductCard(QFrame):
 
         self.price = QLabel(f"${self.product['price']:.0f}")
         self.price.setAlignment(Qt.AlignCenter)
-        self.price.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:28px; font-weight:800; color:{SURFACE};"
-        )
+        self.price.setProperty("role", "price")
         body.addWidget(self.price)
 
         self.buy_button = QPushButton(self.product["name"])
         self.buy_button.setObjectName("buyButton")
         self.buy_button.setCursor(Qt.PointingHandCursor)
         self.buy_button.setMinimumHeight(46)
-        self.buy_button.setStyleSheet(
-            f"""
-            QPushButton#buyButton {{
-                font-family:{APP_FONT};
-                font-size:19px;
-                font-weight:700;
-                color:{SURFACE};
-                border:none;
-                border-radius:10px;
-                background:qlineargradient(
-                    x1:0, y1:0, x2:1, y2:0,
-                    stop:0 {PRIMARY},
-                    stop:1 #f43f5e
-                );
-                padding:0 18px;
-            }}
-            QPushButton#buyButton:hover {{
-                background:qlineargradient(
-                    x1:0, y1:0, x2:1, y2:0,
-                    stop:0 {PRIMARY_HOVER},
-                    stop:1 {ORANGE}
-                );
-            }}
-            QPushButton#buyButton:pressed {{
-                padding-top:2px;
-                padding-bottom:0px;
-                background:qlineargradient(
-                    x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #db2777,
-                    stop:1 #e11d48
-                );
-            }}
-            QPushButton#buyButton:disabled {{
-                background:#cbd5e1;
-                color:#94a3b8;
-            }}
-            """
-        )
         self.buy_button.clicked.connect(self._handle_buy_clicked)
         button_shadow = QGraphicsDropShadowEffect(self.buy_button)
         button_shadow.setBlurRadius(16)
@@ -201,16 +161,31 @@ class ProductCard(QFrame):
         return True
 
     def set_visual_scale(self, scale: float):
+        self._scale_animation.stop()
+        self._scale_animation.setStartValue(self._card_scale)
+        self._scale_animation.setEndValue(scale)
+        self._scale_animation.start()
+
+    def get_card_scale(self) -> float:
+        return self._card_scale
+
+    def set_card_scale(self, scale: float):
+        self._card_scale = scale
         width = int(self._base_min_width * scale)
         height = int(self._base_height * scale)
         self.setMinimumWidth(width)
         self.setMaximumWidth(width)
         self.setFixedHeight(height)
-        if scale >= 1.05:
-            self.setProperty("selectedScale", True)
-        else:
-            self.setProperty("selectedScale", False)
+        self.setProperty("selectedScale", scale >= 1.05)
         refresh_style(self)
+        if self._selected:
+            self._shadow.setBlurRadius(26 if scale >= 1.05 else 22)
+        elif self._hovered:
+            self._shadow.setBlurRadius(24)
+        else:
+            self._shadow.setBlurRadius(20)
+
+    cardScale = pyqtProperty(float, fget=get_card_scale, fset=set_card_scale)
 
     def pulse_attention(self, flashes: int = 3):
         state = {"step": 0}
@@ -237,14 +212,31 @@ class ProductCard(QFrame):
         self.setWindowOpacity(1.0 if self._interactive else 0.72)
         refresh_style(self)
         if self._selected:
-            self._shadow.setBlurRadius(22)
-            self._shadow.setColor(color_with_alpha(PRIMARY, 70))
+            self._shadow.setBlurRadius(26)
+            self._shadow.setColor(color_with_alpha(theme.PRIMARY, 70))
+        elif self._hovered:
+            self._shadow.setBlurRadius(24)
+            self._shadow.setColor(color_with_alpha(theme.ACCENT, 48))
         elif self._affordable:
             self._shadow.setBlurRadius(20)
             self._shadow.setColor(color_with_alpha("#0f172a", 35))
         else:
             self._shadow.setBlurRadius(12)
             self._shadow.setColor(color_with_alpha("#64748b", 24))
+
+    def enterEvent(self, event):
+        self._hovered = True
+        if self._interactive and not self._selected:
+            self.set_visual_scale(1.03)
+        self._apply_state()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._hovered = False
+        if self._interactive and not self._selected:
+            self.set_visual_scale(1.0)
+        self._apply_state()
+        super().leaveEvent(event)
 
 
 class InstructionStep(QFrame):
@@ -283,17 +275,17 @@ class InstructionStep(QFrame):
         self.bubble.setFixedSize(bubble_size, bubble_size)
         self.bubble.setStyleSheet(
             f"""
-            background-color:{SURFACE};
-            color:{PRIMARY};
-            border:2px solid {PRIMARY};
+            background-color:{theme.SURFACE};
+            color:{theme.PRIMARY};
+            border:2px solid {theme.PRIMARY};
             border-radius:{radius}px;
-            font-family:{APP_FONT};
+            font-family:{theme.APP_FONT};
             font-size:{bubble_font}px;
             font-weight:700;
             """
         )
         self.label.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:{label_font}px; font-weight:600; color:{SECONDARY};"
+            f"font-family:{theme.APP_FONT}; font-size:{label_font}px; font-weight:600; color:{theme.SECONDARY};"
         )
 
     def _toggle_pulse(self):
@@ -365,14 +357,10 @@ class ProductScreen(QWidget):
         title_col.setSpacing(2)
         title_col.addStretch(1)
         title = QLabel(settings.BRAND_TITLE)
-        title.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:25px; font-weight:800; color:{SURFACE};"
-        )
+        title.setObjectName("headerTitle")
         title_col.addWidget(title)
         subtitle = QLabel(settings.BRAND_TAGLINE)
-        subtitle.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:12px; font-weight:600; color:{SURFACE};"
-        )
+        subtitle.setObjectName("headerSubtitle")
         title_col.addWidget(subtitle)
         title_col.addStretch(1)
         header_layout.addLayout(title_col, 1)
@@ -392,7 +380,7 @@ class ProductScreen(QWidget):
         if coin_pix.isNull():
             coin.setText("$")
             coin.setStyleSheet(
-                f"font-family:{APP_FONT}; font-size:16px; font-weight:800; color:{TEXT_PRIMARY};"
+                f"font-family:{theme.APP_FONT}; font-size:16px; font-weight:800; color:{theme.TEXT_PRIMARY};"
             )
         else:
             coin.setPixmap(coin_pix.scaled(28, 28, Qt.KeepAspectRatio, Qt.SmoothTransformation))
@@ -424,9 +412,6 @@ class ProductScreen(QWidget):
         self.countdown_label.setObjectName("selectionCountdown")
         self.countdown_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.countdown_label.setVisible(False)
-        self.countdown_label.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:18px; font-weight:800; color:{PRIMARY};"
-        )
         top_row.addWidget(self.countdown_label, 0, Qt.AlignRight)
         section_layout.addLayout(top_row)
 
@@ -458,9 +443,7 @@ class ProductScreen(QWidget):
         instructions_layout.setSpacing(10)
 
         instructions_title = QLabel("Instrucciones de uso")
-        instructions_title.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:20px; font-weight:800; color:{TEXT_PRIMARY};"
-        )
+        instructions_title.setObjectName("sectionLabel")
         instructions_layout.addWidget(instructions_title)
 
         steps_row = QHBoxLayout()

@@ -91,6 +91,7 @@ class MainWindow(QMainWindow):
         self._config_draft = settings.get_runtime_config()
         self._config_menu_options = [
             "Cambiar tema",
+            "Cambiar modo",
             "Ajustar precios",
             "Cambiar nombres",
             "Cambiar volúmenes",
@@ -104,6 +105,7 @@ class MainWindow(QMainWindow):
         self._config_menu_index = 0
         self._config_price_index = 0
         self._config_theme_index = 0
+        self._config_mode_index = 0
         self._config_name_index = 0
         self._config_volume_index = 0
         self._config_contact_field = "correo"
@@ -451,7 +453,23 @@ class MainWindow(QMainWindow):
         self.config_value_screen.configure(
             "Cambiar tema",
             "Tema general de la interfaz",
-            theme_name.upper(),
+            theme_name.replace("_", " ").title(),
+            "P1/P2:cambiar  OK:guardar  Cancelar:volver",
+        )
+
+    def _open_mode_screen(self):
+        self._config_mode = "theme_mode"
+        current_mode = self._config_draft.get("modo", settings.UI_MODE)
+        self._config_mode_index = list(settings.AVAILABLE_MODES).index(current_mode)
+        self._refresh_mode_screen()
+        self.stack.setCurrentWidget(self.config_value_screen)
+
+    def _refresh_mode_screen(self):
+        mode_name = list(settings.AVAILABLE_MODES)[self._config_mode_index]
+        self.config_value_screen.configure(
+            "Cambiar modo",
+            "Light u oscuro",
+            mode_name.upper(),
             "P1/P2:cambiar  OK:guardar  Cancelar:volver",
         )
 
@@ -571,11 +589,13 @@ class MainWindow(QMainWindow):
 
     def _save_runtime_settings(self) -> tuple[bool, bool]:
         previous_theme = settings.UI_THEME
+        previous_mode = settings.UI_MODE
         previous_title = settings.BRAND_TITLE
         previous_tagline = settings.BRAND_TAGLINE
         saved = settings.save_runtime_config(self._config_draft)
         settings.apply_runtime_config(saved)
-        if settings.UI_THEME != previous_theme:
+        theme_changed = settings.UI_THEME != previous_theme or settings.UI_MODE != previous_mode
+        if theme_changed:
             app = QApplication.instance()
             if app is not None:
                 apply_app_theme(app)
@@ -588,7 +608,7 @@ class MainWindow(QMainWindow):
         self.button_leds.products = sorted(settings.PRODUCTS, key=lambda product: product["price"])
         self._refresh_product_enablement(initial=True)
         self.setWindowTitle(settings.BRAND_TITLE)
-        return settings.UI_THEME != previous_theme, branding_changed
+        return theme_changed, branding_changed
 
     def _exit_config_to_home(self):
         self._config_mode = None
@@ -618,6 +638,13 @@ class MainWindow(QMainWindow):
                 count = len(settings.AVAILABLE_THEMES)
                 self._config_theme_index = (self._config_theme_index + step) % count
                 self._refresh_theme_screen()
+            return
+        if self._config_mode == "theme_mode":
+            if product_id in {"full_garrafon", "half_garrafon"}:
+                step = -1 if product_id == "full_garrafon" else 1
+                count = len(settings.AVAILABLE_MODES)
+                self._config_mode_index = (self._config_mode_index + step) % count
+                self._refresh_mode_screen()
             return
         if self._config_mode == "price":
             if product_id == "full_garrafon":
@@ -681,6 +708,8 @@ class MainWindow(QMainWindow):
             self._config_menu_index = self.config_menu_screen.index
             if option == "Cambiar tema":
                 self._open_theme_screen()
+            elif option == "Cambiar modo":
+                self._open_mode_screen()
             elif option == "Ajustar precios":
                 self._open_price_screen()
             elif option == "Cambiar nombres":
@@ -709,6 +738,10 @@ class MainWindow(QMainWindow):
             return
         if self._config_mode == "theme":
             self._config_draft["tema"] = list(settings.AVAILABLE_THEMES)[self._config_theme_index]
+            self._open_config_menu()
+            return
+        if self._config_mode == "theme_mode":
+            self._config_draft["modo"] = list(settings.AVAILABLE_MODES)[self._config_mode_index]
             self._open_config_menu()
             return
         if self._config_mode == "price":
@@ -1263,7 +1296,7 @@ class MainWindow(QMainWindow):
         if self._config_mode in {"login", "menu"}:
             self._exit_config_to_home()
             return
-        if self._config_mode in {"theme", "price", "name", "system_name", "contact_email", "contact_phone", "volume", "time", "code_new"}:
+        if self._config_mode in {"theme", "theme_mode", "price", "name", "system_name", "contact_email", "contact_phone", "volume", "time", "code_new"}:
             self._open_config_menu()
             return
         if self._config_mode == "code_confirm":

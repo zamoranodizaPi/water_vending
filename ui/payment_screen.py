@@ -6,7 +6,8 @@ from PyQt5.QtGui import QMovie, QPixmap
 from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
 from config import settings
-from theme import APP_FONT, SECONDARY, SURFACE, TEXT_PRIMARY, refresh_style
+import theme
+from theme import refresh_style
 
 HEADER_HEIGHT = 90
 
@@ -42,7 +43,7 @@ class BrandedScreen(QWidget):
         pix = QPixmap(str(self.logo_path))
         if pix.isNull():
             self.header_icon.setText("L")
-            self.header_icon.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};")
+            self.header_icon.setObjectName("imageFallback")
         else:
             self.header_icon.setPixmap(pix.scaled(72, 72, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         title_row.addWidget(self.header_icon, 0, Qt.AlignVCenter)
@@ -52,12 +53,10 @@ class BrandedScreen(QWidget):
         text_col.setSpacing(2)
         text_col.addStretch(1)
         title = QLabel(settings.BRAND_TITLE)
-        title.setStyleSheet(f"font-family:{APP_FONT}; font-size:25px; font-weight:800; color:{SURFACE};")
+        title.setObjectName("headerTitle")
         text_col.addWidget(title)
         subtitle = QLabel(settings.BRAND_TAGLINE)
-        subtitle.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:12px; font-weight:600; color:{SURFACE};"
-        )
+        subtitle.setObjectName("headerSubtitle")
         text_col.addWidget(subtitle)
         text_col.addStretch(1)
         title_row.addLayout(text_col, 1)
@@ -102,11 +101,9 @@ class PromptScreen(BrandedScreen):
         self.subtitle.setWordWrap(True)
 
         self.footer_hint = QLabel(self._footer_hint_base)
+        self.footer_hint.setObjectName("footerHint")
         self.footer_hint.setAlignment(Qt.AlignCenter)
         self.footer_hint.setWordWrap(True)
-        self.footer_hint.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:16px; font-weight:600; color:{SECONDARY};"
-        )
 
         self.ok_pressed.setObjectName("confirmButton")
         self.ok_pressed.setMinimumHeight(48)
@@ -170,19 +167,19 @@ class PromptScreen(BrandedScreen):
             else:
                 self.image.setText("[Animación no disponible]")
                 self.image.setProperty("role", "secondary")
-                self.image.setStyleSheet("font-size:22px;")
+                self.image.setObjectName("imageFallback")
                 refresh_style(self.image)
         else:
             pix = QPixmap(str(image_path))
             if pix.isNull():
                 self.image.setText("[Imagen no disponible]")
                 self.image.setProperty("role", "secondary")
-                self.image.setStyleSheet("font-size:22px;")
+                self.image.setObjectName("imageFallback")
                 refresh_style(self.image)
             else:
                 self._image_pixmap = pix
                 self.image.setProperty("role", "")
-                self.image.setStyleSheet("")
+                self.image.setObjectName("heroImage")
                 refresh_style(self.image)
                 self._refresh_image()
         self.subtitle.setText(subtitle)
@@ -267,12 +264,12 @@ class MessageScreen(BrandedScreen):
             if pix.isNull():
                 self.animation.setText("[Imagen no disponible]")
                 self.animation.setProperty("role", "secondary")
-                self.animation.setStyleSheet("font-size:22px;")
+                self.animation.setObjectName("imageFallback")
                 refresh_style(self.animation)
             else:
                 self._image_pixmap = pix
                 self.animation.setProperty("role", "")
-                self.animation.setStyleSheet("")
+                self.animation.setObjectName("heroImage")
                 refresh_style(self.animation)
                 self._refresh_animation()
         elif gif_path:
@@ -284,5 +281,5 @@ class MessageScreen(BrandedScreen):
             else:
                 self.animation.setText("[Animación no disponible]")
                 self.animation.setProperty("role", "secondary")
-                self.animation.setStyleSheet("font-size:22px;")
+                self.animation.setObjectName("imageFallback")
                 refresh_style(self.animation)

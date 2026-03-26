@@ -6,7 +6,8 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QProgressBar, QVBoxLayout, QWidget
 
 from config import settings
-from theme import ACCENT_ORANGE, APP_FONT, PRIMARY, SECONDARY, SURFACE, TEXT_PRIMARY, refresh_style
+import theme
+from theme import refresh_style
 
 HEADER_HEIGHT = 90
 CONFIG_TITLE = "Modo configuración"
@@ -30,13 +31,13 @@ class ConfigBaseScreen(QWidget):
 
         icon = QLabel()
         icon.setAlignment(Qt.AlignCenter)
-        icon.setFixedSize(94, 94)
+        icon.setFixedSize(72, 72)
         pix = QPixmap(str(self.logo_path))
         if pix.isNull():
             icon.setText("L")
-            icon.setStyleSheet(f"font-family:{APP_FONT}; font-size:24px; font-weight:800; color:{SURFACE};")
+            icon.setObjectName("imageFallback")
         else:
-            icon.setPixmap(pix.scaled(94, 94, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon.setPixmap(pix.scaled(72, 72, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         header_layout.addWidget(icon, 0, Qt.AlignVCenter)
 
         title_col = QVBoxLayout()
@@ -44,12 +45,10 @@ class ConfigBaseScreen(QWidget):
         title_col.setSpacing(0)
         title_col.addStretch(1)
         title = QLabel(settings.BRAND_TITLE)
-        title.setStyleSheet(f"font-family:{APP_FONT}; font-size:25px; font-weight:800; color:{SURFACE};")
+        title.setObjectName("headerTitle")
         title_col.addWidget(title)
         subtitle = QLabel(settings.BRAND_TAGLINE)
-        subtitle.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:12px; font-weight:600; color:{SURFACE};"
-        )
+        subtitle.setObjectName("headerSubtitle")
         title_col.addWidget(subtitle)
         title_col.addStretch(1)
         header_layout.addLayout(title_col, 1)
@@ -71,11 +70,9 @@ class ConfigHoldScreen(ConfigBaseScreen):
         self.title.setAlignment(Qt.AlignCenter)
 
         self.help_text = QLabel("Mantenga OK y Cancelar presionados durante 10 segundos")
+        self.help_text.setObjectName("footerHint")
         self.help_text.setAlignment(Qt.AlignCenter)
         self.help_text.setWordWrap(True)
-        self.help_text.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:18px; font-weight:600; color:{SECONDARY};"
-        )
 
         self.progress = QProgressBar()
         self.progress.setObjectName("processProgress")
@@ -83,7 +80,6 @@ class ConfigHoldScreen(ConfigBaseScreen):
         self.progress.setValue(0)
         self.progress.setFixedHeight(48)
         self.progress.setFixedWidth(520)
-        self.progress.setStyleSheet(f"QProgressBar{{font-family:{APP_FONT};}}")
 
         self.panel_layout.addStretch(1)
         self.panel_layout.addWidget(self.title)
@@ -107,10 +103,8 @@ class ConfigCodeScreen(ConfigBaseScreen):
         self.title.setAlignment(Qt.AlignCenter)
 
         self.hint = QLabel("P1:+  P2:-  P3:siguiente  OK:confirmar")
+        self.hint.setObjectName("footerHint")
         self.hint.setAlignment(Qt.AlignCenter)
-        self.hint.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:16px; font-weight:600; color:{SECONDARY};"
-        )
 
         self.code_row = QHBoxLayout()
         self.code_row.setContentsMargins(0, 0, 0, 0)
@@ -125,7 +119,7 @@ class ConfigCodeScreen(ConfigBaseScreen):
 
         self.message = QLabel("")
         self.message.setAlignment(Qt.AlignCenter)
-        self.message.setStyleSheet(f"font-family:{APP_FONT}; font-size:18px; font-weight:700; color:{PRIMARY};")
+        self.message.setObjectName("bodyText")
 
         self.panel_layout.addStretch(1)
         self.panel_layout.addWidget(self.title)
@@ -147,15 +141,15 @@ class ConfigCodeScreen(ConfigBaseScreen):
     def _refresh_digits(self):
         for index, label in enumerate(self.digit_labels):
             selected = index == self.cursor_index
-            border_color = ACCENT_ORANGE if selected else "#cbd5e1"
+            border_color = theme.ACCENT_ORANGE if selected else "#cbd5e1"
             label.setText(self.digits[index])
             label.setStyleSheet(
                 f"""
-                font-family:{APP_FONT};
+                font-family:{theme.APP_FONT};
                 font-size:38px;
                 font-weight:800;
-                color:{TEXT_PRIMARY};
-                background-color:{SURFACE};
+                color:{theme.TEXT_PRIMARY};
+                background-color:{theme.SURFACE};
                 border:3px solid {border_color};
                 border-radius:16px;
                 """
@@ -178,11 +172,11 @@ class ConfigCodeScreen(ConfigBaseScreen):
 
     def show_error(self, text: str):
         self.message.setText(text)
-        self.message.setStyleSheet(f"font-family:{APP_FONT}; font-size:18px; font-weight:700; color:#dc2626;")
+        self.message.setStyleSheet(f"font-family:{theme.APP_FONT}; font-size:18px; font-weight:700; color:#dc2626;")
 
     def show_info(self, text: str):
         self.message.setText(text)
-        self.message.setStyleSheet(f"font-family:{APP_FONT}; font-size:18px; font-weight:700; color:{PRIMARY};")
+        self.message.setStyleSheet(f"font-family:{theme.APP_FONT}; font-size:18px; font-weight:700; color:{theme.PRIMARY};")
 
 
 class ConfigTextScreen(ConfigBaseScreen):
@@ -201,11 +195,9 @@ class ConfigTextScreen(ConfigBaseScreen):
         self.title.setAlignment(Qt.AlignCenter)
 
         self.subtitle = QLabel("")
+        self.subtitle.setObjectName("bodyText")
         self.subtitle.setAlignment(Qt.AlignCenter)
         self.subtitle.setWordWrap(True)
-        self.subtitle.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:18px; font-weight:600; color:{SECONDARY};"
-        )
 
         self.row = QHBoxLayout()
         self.row.setContentsMargins(0, 0, 0, 0)
@@ -219,11 +211,9 @@ class ConfigTextScreen(ConfigBaseScreen):
             self.row.addWidget(label)
 
         self.help = QLabel("P1:+  P2:-  P3:siguiente  OK:guardar  Cancelar:volver")
+        self.help.setObjectName("footerHint")
         self.help.setAlignment(Qt.AlignCenter)
         self.help.setWordWrap(True)
-        self.help.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:16px; font-weight:600; color:{SECONDARY};"
-        )
 
         self.panel_layout.addWidget(self.title)
         self.panel_layout.addWidget(self.subtitle)
@@ -283,15 +273,15 @@ class ConfigTextScreen(ConfigBaseScreen):
             if not visible:
                 continue
             selected = index == self.cursor_index
-            border_color = ACCENT_ORANGE if selected else "#cbd5e1"
-            background = SURFACE if selected else "#f8fafc"
+            border_color = theme.ACCENT_ORANGE if selected else "#cbd5e1"
+            background = theme.SURFACE if selected else "rgba(255, 255, 255, 0.16)"
             label.setText(self.characters[index] if self.characters[index] != " " else "·")
             label.setStyleSheet(
                 f"""
-                font-family:{APP_FONT};
+                font-family:{theme.APP_FONT};
                 font-size:24px;
                 font-weight:800;
-                color:{TEXT_PRIMARY};
+                color:{theme.TEXT_PRIMARY};
                 background-color:{background};
                 border:3px solid {border_color};
                 border-radius:10px;
@@ -308,10 +298,8 @@ class ConfigMenuScreen(ConfigBaseScreen):
         self.title.setObjectName("screenTitle")
         self.title.setAlignment(Qt.AlignCenter)
         self.hint = QLabel("P1:subir  P2:bajar  OK:seleccionar  Cancelar:volver")
+        self.hint.setObjectName("footerHint")
         self.hint.setAlignment(Qt.AlignCenter)
-        self.hint.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:16px; font-weight:600; color:{SECONDARY};"
-        )
         self.list_layout = QVBoxLayout()
         self.list_layout.setContentsMargins(0, 0, 0, 0)
         self.list_layout.setSpacing(10)
@@ -336,7 +324,7 @@ class ConfigMenuScreen(ConfigBaseScreen):
             frame.setObjectName("configMenuItem")
             frame.setFixedHeight(56)
             label = QLabel(option)
-            label.setStyleSheet(f"font-family:{APP_FONT}; font-size:22px; font-weight:700; color:{TEXT_PRIMARY};")
+            label.setStyleSheet(f"font-family:{theme.APP_FONT}; font-size:22px; font-weight:700; color:{theme.TEXT_PRIMARY};")
             row = QHBoxLayout(frame)
             row.setContentsMargins(18, 10, 18, 10)
             row.addWidget(label)
@@ -360,8 +348,8 @@ class ConfigMenuScreen(ConfigBaseScreen):
             selected = index == self.index
             frame.setStyleSheet(
                 f"""
-                background-color:{SURFACE};
-                border:{'3px' if selected else '1px'} solid {ACCENT_ORANGE if selected else '#e2e8f0'};
+                background-color:{theme.SURFACE};
+                border:{'3px' if selected else '1px'} solid {theme.ACCENT_ORANGE if selected else '#e2e8f0'};
                 border-radius:16px;
                 """
             )
@@ -375,24 +363,18 @@ class ConfigValueScreen(ConfigBaseScreen):
         self.title.setAlignment(Qt.AlignCenter)
 
         self.subtitle = QLabel("")
+        self.subtitle.setObjectName("bodyText")
         self.subtitle.setAlignment(Qt.AlignCenter)
         self.subtitle.setWordWrap(True)
-        self.subtitle.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:18px; font-weight:600; color:{SECONDARY};"
-        )
 
         self.value = QLabel("")
+        self.value.setProperty("role", "price")
         self.value.setAlignment(Qt.AlignCenter)
-        self.value.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:44px; font-weight:800; color:{PRIMARY};"
-        )
 
         self.help = QLabel("")
+        self.help.setObjectName("footerHint")
         self.help.setAlignment(Qt.AlignCenter)
         self.help.setWordWrap(True)
-        self.help.setStyleSheet(
-            f"font-family:{APP_FONT}; font-size:16px; font-weight:600; color:{SECONDARY};"
-        )
 
         self.panel_layout.addStretch(1)
         self.panel_layout.addWidget(self.title)
