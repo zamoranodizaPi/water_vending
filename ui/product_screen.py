@@ -19,9 +19,9 @@ import theme
 from theme import color_with_alpha, refresh_style
 
 HEADER_HEIGHT = 90
-CARD_HEIGHT = 280
+CARD_HEIGHT = 290
 CARD_MIN_WIDTH = 300
-INSTRUCTIONS_HEIGHT = 120
+INSTRUCTIONS_HEIGHT = 110
 CARD_SELECTED_SCALE = 1.1
 class TopLeftHotspot(QWidget):
     pressed = pyqtSignal()
@@ -79,32 +79,47 @@ class ProductCard(QFrame):
         root.setSpacing(0)
 
         body = QVBoxLayout()
-        body.setContentsMargins(10, 8, 10, 12)
-        body.setSpacing(4)
+        body.setContentsMargins(12, 10, 12, 12)
+        body.setSpacing(6)
         root.addLayout(body, 1)
+
+        top_row = QHBoxLayout()
+        top_row.setContentsMargins(0, 0, 0, 0)
+        top_row.setSpacing(8)
 
         self.price_corner = QLabel(f"${self.product['price']:.0f}")
         self.price_corner.setObjectName("productPriceCorner")
-        self.price_corner.setAlignment(Qt.AlignRight | Qt.AlignTop)
+        self.price_corner.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.price_corner.setVisible(False)
-        body.addWidget(self.price_corner, 0, Qt.AlignRight | Qt.AlignTop)
+        top_row.addWidget(self.price_corner, 0, Qt.AlignLeft | Qt.AlignTop)
+
+        self.volume_corner = QLabel(self._volume_text())
+        self.volume_corner.setAlignment(Qt.AlignRight | Qt.AlignTop)
+        self.volume_corner.setStyleSheet(
+            f"font-family:{theme.APP_FONT}; font-size:16px; font-weight:800; color:rgba(255,255,255,0.92);"
+        )
+        top_row.addWidget(self.volume_corner, 1, Qt.AlignRight | Qt.AlignTop)
+        body.addLayout(top_row)
+        body.addStretch(1)
 
         self.icon = QLabel()
         self.icon.setAlignment(Qt.AlignCenter)
-        self.icon.setFixedHeight(178)
+        self.icon.setFixedHeight(188)
         pixmap = QPixmap(str(self.product["image"]))
         if pixmap.isNull():
             self.icon.setText("Agua")
             self.icon.setObjectName("productFallback")
         else:
-            scaled = pixmap.scaled(220, 178, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            scaled = pixmap.scaled(228, 188, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.icon.setPixmap(scaled)
         body.addWidget(self.icon, 1, Qt.AlignCenter)
+        body.addStretch(1)
 
         self.price = QLabel(f"${self.product['price']:.0f}")
         self.price.setAlignment(Qt.AlignCenter)
         self.price.setProperty("role", "price")
         body.addWidget(self.price)
+        body.addStretch(1)
 
         self.buy_button = QPushButton(self.product["name"])
         self.buy_button.setObjectName("buyButton")
@@ -116,17 +131,23 @@ class ProductCard(QFrame):
         button_shadow.setOffset(0, 4)
         button_shadow.setColor(color_with_alpha("#0f172a", 55))
         self.buy_button.setGraphicsEffect(button_shadow)
-        body.addSpacing(4)
         body.addWidget(self.buy_button)
 
     def _handle_buy_clicked(self):
         print(f"Producto seleccionado: {self.product['name']}")
         self.clicked.emit()
 
+    def _volume_text(self) -> str:
+        volume = float(self.product.get("volume_l", 0))
+        if abs(volume - round(volume)) < 0.05:
+            return f"{int(round(volume))} L"
+        return f"{volume:.1f} L"
+
     def refresh_product_data(self):
         price_text = f"${self.product['price']:.0f}"
         self.price.setText(price_text)
         self.price_corner.setText(price_text)
+        self.volume_corner.setText(self._volume_text())
         self.buy_button.setText(self.product["name"])
 
     def mousePressEvent(self, event):
