@@ -340,6 +340,11 @@ class ProductScreen(QWidget):
         self.cards = {}
         self.steps = []
         self._rinse_locked = False
+        self._instruction_focus_sequence: tuple[int, ...] = ()
+        self._instruction_focus_index = 0
+        self._instruction_timer = QTimer(self)
+        self._instruction_timer.setInterval(520)
+        self._instruction_timer.timeout.connect(self._tick_instruction_focus)
         self._build_ui()
 
     def _build_ui(self):
@@ -546,9 +551,31 @@ class ProductScreen(QWidget):
         self.countdown_label.setText(f"Regreso en {seconds}s")
         self.countdown_label.setVisible(True)
 
-    def set_instruction_focus(self, step_number: int | None):
+    def _apply_instruction_focus(self, active_step: int | None):
         for index, step in enumerate(self.steps, start=1):
-            step.set_active(index == step_number)
+            step.set_active(index == active_step)
+
+    def _tick_instruction_focus(self):
+        if not self._instruction_focus_sequence:
+            self._instruction_timer.stop()
+            self._apply_instruction_focus(None)
+            return
+        active_step = self._instruction_focus_sequence[self._instruction_focus_index]
+        self._instruction_focus_index = (self._instruction_focus_index + 1) % len(self._instruction_focus_sequence)
+        self._apply_instruction_focus(active_step)
+
+    def set_instruction_focus(self, step_number: int | None):
+        if step_number == 3:
+            self._instruction_focus_sequence = (3, 4)
+            self._instruction_focus_index = 0
+            if not self._instruction_timer.isActive():
+                self._tick_instruction_focus()
+                self._instruction_timer.start()
+            return
+        self._instruction_timer.stop()
+        self._instruction_focus_sequence = ()
+        self._instruction_focus_index = 0
+        self._apply_instruction_focus(step_number)
 
     def refresh_products(self):
         for card in self.cards.values():
