@@ -414,7 +414,7 @@ QPushButton#buyButton {{
 }}
 
 QPushButton#buyButton {{
-    min-height: 32px;
+    min-height: 28px;
     font-size: 19px;
     border-radius: 18px;
 }}
