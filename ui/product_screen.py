@@ -113,6 +113,7 @@ class ProductCard(QFrame):
         body.addWidget(self.icon, 1, Qt.AlignCenter)
 
         self.price = QLabel(f"${self.product['price']:.0f}")
+        self.price.setObjectName("productPrice")
         self.price.setAlignment(Qt.AlignCenter)
         self.price.setProperty("role", "price")
         body.addWidget(self.price)
@@ -120,7 +121,7 @@ class ProductCard(QFrame):
         self.buy_button = QPushButton(self.product["name"])
         self.buy_button.setObjectName("buyButton")
         self.buy_button.setCursor(Qt.PointingHandCursor)
-        self.buy_button.setMinimumHeight(28)
+        self.buy_button.setMinimumHeight(22)
         self.buy_button.clicked.connect(self._handle_buy_clicked)
         button_shadow = QGraphicsDropShadowEffect(self.buy_button)
         button_shadow.setBlurRadius(16)

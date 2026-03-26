@@ -383,8 +383,14 @@ QLabel[role="price"] {{
     font-weight: 900;
 }}
 
+QLabel#productPrice {{
+    color: rgba(255, 250, 240, 0.98);
+    font-size: 30px;
+    font-weight: 900;
+}}
+
 QLabel#productPriceCorner {{
-    color: rgba(255, 255, 255, 0.92);
+    color: rgba(255, 248, 235, 0.96);
     font-size: 24px;
     font-weight: 900;
 }}
@@ -414,7 +420,7 @@ QPushButton#buyButton {{
 }}
 
 QPushButton#buyButton {{
-    min-height: 28px;
+    min-height: 22px;
     font-size: 19px;
     border-radius: 18px;
 }}
