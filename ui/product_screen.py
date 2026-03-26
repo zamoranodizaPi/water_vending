@@ -19,9 +19,9 @@ import theme
 from theme import color_with_alpha, refresh_style
 
 HEADER_HEIGHT = 90
-CARD_HEIGHT = 290
+CARD_HEIGHT = 305
 CARD_MIN_WIDTH = 300
-INSTRUCTIONS_HEIGHT = 110
+INSTRUCTIONS_HEIGHT = 92
 CARD_SELECTED_SCALE = 1.1
 class TopLeftHotspot(QWidget):
     pressed = pyqtSignal()
@@ -79,8 +79,8 @@ class ProductCard(QFrame):
         root.setSpacing(0)
 
         body = QVBoxLayout()
-        body.setContentsMargins(12, 10, 12, 12)
-        body.setSpacing(6)
+        body.setContentsMargins(12, 8, 12, 10)
+        body.setSpacing(4)
         root.addLayout(body, 1)
 
         top_row = QHBoxLayout()
@@ -100,31 +100,27 @@ class ProductCard(QFrame):
         )
         top_row.addWidget(self.volume_corner, 1, Qt.AlignRight | Qt.AlignTop)
         body.addLayout(top_row)
-        body.addStretch(1)
-
         self.icon = QLabel()
         self.icon.setAlignment(Qt.AlignCenter)
-        self.icon.setFixedHeight(188)
+        self.icon.setFixedHeight(204)
         pixmap = QPixmap(str(self.product["image"]))
         if pixmap.isNull():
             self.icon.setText("Agua")
             self.icon.setObjectName("productFallback")
         else:
-            scaled = pixmap.scaled(228, 188, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            scaled = pixmap.scaled(236, 204, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.icon.setPixmap(scaled)
         body.addWidget(self.icon, 1, Qt.AlignCenter)
-        body.addStretch(1)
 
         self.price = QLabel(f"${self.product['price']:.0f}")
         self.price.setAlignment(Qt.AlignCenter)
         self.price.setProperty("role", "price")
         body.addWidget(self.price)
-        body.addStretch(1)
 
         self.buy_button = QPushButton(self.product["name"])
         self.buy_button.setObjectName("buyButton")
         self.buy_button.setCursor(Qt.PointingHandCursor)
-        self.buy_button.setMinimumHeight(36)
+        self.buy_button.setMinimumHeight(32)
         self.buy_button.clicked.connect(self._handle_buy_clicked)
         button_shadow = QGraphicsDropShadowEffect(self.buy_button)
         button_shadow.setBlurRadius(16)
@@ -267,16 +263,16 @@ class InstructionStep(QFrame):
         self._scale = 1.0
         self._base_bubble_size = 36
         self._base_bubble_radius = 18
-        self._base_bubble_font = 18
-        self._base_label_font = 13
+        self._base_bubble_font = 17
+        self._base_label_font = 12
         self._pulse_timer = QTimer(self)
         self._pulse_timer.setInterval(240)
         self._pulse_timer.timeout.connect(self._toggle_pulse)
         self._pulse_grow = False
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        layout.setContentsMargins(6, 4, 6, 4)
+        layout.setSpacing(6)
 
         self.bubble = QLabel(str(number))
         self.bubble.setAlignment(Qt.AlignCenter)
@@ -427,7 +423,8 @@ class ProductScreen(QWidget):
         self.section_label = QLabel("Seleccione un producto")
         self.section_label.setObjectName("sectionLabel")
         self.section_label.setProperty("warning", False)
-        top_row.addWidget(self.section_label, 1)
+        self.section_label.setAlignment(Qt.AlignCenter)
+        top_row.addWidget(self.section_label, 1, Qt.AlignCenter)
 
         self.countdown_label = QLabel("")
         self.countdown_label.setObjectName("selectionCountdown")
@@ -460,8 +457,8 @@ class ProductScreen(QWidget):
         self.instructions_frame.setObjectName("instructionsPanel")
         self.instructions_frame.setFixedHeight(INSTRUCTIONS_HEIGHT)
         instructions_layout = QVBoxLayout(self.instructions_frame)
-        instructions_layout.setContentsMargins(16, 12, 16, 12)
-        instructions_layout.setSpacing(10)
+        instructions_layout.setContentsMargins(14, 8, 14, 8)
+        instructions_layout.setSpacing(6)
 
         instructions_title = QLabel("Instrucciones de uso")
         instructions_title.setObjectName("sectionLabel")
@@ -469,7 +466,7 @@ class ProductScreen(QWidget):
 
         steps_row = QHBoxLayout()
         steps_row.setContentsMargins(0, 0, 0, 0)
-        steps_row.setSpacing(10)
+        steps_row.setSpacing(8)
         steps = [
             "Seleccione producto",
             "Ingrese crédito",

@@ -297,20 +297,27 @@ class ConfigMenuScreen(ConfigBaseScreen):
         self.title = QLabel(CONFIG_TITLE)
         self.title.setObjectName("screenTitle")
         self.title.setAlignment(Qt.AlignCenter)
+        self.subtitle = QLabel("")
+        self.subtitle.setObjectName("footerHint")
+        self.subtitle.setAlignment(Qt.AlignCenter)
+        self.subtitle.setWordWrap(True)
         self.hint = QLabel("P1:subir  P2:bajar  OK:seleccionar  Cancelar:volver")
         self.hint.setObjectName("footerHint")
         self.hint.setAlignment(Qt.AlignCenter)
         self.list_layout = QVBoxLayout()
         self.list_layout.setContentsMargins(0, 0, 0, 0)
-        self.list_layout.setSpacing(10)
-        self.items = []
+        self.list_layout.setSpacing(6)
+        self.items: list[tuple[QFrame, QLabel, QLabel]] = []
 
         self.panel_layout.addWidget(self.title)
+        self.panel_layout.addWidget(self.subtitle)
         self.panel_layout.addSpacing(6)
         self.panel_layout.addLayout(self.list_layout, 1)
         self.panel_layout.addWidget(self.hint)
 
-    def configure(self, options: list[str], index: int = 0):
+    def configure(self, title: str, subtitle: str, options: list[str], index: int = 0):
+        self.title.setText(title)
+        self.subtitle.setText(subtitle)
         self.options = options
         self.index = index
         while self.list_layout.count():
@@ -322,13 +329,18 @@ class ConfigMenuScreen(ConfigBaseScreen):
         for option in options:
             frame = QFrame()
             frame.setObjectName("configMenuItem")
-            frame.setFixedHeight(56)
+            frame.setFixedHeight(46)
+            marker = QLabel("")
+            marker.setFixedWidth(22)
+            marker.setAlignment(Qt.AlignCenter)
             label = QLabel(option)
-            label.setStyleSheet(f"font-family:{theme.APP_FONT}; font-size:22px; font-weight:700; color:{theme.TEXT_PRIMARY};")
+            label.setStyleSheet(f"font-family:{theme.APP_FONT}; font-size:22px; font-weight:700;")
             row = QHBoxLayout(frame)
-            row.setContentsMargins(18, 10, 18, 10)
+            row.setContentsMargins(6, 4, 6, 4)
+            row.setSpacing(8)
+            row.addWidget(marker, 0)
             row.addWidget(label)
-            self.items.append(frame)
+            self.items.append((frame, marker, label))
             self.list_layout.addWidget(frame)
         self._refresh()
 
@@ -344,14 +356,15 @@ class ConfigMenuScreen(ConfigBaseScreen):
         return self.options[self.index]
 
     def _refresh(self):
-        for index, frame in enumerate(self.items):
+        for index, (frame, marker, label) in enumerate(self.items):
             selected = index == self.index
-            frame.setStyleSheet(
-                f"""
-                background-color:{theme.SURFACE};
-                border:{'3px' if selected else '1px'} solid {theme.ACCENT_ORANGE if selected else '#e2e8f0'};
-                border-radius:16px;
-                """
+            frame.setStyleSheet("background: transparent; border: none;")
+            marker.setText("◆" if selected else "")
+            marker.setStyleSheet(
+                f"font-family:{theme.APP_FONT}; font-size:18px; font-weight:800; color:{theme.ACCENT_ORANGE if selected else theme.TEXT_PRIMARY};"
+            )
+            label.setStyleSheet(
+                f"font-family:{theme.APP_FONT}; font-size:{24 if selected else 22}px; font-weight:{800 if selected else 700}; color:{theme.ACCENT_ORANGE if selected else theme.TEXT_PRIMARY};"
             )
 
 
