@@ -172,6 +172,8 @@ def _mix(color_a: str, color_b: str, factor: float) -> str:
 
 def _refresh_exports() -> dict:
     palette = ThemeManager.get_theme()
+    card_text = _mix(palette["text"], "#000000", 0.12) if ThemeManager.current_mode == "light" else "#fffaf0"
+    card_meta = _mix(palette["text"], "#000000", 0.04) if ThemeManager.current_mode == "light" else "rgba(255, 248, 235, 0.96)"
     globals().update(
         {
             "PRIMARY": palette["primary"],
@@ -191,6 +193,8 @@ def _refresh_exports() -> dict:
             "ERROR": "#ef4444",
             "ERROR_BG": "rgba(239, 68, 68, 0.14)",
             "CREDIT_BG": rgba_from_rgb(palette["card_color"], min(0.9, palette["glass_opacity"] + 0.1)),
+            "CARD_TEXT_STRONG": card_text,
+            "CARD_TEXT_META": card_meta,
         }
     )
     return palette
@@ -384,15 +388,21 @@ QLabel[role="price"] {{
 }}
 
 QLabel#productPrice {{
-    color: rgba(255, 250, 240, 0.98);
+    color: {CARD_TEXT_STRONG};
     font-size: 30px;
     font-weight: 900;
 }}
 
 QLabel#productPriceCorner {{
-    color: rgba(255, 248, 235, 0.96);
+    color: {CARD_TEXT_META};
     font-size: 24px;
     font-weight: 900;
+}}
+
+QLabel#productVolume {{
+    color: {CARD_TEXT_META};
+    font-size: 24px;
+    font-weight: 800;
 }}
 
 QLabel#productFallback,

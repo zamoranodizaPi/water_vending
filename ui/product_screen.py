@@ -94,10 +94,8 @@ class ProductCard(QFrame):
         top_row.addWidget(self.price_corner, 0, Qt.AlignLeft | Qt.AlignTop)
 
         self.volume_corner = QLabel(self._volume_text())
+        self.volume_corner.setObjectName("productVolume")
         self.volume_corner.setAlignment(Qt.AlignRight | Qt.AlignTop)
-        self.volume_corner.setStyleSheet(
-            f"font-family:{theme.APP_FONT}; font-size:16px; font-weight:800; color:rgba(255,255,255,0.92);"
-        )
         top_row.addWidget(self.volume_corner, 1, Qt.AlignRight | Qt.AlignTop)
         body.addLayout(top_row)
         body.addSpacing(-10)
@@ -472,6 +470,7 @@ class ProductScreen(QWidget):
         steps = [
             "Seleccione producto",
             "Ingrese crédito",
+            "Coloque garrafón",
             "Presione OK",
         ]
         for index, text in enumerate(steps, start=1):

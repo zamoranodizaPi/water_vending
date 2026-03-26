@@ -445,6 +445,7 @@ class MainWindow(QMainWindow):
     def _open_config_menu(self):
         self._config_mode = "menu"
         options = self._config_menu_options[self._config_menu_scope]
+        self._config_menu_indices[self._config_menu_scope] = 0
         if self._config_menu_scope == "general":
             title = "◆ Configuración general"
             subtitle = "Tema, sistema, contacto y código"
@@ -455,7 +456,7 @@ class MainWindow(QMainWindow):
             title,
             subtitle,
             options,
-            self._config_menu_indices[self._config_menu_scope],
+            0,
         )
         self.stack.setCurrentWidget(self.config_menu_screen)
 
