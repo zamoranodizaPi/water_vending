@@ -7,6 +7,7 @@ import logging
 import threading
 from datetime import datetime
 from email.utils import parseaddr
+from email.message import Message
 
 from PyQt5.QtCore import QObject, QTimer
 
@@ -71,6 +72,29 @@ def generate_audit_report(sales_db: SalesDB) -> str:
     return "\n".join(report_lines)
 
 
+def _extract_text_body(message: Message) -> str:
+    if message.is_multipart():
+        parts: list[str] = []
+        for part in message.walk():
+            if part.get_content_type() != "text/plain":
+                continue
+            if part.get_content_disposition() == "attachment":
+                continue
+            payload = part.get_payload(decode=True) or b""
+            charset = part.get_content_charset() or "utf-8"
+            try:
+                parts.append(payload.decode(charset, errors="ignore"))
+            except Exception:
+                parts.append(payload.decode("utf-8", errors="ignore"))
+        return "\n".join(parts)
+    payload = message.get_payload(decode=True) or b""
+    charset = message.get_content_charset() or "utf-8"
+    try:
+        return payload.decode(charset, errors="ignore")
+    except Exception:
+        return payload.decode("utf-8", errors="ignore")
+
+
 class AuditEmailService(QObject):
     def __init__(self, sales_db: SalesDB, parent=None):
         super().__init__(parent)
@@ -114,7 +138,7 @@ class AuditEmailService(QObject):
                 mailbox = imaplib.IMAP4(settings.IMAP_HOST, settings.IMAP_PORT)
             mailbox.login(settings.IMAP_USERNAME, settings.IMAP_PASSWORD)
             mailbox.select(settings.AUDIT_EMAIL_INBOX)
-            status, data = mailbox.search(None, "UNSEEN", "SUBJECT", f'"{settings.AUDIT_EMAIL_SUBJECT}"')
+            status, data = mailbox.search(None, "UNSEEN", "SUBJECT", f'"{settings.SYSTEM_NAME}"')
             if status != "OK":
                 return
             for message_id in data[0].split():
@@ -138,8 +162,18 @@ class AuditEmailService(QObject):
         raw_message = data[0][1]
         message = email.message_from_bytes(raw_message)
         subject = str(message.get("Subject", "")).strip()
+        body = _extract_text_body(message)
         sender = parseaddr(message.get("From", ""))[1].strip().lower()
         mailbox.store(message_id, "+FLAGS", "\\Seen")
+
+        if subject.strip().lower() != settings.SYSTEM_NAME.strip().lower():
+            logger.info("Ignoring audit email from %s due to subject mismatch: %s", sender, subject)
+            self.sales_db.log_email_event(timestamp, "audit_request", sender, subject, "ignored_subject")
+            return
+        if settings.AUDIT_EMAIL_BODY_KEYWORD not in body.lower():
+            logger.info("Ignoring audit email from %s due to missing body keyword", sender)
+            self.sales_db.log_email_event(timestamp, "audit_request", sender, subject, "ignored_body")
+            return
 
         allowed = settings.authorized_audit_emails()
         if allowed and sender not in allowed:
