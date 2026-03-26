@@ -154,6 +154,28 @@ SMTP_USERNAME = os.getenv("VENDING_SMTP_USERNAME", "zamoranodiza@gmail.com")
 SMTP_PASSWORD = os.getenv("VENDING_SMTP_PASSWORD", "")
 SMTP_FROM = os.getenv("VENDING_SMTP_FROM", SMTP_USERNAME)
 SMTP_USE_TLS = os.getenv("VENDING_SMTP_USE_TLS", "1") != "0"
+IMAP_HOST = os.getenv("VENDING_IMAP_HOST", "imap.gmail.com")
+IMAP_PORT = int(os.getenv("VENDING_IMAP_PORT", "993"))
+IMAP_USERNAME = os.getenv("VENDING_IMAP_USERNAME", SMTP_USERNAME)
+IMAP_PASSWORD = os.getenv("VENDING_IMAP_PASSWORD", SMTP_PASSWORD)
+IMAP_USE_SSL = os.getenv("VENDING_IMAP_USE_SSL", "1") != "0"
+AUDIT_EMAIL_SUBJECT = (os.getenv("VENDING_AUDIT_EMAIL_SUBJECT", "auditorias") or "auditorias").strip().lower()
+AUDIT_EMAIL_POLL_MS = max(10000, int(os.getenv("VENDING_AUDIT_EMAIL_POLL_MS", "60000")))
+AUDIT_EMAIL_INBOX = os.getenv("VENDING_AUDIT_EMAIL_INBOX", "INBOX")
+_AUTHORIZED_AUDIT_EMAILS_RAW = os.getenv("VENDING_AUDIT_EMAILS", "")
+
+
+def authorized_audit_emails() -> tuple[str, ...]:
+    allowed: list[str] = []
+    for candidate in (
+        CONTACT_EMAIL,
+        SMTP_USERNAME,
+        *[part.strip() for part in _AUTHORIZED_AUDIT_EMAILS_RAW.split(",")],
+    ):
+        cleaned = (candidate or "").strip().lower()
+        if cleaned and cleaned not in allowed:
+            allowed.append(cleaned)
+    return tuple(allowed)
 
 
 def _sanitize_runtime_config(raw: dict | None) -> dict:

@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedWidget
 
 from config import settings
 from database.sales_db import SalesDB
+from hardware.audit_email_service import AuditEmailService
 from hardware.auxiliary_outputs import AuxiliaryOutputs
 from hardware.button_led_controller import ButtonLedController
 from hardware.coin_acceptor import CoinAcceptor
@@ -131,6 +132,7 @@ class MainWindow(QMainWindow):
 
         self.products = {p["id"]: p for p in settings.PRODUCTS}
         self.sales_db = SalesDB(settings.DB_PATH)
+        self.audit_email_service = AuditEmailService(self.sales_db, self)
         self.audio = AudioManager(settings.AUDIO_FILES, self)
         self.gpio = GPIOController()
         self._setup_hardware()
@@ -139,6 +141,7 @@ class MainWindow(QMainWindow):
         self._audit_hold_timer.start()
         self._audit_reset_hold_timer.start()
         self._service_level_timer.start()
+        self.audit_email_service.start()
         self._refresh_product_enablement(initial=True)
         self._poll_service_level()
 
@@ -1027,12 +1030,14 @@ class MainWindow(QMainWindow):
 
     def _render_audit_email_page(self):
         day = self._selected_audit_day(self._audit_email_day_index)
-        emails = self._filter_rows_by_day(self.sales_db.fetch_email_events("out_of_service"), day)
+        emails = self._filter_rows_by_day(self.sales_db.fetch_email_events(), day)
         sent_count = sum(1 for row in emails if row["status"] == "sent")
-        failed_count = sum(1 for row in emails if row["status"] != "sent")
+        failed_count = sum(1 for row in emails if row["status"] not in {"sent", "received"})
+        audit_requests = sum(1 for row in emails if row["event_type"] == "audit_request")
         rows = [
             [
                 str(row["timestamp"]).replace("T", " "),
+                str(row["event_type"]),
                 str(row["status"]),
                 str(row["recipient"]),
                 str(row["subject"]),
@@ -1043,14 +1048,15 @@ class MainWindow(QMainWindow):
             rows = [["Sin correos", "-", "-", "-"]]
         self.audit_screen.set_view(
             title="Auditoría",
-            subtitle="Correos enviados por falta de agua",
+            subtitle="Eventos de correo y respuestas automáticas",
             filter_text=f"Filtro día: {day or 'Todos'}",
             summary_lines=[
                 f"Correos enviados: {sent_count}",
                 f"Correos fallidos: {failed_count}",
+                f"Solicitudes auditoría: {audit_requests}",
                 f"Eventos registrados: {len(emails)}",
             ],
-            headers=["Fecha y hora", "Estado", "Destino", "Asunto"],
+            headers=["Fecha y hora", "Tipo", "Estado", "Destino", "Asunto"],
             rows=rows,
         )
 
@@ -1684,6 +1690,7 @@ class MainWindow(QMainWindow):
         self._audit_hold_timer.stop()
         self._audit_reset_hold_timer.stop()
         self._service_level_timer.stop()
+        self.audit_email_service.stop()
         self.coin_acceptor.shutdown()
         self.button_leds.shutdown()
         super().closeEvent(event)
