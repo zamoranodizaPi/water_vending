@@ -100,6 +100,7 @@ class ProductCard(QFrame):
         )
         top_row.addWidget(self.volume_corner, 1, Qt.AlignRight | Qt.AlignTop)
         body.addLayout(top_row)
+        body.addSpacing(-10)
         self.icon = QLabel()
         self.icon.setAlignment(Qt.AlignCenter)
         self.icon.setFixedHeight(204)
