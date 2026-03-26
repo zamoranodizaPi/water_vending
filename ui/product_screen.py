@@ -109,7 +109,7 @@ class ProductCard(QFrame):
         self.buy_button = QPushButton(self.product["name"])
         self.buy_button.setObjectName("buyButton")
         self.buy_button.setCursor(Qt.PointingHandCursor)
-        self.buy_button.setMinimumHeight(46)
+        self.buy_button.setMinimumHeight(36)
         self.buy_button.clicked.connect(self._handle_buy_clicked)
         button_shadow = QGraphicsDropShadowEffect(self.buy_button)
         button_shadow.setBlurRadius(16)
@@ -344,12 +344,12 @@ class ProductScreen(QWidget):
 
         icon_box = QLabel()
         icon_box.setAlignment(Qt.AlignCenter)
-        icon_box.setFixedSize(72, 72)
+        icon_box.setFixedSize(77, 77)
         logo = QPixmap(str(self.logo_path))
         if logo.isNull():
             icon_box.setText("L")
         else:
-            icon_box.setPixmap(logo.scaled(72, 72, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon_box.setPixmap(logo.scaled(77, 77, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         header_layout.addWidget(icon_box, 0, Qt.AlignVCenter)
 
         title_col = QVBoxLayout()
@@ -367,7 +367,7 @@ class ProductScreen(QWidget):
 
         self.credit_box = ClickableFrame()
         self.credit_box.setObjectName("creditPill")
-        self.credit_box.setFixedSize(190, 56)
+        self.credit_box.setFixedSize(218, 56)
         self.credit_box.pressed.connect(self.credit_box_pressed.emit)
         credit_layout = QHBoxLayout(self.credit_box)
         credit_layout.setContentsMargins(12, 8, 12, 8)

@@ -89,20 +89,31 @@ class MainWindow(QMainWindow):
         self._service_level_timer.timeout.connect(self._poll_service_level)
         self._config_mode: str | None = None
         self._config_draft = settings.get_runtime_config()
-        self._config_menu_options = [
-            "Cambiar tema",
-            "Cambiar modo",
+        self._config_menu_options = {
+            "root": [
             "Ajustar precios",
             "Cambiar nombres",
             "Cambiar volúmenes",
-            "Cambiar nombre sistema",
-            "Cambiar contacto",
             "Ajustar tiempo por litro",
-            "Cambiar código",
+            "Configuración general",
             "Guardar y salir",
             "Cancelar",
-        ]
-        self._config_menu_index = 0
+            ],
+            "general": [
+            "Cambiar tema",
+            "Cambiar modo",
+            "Cambiar nombre sistema",
+            "Cambiar contacto",
+            "Cambiar código",
+            "Volver",
+            ],
+        }
+        self._config_menu_scope = "root"
+        self._config_return_menu = "root"
+        self._config_menu_indices = {
+            "root": 0,
+            "general": 0,
+        }
         self._config_price_index = 0
         self._config_theme_index = 0
         self._config_mode_index = 0
@@ -430,10 +441,23 @@ class MainWindow(QMainWindow):
 
     def _open_config_menu(self):
         self._config_mode = "menu"
-        self.config_menu_screen.configure(self._config_menu_options, self._config_menu_index)
+        options = self._config_menu_options[self._config_menu_scope]
+        self.config_menu_screen.configure(options, self._config_menu_indices[self._config_menu_scope])
         self.stack.setCurrentWidget(self.config_menu_screen)
 
+    def _open_general_config_menu(self):
+        self._config_menu_scope = "general"
+        self._open_config_menu()
+
+    def _set_config_return_menu(self):
+        self._config_return_menu = self._config_menu_scope
+
+    def _return_to_config_menu(self):
+        self._config_menu_scope = self._config_return_menu
+        self._open_config_menu()
+
     def _open_price_screen(self):
+        self._set_config_return_menu()
         self._config_mode = "price"
         self._config_price_index = 0
         price_keys = ["garrafon", "medio", "galon"]
@@ -442,6 +466,7 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentWidget(self.config_value_screen)
 
     def _open_theme_screen(self):
+        self._set_config_return_menu()
         self._config_mode = "theme"
         current_theme = self._config_draft["tema"]
         self._config_theme_index = list(settings.AVAILABLE_THEMES).index(current_theme)
@@ -458,6 +483,7 @@ class MainWindow(QMainWindow):
         )
 
     def _open_mode_screen(self):
+        self._set_config_return_menu()
         self._config_mode = "theme_mode"
         current_mode = self._config_draft.get("modo", settings.UI_MODE)
         self._config_mode_index = list(settings.AVAILABLE_MODES).index(current_mode)
@@ -489,12 +515,14 @@ class MainWindow(QMainWindow):
         )
 
     def _open_time_screen(self):
+        self._set_config_return_menu()
         self._config_mode = "time"
         self._config_edit_value = float(self._config_draft["tiempo_por_litro"])
         self._refresh_time_screen()
         self.stack.setCurrentWidget(self.config_value_screen)
 
     def _open_name_screen(self):
+        self._set_config_return_menu()
         self._config_mode = "name"
         self._config_name_index = 0
         self._refresh_name_screen()
@@ -516,6 +544,7 @@ class MainWindow(QMainWindow):
         )
 
     def _open_volume_screen(self):
+        self._set_config_return_menu()
         self._config_mode = "volume"
         self._config_volume_index = 0
         volume_keys = ["garrafon", "medio", "galon"]
@@ -539,11 +568,13 @@ class MainWindow(QMainWindow):
         )
 
     def _open_contact_screen(self):
+        self._set_config_return_menu()
         self._config_contact_field = "correo"
         self._refresh_contact_screen()
         self.stack.setCurrentWidget(self.config_text_screen)
 
     def _open_system_name_screen(self):
+        self._set_config_return_menu()
         self._config_mode = "system_name"
         self.config_text_screen.configure(
             "Nombre del sistema",
@@ -583,6 +614,7 @@ class MainWindow(QMainWindow):
         )
 
     def _open_code_change(self):
+        self._set_config_return_menu()
         self._config_mode = "code_new"
         self.config_code_screen.configure("Nuevo código", "Ingrese nuevo código", "0000")
         self.stack.setCurrentWidget(self.config_code_screen)
@@ -705,7 +737,14 @@ class MainWindow(QMainWindow):
             return
         if self._config_mode == "menu":
             option = self.config_menu_screen.current_option()
-            self._config_menu_index = self.config_menu_screen.index
+            self._config_menu_indices[self._config_menu_scope] = self.config_menu_screen.index
+            if option == "Configuración general":
+                self._open_general_config_menu()
+                return
+            elif option == "Volver":
+                self._config_menu_scope = "root"
+                self._open_config_menu()
+                return
             if option == "Cambiar tema":
                 self._open_theme_screen()
             elif option == "Cambiar modo":
@@ -738,25 +777,25 @@ class MainWindow(QMainWindow):
             return
         if self._config_mode == "theme":
             self._config_draft["tema"] = list(settings.AVAILABLE_THEMES)[self._config_theme_index]
-            self._open_config_menu()
+            self._return_to_config_menu()
             return
         if self._config_mode == "theme_mode":
             self._config_draft["modo"] = list(settings.AVAILABLE_MODES)[self._config_mode_index]
-            self._open_config_menu()
+            self._return_to_config_menu()
             return
         if self._config_mode == "price":
             price_keys = ["garrafon", "medio", "galon"]
             self._config_draft["precios"][price_keys[self._config_price_index]] = self._config_edit_value
-            self._open_config_menu()
+            self._return_to_config_menu()
             return
         if self._config_mode == "name":
             name_keys = ["garrafon", "medio", "galon"]
             self._config_draft["nombres"][name_keys[self._config_name_index]] = self.config_text_screen.text()
-            self._open_config_menu()
+            self._return_to_config_menu()
             return
         if self._config_mode == "system_name":
             self._config_draft["nombre_sistema"] = self.config_text_screen.text()
-            self._open_config_menu()
+            self._return_to_config_menu()
             return
         if self._config_mode == "contact_email":
             self._config_draft["contacto"]["correo"] = self.config_text_screen.text()
@@ -765,7 +804,7 @@ class MainWindow(QMainWindow):
             return
         if self._config_mode == "contact_phone":
             self._config_draft["contacto"]["telefono"] = self.config_text_screen.text()
-            self._open_config_menu()
+            self._return_to_config_menu()
             return
         if self._config_mode == "volume":
             volume_keys = ["garrafon", "medio", "galon"]
@@ -776,11 +815,11 @@ class MainWindow(QMainWindow):
                 self._config_edit_value = float(self._config_draft["volumenes"][next_key])
                 self._refresh_volume_screen()
             else:
-                self._open_config_menu()
+                self._return_to_config_menu()
             return
         if self._config_mode == "time":
             self._config_draft["tiempo_por_litro"] = self._config_edit_value
-            self._open_config_menu()
+            self._return_to_config_menu()
             return
         if self._config_mode == "code_new":
             self._config_new_code = self.config_code_screen.code()
@@ -1297,7 +1336,7 @@ class MainWindow(QMainWindow):
             self._exit_config_to_home()
             return
         if self._config_mode in {"theme", "theme_mode", "price", "name", "system_name", "contact_email", "contact_phone", "volume", "time", "code_new"}:
-            self._open_config_menu()
+            self._return_to_config_menu()
             return
         if self._config_mode == "code_confirm":
             self._config_mode = "code_new"

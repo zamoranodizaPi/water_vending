@@ -309,7 +309,7 @@ QLabel {{
 
 QLabel#headerTitle {{
     color: rgba(255, 255, 255, 0.98);
-    font-size: 26px;
+    font-size: 27px;
     font-weight: 800;
 }}
 
@@ -414,7 +414,7 @@ QPushButton#buyButton {{
 }}
 
 QPushButton#buyButton {{
-    min-height: 46px;
+    min-height: 36px;
     font-size: 19px;
     border-radius: 18px;
 }}
