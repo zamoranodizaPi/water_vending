@@ -17,6 +17,7 @@ SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 600
 FULLSCREEN = True
 COURTESY_LIGHT_TIMEOUT_MS = 15000
+AVAILABLE_THEMES = ("pink", "blue")
 
 PINS = {
     "water_valve": 17,
@@ -178,8 +179,8 @@ def _sanitize_runtime_config(raw: dict | None) -> dict:
     tema = raw.get("tema")
     if isinstance(tema, str):
         cleaned = tema.strip().lower()
-        if cleaned:
-            config["tema"] = cleaned[:16]
+        if cleaned in AVAILABLE_THEMES:
+            config["tema"] = cleaned
     titulo = raw.get("titulo")
     if isinstance(titulo, str):
         cleaned = titulo.strip()

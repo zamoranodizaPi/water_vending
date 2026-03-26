@@ -89,6 +89,7 @@ class MainWindow(QMainWindow):
         self._config_mode: str | None = None
         self._config_draft = settings.get_runtime_config()
         self._config_menu_options = [
+            "Cambiar tema",
             "Ajustar precios",
             "Cambiar nombres",
             "Cambiar volúmenes",
@@ -101,6 +102,7 @@ class MainWindow(QMainWindow):
         ]
         self._config_menu_index = 0
         self._config_price_index = 0
+        self._config_theme_index = 0
         self._config_name_index = 0
         self._config_volume_index = 0
         self._config_contact_field = "correo"
@@ -436,6 +438,22 @@ class MainWindow(QMainWindow):
         self._refresh_price_screen()
         self.stack.setCurrentWidget(self.config_value_screen)
 
+    def _open_theme_screen(self):
+        self._config_mode = "theme"
+        current_theme = self._config_draft["tema"]
+        self._config_theme_index = list(settings.AVAILABLE_THEMES).index(current_theme)
+        self._refresh_theme_screen()
+        self.stack.setCurrentWidget(self.config_value_screen)
+
+    def _refresh_theme_screen(self):
+        theme_name = list(settings.AVAILABLE_THEMES)[self._config_theme_index]
+        self.config_value_screen.configure(
+            "Cambiar tema",
+            "Tema general de la interfaz",
+            theme_name.upper(),
+            "P1/P2:cambiar  OK:guardar  Cancelar:volver",
+        )
+
     def _refresh_price_screen(self):
         labels = [
             ("Garrafón", "garrafon"),
@@ -580,6 +598,13 @@ class MainWindow(QMainWindow):
             elif product_id == "half_garrafon":
                 self.config_menu_screen.move_down()
             return
+        if self._config_mode == "theme":
+            if product_id in {"full_garrafon", "half_garrafon"}:
+                step = -1 if product_id == "full_garrafon" else 1
+                count = len(settings.AVAILABLE_THEMES)
+                self._config_theme_index = (self._config_theme_index + step) % count
+                self._refresh_theme_screen()
+            return
         if self._config_mode == "price":
             if product_id == "full_garrafon":
                 self._config_edit_value = round(self._config_edit_value + 1, 2)
@@ -640,7 +665,9 @@ class MainWindow(QMainWindow):
         if self._config_mode == "menu":
             option = self.config_menu_screen.current_option()
             self._config_menu_index = self.config_menu_screen.index
-            if option == "Ajustar precios":
+            if option == "Cambiar tema":
+                self._open_theme_screen()
+            elif option == "Ajustar precios":
                 self._open_price_screen()
             elif option == "Cambiar nombres":
                 self._open_name_screen()
@@ -659,6 +686,10 @@ class MainWindow(QMainWindow):
                 self._exit_config_to_home()
             elif option == "Cancelar":
                 self._exit_config_to_home()
+            return
+        if self._config_mode == "theme":
+            self._config_draft["tema"] = list(settings.AVAILABLE_THEMES)[self._config_theme_index]
+            self._open_config_menu()
             return
         if self._config_mode == "price":
             price_keys = ["garrafon", "medio", "galon"]
@@ -1212,7 +1243,7 @@ class MainWindow(QMainWindow):
         if self._config_mode in {"login", "menu"}:
             self._exit_config_to_home()
             return
-        if self._config_mode in {"price", "name", "system_name", "contact_email", "contact_phone", "volume", "time", "code_new"}:
+        if self._config_mode in {"theme", "price", "name", "system_name", "contact_email", "contact_phone", "volume", "time", "code_new"}:
             self._open_config_menu()
             return
         if self._config_mode == "code_confirm":

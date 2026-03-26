@@ -13,6 +13,40 @@ THEMES = {
         "PRIMARY_HOVER": "#f43f5e",
         "PRIMARY_DARK": "#db2777",
         "ORANGE": "#ff6b35",
+        "ACCENT": "#f43f5e",
+        "ACCENT_LIGHT": "#fff1f7",
+        "BACKGROUND": "#f8fafc",
+        "SURFACE": "#ffffff",
+        "TEXT_PRIMARY": "#111827",
+        "TEXT_SECONDARY": "#64748b",
+        "BORDER": "#e2e8f0",
+        "ERROR": "#dc2626",
+        "ERROR_BG": "#fee2e2",
+        "CARD_DISABLED": "#cbd5e1",
+        "HERO_BG": "#fff7fb",
+        "HERO_BORDER": "#fbcfe8",
+        "FLASH_BG": "#fff7ed",
+        "FLASH_BORDER": "#ff6b35",
+    },
+    "blue": {
+        "PRIMARY": "#2563eb",
+        "PRIMARY_HOVER": "#1d4ed8",
+        "PRIMARY_DARK": "#1e40af",
+        "ORANGE": "#facc15",
+        "ACCENT": "#3b82f6",
+        "ACCENT_LIGHT": "#eff6ff",
+        "BACKGROUND": "#f8fbff",
+        "SURFACE": "#ffffff",
+        "TEXT_PRIMARY": "#0f172a",
+        "TEXT_SECONDARY": "#475569",
+        "BORDER": "#cbd5e1",
+        "ERROR": "#dc2626",
+        "ERROR_BG": "#fee2e2",
+        "CARD_DISABLED": "#bfdbfe",
+        "HERO_BG": "#eff6ff",
+        "HERO_BORDER": "#93c5fd",
+        "FLASH_BG": "#fefce8",
+        "FLASH_BORDER": "#facc15",
     }
 }
 
@@ -23,21 +57,21 @@ PRIMARY_HOVER = _theme["PRIMARY_HOVER"]
 PRIMARY_DARK = _theme["PRIMARY_DARK"]
 ORANGE = _theme["ORANGE"]
 
-ACCENT = "#f43f5e"
-ACCENT_LIGHT = "#fff1f7"
+ACCENT = _theme["ACCENT"]
+ACCENT_LIGHT = _theme["ACCENT_LIGHT"]
 ACCENT_ORANGE = ORANGE
 ACCENT_PINK = PRIMARY
 
-BACKGROUND = "#f8fafc"
-SURFACE = "#ffffff"
+BACKGROUND = _theme["BACKGROUND"]
+SURFACE = _theme["SURFACE"]
 
-TEXT_PRIMARY = "#111827"
-TEXT_SECONDARY = "#64748b"
+TEXT_PRIMARY = _theme["TEXT_PRIMARY"]
+TEXT_SECONDARY = _theme["TEXT_SECONDARY"]
 SECONDARY = TEXT_SECONDARY
 
-BORDER = "#e2e8f0"
-ERROR = "#dc2626"
-ERROR_BG = "#fee2e2"
+BORDER = _theme["BORDER"]
+ERROR = _theme["ERROR"]
+ERROR_BG = _theme["ERROR_BG"]
 CREDIT_BG = PRIMARY
 
 
@@ -98,8 +132,8 @@ QFrame#creditPill {{
 }}
 
 QFrame#creditPill[flash="true"] {{
-    background-color: #fff7ed;
-    border: 2px solid {ORANGE};
+    background-color: {_theme["FLASH_BG"]};
+    border: 2px solid {_theme["FLASH_BORDER"]};
 }}
 
 QFrame#actionBox {{
@@ -137,8 +171,8 @@ QFrame#productCard[selected="true"] {{
 }}
 
 QFrame#productCard[affordable="false"] {{
-    background:#cbd5e1;
-    border: 1px solid #cbd5e1;
+    background:{_theme["CARD_DISABLED"]};
+    border: 1px solid {_theme["CARD_DISABLED"]};
 }}
 
 QFrame#productCard[attention="true"] {{
@@ -343,8 +377,8 @@ QFrame#instructionStep {{
 }}
 
 QLabel#heroImage {{
-    background-color: #fff7fb;
-    border: 1px solid #fbcfe8;
+    background-color: {_theme["HERO_BG"]};
+    border: 1px solid {_theme["HERO_BORDER"]};
     border-radius: 18px;
 }}
 """
