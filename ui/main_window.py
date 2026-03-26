@@ -8,7 +8,7 @@ from datetime import datetime
 
 from PyQt5.QtCore import QObject, QEvent, QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QCursor
-from PyQt5.QtWidgets import QMainWindow, QStackedWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedWidget
 
 from config import settings
 from database.sales_db import SalesDB
@@ -24,6 +24,7 @@ from ui.config_screen import ConfigCodeScreen, ConfigHoldScreen, ConfigMenuScree
 from ui.dispensing_screen import DispensingScreen
 from ui.payment_screen import MessageScreen, PromptScreen
 from ui.product_screen import ProductScreen
+from theme import apply_app_theme
 
 logger = logging.getLogger(__name__)
 
@@ -568,13 +569,26 @@ class MainWindow(QMainWindow):
         self.config_code_screen.configure("Nuevo código", "Ingrese nuevo código", "0000")
         self.stack.setCurrentWidget(self.config_code_screen)
 
-    def _save_runtime_settings(self):
+    def _save_runtime_settings(self) -> tuple[bool, bool]:
+        previous_theme = settings.UI_THEME
+        previous_title = settings.BRAND_TITLE
+        previous_tagline = settings.BRAND_TAGLINE
         saved = settings.save_runtime_config(self._config_draft)
         settings.apply_runtime_config(saved)
+        if settings.UI_THEME != previous_theme:
+            app = QApplication.instance()
+            if app is not None:
+                apply_app_theme(app)
+        branding_changed = (
+            settings.BRAND_TITLE != previous_title
+            or settings.BRAND_TAGLINE != previous_tagline
+        )
         self.products = {p["id"]: p for p in settings.PRODUCTS}
         self.product_screen.refresh_products()
         self.button_leds.products = sorted(settings.PRODUCTS, key=lambda product: product["price"])
         self._refresh_product_enablement(initial=True)
+        self.setWindowTitle(settings.BRAND_TITLE)
+        return settings.UI_THEME != previous_theme, branding_changed
 
     def _exit_config_to_home(self):
         self._config_mode = None
@@ -682,8 +696,14 @@ class MainWindow(QMainWindow):
             elif option == "Cambiar código":
                 self._open_code_change()
             elif option == "Guardar y salir":
-                self._save_runtime_settings()
+                theme_changed, branding_changed = self._save_runtime_settings()
                 self._exit_config_to_home()
+                if theme_changed and branding_changed:
+                    self.product_screen.show_alert("Tema aplicado. Reinicio recomendado para titulo y eslogan", ms=3500)
+                elif theme_changed:
+                    self.product_screen.show_alert("Tema aplicado", ms=2500)
+                elif branding_changed:
+                    self.product_screen.show_alert("Reinicio recomendado para actualizar titulo y eslogan", ms=3500)
             elif option == "Cancelar":
                 self._exit_config_to_home()
             return
