@@ -268,7 +268,7 @@ class InstructionStep(QFrame):
         self._base_bubble_font = 17
         self._base_label_font = 12
         self._pulse_timer = QTimer(self)
-        self._pulse_timer.setInterval(240)
+        self._pulse_timer.setInterval(360)
         self._pulse_timer.timeout.connect(self._toggle_pulse)
         self._pulse_grow = False
 
@@ -309,7 +309,7 @@ class InstructionStep(QFrame):
 
     def _toggle_pulse(self):
         self._pulse_grow = not self._pulse_grow
-        self._scale = 1.1 if self._pulse_grow else 1.0
+        self._scale = 1.04 if self._pulse_grow else 1.0
         self._apply_scale()
 
     def set_active(self, active: bool):
@@ -345,7 +345,7 @@ class ProductScreen(QWidget):
         self._instruction_focus_sequence: tuple[int, ...] = ()
         self._instruction_focus_index = 0
         self._instruction_timer = QTimer(self)
-        self._instruction_timer.setInterval(520)
+        self._instruction_timer.setInterval(900)
         self._instruction_timer.timeout.connect(self._tick_instruction_focus)
         self._build_ui()
 

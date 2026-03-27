@@ -5,6 +5,7 @@ import email
 import imaplib
 import logging
 import threading
+import unicodedata
 from datetime import datetime
 from email.utils import parseaddr
 from email.message import Message
@@ -16,6 +17,33 @@ from database.sales_db import SalesDB
 from hardware.email_notifier import send_email
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value or "")
+    without_marks = "".join(char for char in normalized if not unicodedata.combining(char))
+    return without_marks.casefold().strip()
+
+
+def _compact_text(value: str) -> str:
+    return "".join(char for char in _normalize_text(value) if char.isalnum())
+
+
+def _subject_matches_system_name(subject: str) -> bool:
+    return _compact_text(subject) == _compact_text(settings.SYSTEM_NAME)
+
+
+def _body_requests_audit(body: str) -> bool:
+    normalized_body = _normalize_text(body)
+    compact_body = _compact_text(body)
+    keyword = _normalize_text(settings.AUDIT_EMAIL_BODY_KEYWORD)
+    compact_keyword = _compact_text(settings.AUDIT_EMAIL_BODY_KEYWORD)
+
+    if compact_keyword and compact_keyword in compact_body:
+        return True
+    if "auditoria" in compact_body:
+        return True
+    return normalized_body in {"a", "auditoria", "auditorias"}
 
 
 def generate_audit_report(sales_db: SalesDB) -> str:
@@ -138,7 +166,7 @@ class AuditEmailService(QObject):
                 mailbox = imaplib.IMAP4(settings.IMAP_HOST, settings.IMAP_PORT)
             mailbox.login(settings.IMAP_USERNAME, settings.IMAP_PASSWORD)
             mailbox.select(settings.AUDIT_EMAIL_INBOX)
-            status, data = mailbox.search(None, "UNSEEN", "SUBJECT", f'"{settings.SYSTEM_NAME}"')
+            status, data = mailbox.search(None, "UNSEEN")
             if status != "OK":
                 return
             for message_id in data[0].split():
@@ -166,11 +194,11 @@ class AuditEmailService(QObject):
         sender = parseaddr(message.get("From", ""))[1].strip().lower()
         mailbox.store(message_id, "+FLAGS", "\\Seen")
 
-        if subject.strip().lower() != settings.SYSTEM_NAME.strip().lower():
+        if not _subject_matches_system_name(subject):
             logger.info("Ignoring audit email from %s due to subject mismatch: %s", sender, subject)
             self.sales_db.log_email_event(timestamp, "audit_request", sender, subject, "ignored_subject")
             return
-        if settings.AUDIT_EMAIL_BODY_KEYWORD not in body.lower():
+        if not _body_requests_audit(body):
             logger.info("Ignoring audit email from %s due to missing body keyword", sender)
             self.sales_db.log_email_event(timestamp, "audit_request", sender, subject, "ignored_body")
             return
