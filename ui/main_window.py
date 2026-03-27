@@ -1217,10 +1217,10 @@ class MainWindow(QMainWindow):
 
     def _play_prompt_audio(self):
         if self.flow_step == "await_rinse_position":
-            self.audio.queue(["place_container", "garrafon_boca_abajo"], gap_ms=500, interrupt=False)
+            self.audio.queue(["place_container", "garrafon_boca_abajo", "press_ok"], gap_ms=500, interrupt=False)
             return
         if self.flow_step == "await_fill_position":
-            self.audio.play("place_container_fill", interrupt=False)
+            self.audio.queue(["place_container_fill", "press_ok"], gap_ms=500, interrupt=False)
 
     def _handle_coin(self, amount: int):
         if self._service_lock_active:

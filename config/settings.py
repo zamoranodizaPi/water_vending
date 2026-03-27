@@ -138,6 +138,7 @@ AUDIO_FILES = {
     "selected_product": AUDIO_DIR / "selecciono_producto.mp3",
     "place_container": AUDIO_DIR / "coloque_su_garrafon.mp3",
     "place_container_fill": AUDIO_DIR / "coloque_su_garrafon_llenado.mp3",
+    "press_ok": AUDIO_DIR / "presione_ok.mp3",
     "remove_container": AUDIO_DIR / "retire_garrafon.mp3",
     "remove_change": AUDIO_DIR / "retire_su_cambio.mp3",
     "thanks": AUDIO_DIR / "agradecimiento.mp3",
