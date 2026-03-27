@@ -59,6 +59,7 @@ class MainWindow(QMainWindow):
         self._service_lock_active = False
         self._rinse_charge_pending = False
         self._played_75_audio = False
+        self._last_announced_credit_amount = 0
         self._last_input_at: dict[str, float] = {}
         self._selection_reset_timer = QTimer(self)
         self._selection_reset_timer.setSingleShot(True)
@@ -1128,6 +1129,7 @@ class MainWindow(QMainWindow):
         if self.current_product is not None or self.flow_step is not None:
             return
         self.product_screen.play_idle_attention_animation()
+        self.audio.play("welcome", interrupt=True)
 
     def _courtesy_on(self):
         try:
@@ -1142,6 +1144,54 @@ class MainWindow(QMainWindow):
         except GPIOControllerError as exc:
             logger.error(str(exc))
 
+    def _product_audio_key(self, product_id: str) -> str | None:
+        mapping = {
+            "full_garrafon": "product_full_garrafon",
+            "half_garrafon": "product_half_garrafon",
+            "gallon": "product_gallon",
+        }
+        return mapping.get(product_id)
+
+    def _amount_audio_key(self, amount: float) -> str | None:
+        rounded = int(round(amount))
+        mapping = {
+            5: "amount_5",
+            8: "amount_8",
+            10: "amount_10",
+            12: "amount_12",
+            15: "amount_15",
+            20: "amount_20",
+        }
+        return mapping.get(rounded)
+
+    def _queue_selection_audio(self, product_id: str, interrupt: bool = False):
+        names = ["selected_product"]
+        product_audio = self._product_audio_key(product_id)
+        if product_audio:
+            names.append(product_audio)
+        self.audio.queue(names, gap_ms=500, interrupt=interrupt)
+
+    def _announce_credit_if_needed(self, previous_credit: float):
+        current_amount = int(round(self.credit))
+        if abs(self.credit - current_amount) > 0.01:
+            return
+        if current_amount <= int(round(previous_credit)):
+            return
+        audio_key = self._amount_audio_key(self.credit)
+        if not audio_key:
+            return
+        if current_amount == self._last_announced_credit_amount:
+            return
+        self._last_announced_credit_amount = current_amount
+        self.audio.queue(["credit_received", audio_key], gap_ms=500, interrupt=True)
+
+    def _play_prompt_audio(self):
+        if self.flow_step == "await_rinse_position":
+            self.audio.queue(["place_container", "garrafon_boca_abajo"], gap_ms=500, interrupt=False)
+            return
+        if self.flow_step == "await_fill_position":
+            self.audio.play("place_container_fill", interrupt=False)
+
     def _handle_coin(self, amount: int):
         if self._service_lock_active:
             return
@@ -1152,13 +1202,14 @@ class MainWindow(QMainWindow):
         if not self._accept_input("coin", 0.18):
             return
         self._touch_interaction()
+        previous_credit = self.credit
         self.credit = min(999.0, self.credit + amount)
         self._update_credit_displays()
         self._sync_selection_countdown()
         self._refresh_product_enablement()
         self._log_ui_event("credit_added", source="coin", amount=amount, credit=f"{self.credit:.2f}")
         print(f"Pulso detectado. Crédito: {int(self.credit)}")
-        self.audio.queue(["coin_received", "credit_updated"])
+        self._announce_credit_if_needed(previous_credit)
 
     def _accept_input(self, name: str, min_interval_s: float) -> bool:
         now = time.monotonic()
@@ -1176,12 +1227,13 @@ class MainWindow(QMainWindow):
             return
         if self.stack.currentWidget() != self.product_screen:
             return
+        previous_credit = self.credit
         self.credit += 1.0
         self._update_credit_displays()
         self._sync_selection_countdown()
         self._refresh_product_enablement()
         self._log_ui_event("credit_added", source="service_hotspot", amount="1.00", credit=f"{self.credit:.2f}")
-        self.audio.queue(["coin_received", "credit_updated"])
+        self._announce_credit_if_needed(previous_credit)
 
     def _add_credit_box_amount(self):
         if self._service_lock_active:
@@ -1190,12 +1242,13 @@ class MainWindow(QMainWindow):
             return
         if self.stack.currentWidget() != self.product_screen:
             return
+        previous_credit = self.credit
         self.credit += 2.0
         self._update_credit_displays()
         self._sync_selection_countdown()
         self._refresh_product_enablement()
         self._log_ui_event("credit_added", source="credit_box", amount="2.00", credit=f"{self.credit:.2f}")
-        self.audio.queue(["coin_received", "credit_updated"])
+        self._announce_credit_if_needed(previous_credit)
 
     def _update_credit_displays(self):
         self.product_screen.set_credit(self.credit)
@@ -1243,7 +1296,7 @@ class MainWindow(QMainWindow):
         self.product_screen.set_instruction_focus(None)
 
     def _show_credit_insufficient(self):
-        self.audio.play("credit_insufficient")
+        self.audio.play("credit_insufficient", interrupt=True)
 
     def _show_insert_credit_and_return_idle(self):
         if self._service_lock_active:
@@ -1279,7 +1332,6 @@ class MainWindow(QMainWindow):
             return
         if self.credit < self.current_product["price"]:
             return
-        self.audio.queue(["select_product", "press_ok"])
         self.product_screen.show_alert("Crédito completo. Presione OK", ms=2000)
 
     def _tick_selection_countdown(self):
@@ -1335,6 +1387,7 @@ class MainWindow(QMainWindow):
             self.current_product = product
             self.product_screen.set_selected(product_id)
             self._refresh_product_enablement()
+            self._queue_selection_audio(product_id, interrupt=True)
             self._log_ui_event(
                 "product_selected",
                 product=product_id,
@@ -1351,6 +1404,7 @@ class MainWindow(QMainWindow):
         self.current_product = product
         self.product_screen.set_selected(product_id)
         self._refresh_product_enablement()
+        self._queue_selection_audio(product_id, interrupt=True)
         self._log_ui_event(
             "product_selected",
             product=product_id,
@@ -1358,7 +1412,6 @@ class MainWindow(QMainWindow):
             credit=f"{self.credit:.2f}",
             price=f"{product['price']:.2f}",
         )
-        self.audio.queue(["select_product", "press_ok"])
         self._show_preparation_prompt()
 
     def _handle_ok_input(self):
@@ -1440,6 +1493,7 @@ class MainWindow(QMainWindow):
         self._selection_reset_timer.stop()
         self._selection_countdown_timer.stop()
         self.credit = 0.0
+        self._last_announced_credit_amount = 0
         self.current_product = None
         self.flow_step = None
         self.current_fill_percent = 0
@@ -1467,6 +1521,8 @@ class MainWindow(QMainWindow):
         self.current_product = None
         self.current_fill_percent = 0
         self._rinse_charge_pending = False
+        if self.credit <= 0:
+            self._last_announced_credit_amount = 0
         self.product_screen.clear_alert()
         self.product_screen.set_selected(None)
         self.product_screen.set_countdown(None)
@@ -1490,9 +1546,9 @@ class MainWindow(QMainWindow):
             if any(self.credit >= p["price"] for p in settings.PRODUCTS):
                 self.product_screen.blink_enabled_products()
                 self.product_screen.show_alert("Seleccione un producto", ms=2500)
-                self.audio.play("select_product")
+                self.audio.play("select_product", interrupt=True)
             else:
-                self.audio.play("credit_insufficient")
+                self.audio.play("credit_insufficient", interrupt=True)
             return
 
         if self.credit < self.current_product["price"]:
@@ -1527,6 +1583,7 @@ class MainWindow(QMainWindow):
             )
         self.stack.setCurrentWidget(self.prompt_screen)
         self._log_ui_event("prompt_shown", screen="prompt", flow_step=self.flow_step, product=self.current_product["id"])
+        self._play_prompt_audio()
 
     def _show_upright_prompt(self):
         self._start_prompt_countdown()
@@ -1546,7 +1603,7 @@ class MainWindow(QMainWindow):
         )
         self.stack.setCurrentWidget(self.prompt_screen)
         self._log_ui_event("prompt_shown", screen="prompt", flow_step=self.flow_step, product=self.current_product["id"])
-        self.audio.play("press_ok")
+        self._play_prompt_audio()
 
     def _on_prompt_ok(self):
         if self._service_lock_active:
@@ -1576,7 +1633,6 @@ class MainWindow(QMainWindow):
                 emergency_enabled=False,
                 image_offset_y=20,
             )
-            self.audio.play("nozzle_cleaning")
         elif self.flow_step == "await_fill_position":
             self._start_filling()
 
@@ -1611,7 +1667,6 @@ class MainWindow(QMainWindow):
                 emergency_enabled=True,
                 image_offset_y=0,
             )
-            self.audio.queue(["starting_fill", "filling"])
         except GPIOControllerError as exc:
             logger.error(str(exc))
             self.audio.play("error")
@@ -1623,9 +1678,6 @@ class MainWindow(QMainWindow):
         self.current_fill_percent = progress
         if self.flow_step == "filling":
             self.valves.update_progress(progress)
-            if progress >= 75 and not self._played_75_audio:
-                self._played_75_audio = True
-                self.audio.play("seventy_five")
 
     def _on_emergency_stop(self):
         if self._service_lock_active:
@@ -1671,7 +1723,7 @@ class MainWindow(QMainWindow):
             except GPIOControllerError as exc:
                 logger.error(str(exc))
                 self.audio.play("error")
-            self.audio.queue(["fill_complete", "remove_container"])
+            self.audio.play("remove_container")
             self._complete_sale(emergency=False)
 
     def _complete_sale(self, emergency: bool = False):
@@ -1727,11 +1779,14 @@ class MainWindow(QMainWindow):
                 image_size=(200, 200),
             )
             self.stack.setCurrentWidget(self.message_screen)
+            self.audio.play("remove_change")
             self.credit = 0.0
+            self._last_announced_credit_amount = 0
             self._update_credit_displays()
             QTimer.singleShot(3000, self._show_thanks)
         else:
             self.credit = 0.0
+            self._last_announced_credit_amount = 0
             self._update_credit_displays()
             self._show_thanks()
 
@@ -1760,6 +1815,8 @@ class MainWindow(QMainWindow):
         self.flow_step = None
         self.current_fill_percent = 0
         self._rinse_charge_pending = False
+        if self.credit <= 0:
+            self._last_announced_credit_amount = 0
         self.product_screen.set_selected(None)
         self._refresh_product_enablement()
         self.stack.setCurrentWidget(self.product_screen)
