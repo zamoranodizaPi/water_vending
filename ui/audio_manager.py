@@ -1,11 +1,12 @@
-"""Queued audio playback helper with MP3 support and graceful fallback."""
+"""Queued audio playback helper with multiple backends and graceful fallback."""
 from __future__ import annotations
 
 import logging
+import shutil
 from collections import deque
 from pathlib import Path
 
-from PyQt5.QtCore import QObject, QTimer, QUrl
+from PyQt5.QtCore import QObject, QProcess, QTimer, QUrl
 
 logger = logging.getLogger(__name__)
 
@@ -27,19 +28,29 @@ class AudioManager(QObject):
         self._gap_timer.timeout.connect(self._play_next)
         self._next_gap_ms = 250
 
-        self._available = QMediaPlayer is not None and QMediaContent is not None
-        self._player = QMediaPlayer(self) if self._available else None
+        self._process = QProcess(self)
+        self._process.finished.connect(self._handle_process_finished)
+        self._process.errorOccurred.connect(self._handle_process_error)
+        self._external_player = self._detect_external_player()
+
+        self._qt_available = QMediaPlayer is not None and QMediaContent is not None
+        self._player = QMediaPlayer(self) if self._qt_available else None
         if self._player is not None:
             self._player.setVolume(95)
             self._player.mediaStatusChanged.connect(self._handle_media_status)
-            self._player.error.connect(self._handle_error)
+            self._player.error.connect(self._handle_qt_error)
+
+        if self._external_player:
+            logger.info("Audio backend: external player %s", self._external_player[0])
+        elif self._qt_available:
+            logger.info("Audio backend: Qt multimedia")
+        else:
+            logger.warning("Audio backend unavailable")
 
     def play(self, name: str, gap_ms: int = 250, interrupt: bool = False):
         self.queue([name], gap_ms=gap_ms, interrupt=interrupt)
 
     def queue(self, names: list[str], gap_ms: int = 250, interrupt: bool = False):
-        if not self._available:
-            return
         if interrupt:
             self.stop()
         for name in names:
@@ -50,15 +61,44 @@ class AudioManager(QObject):
     def stop(self):
         self._queue.clear()
         self._gap_timer.stop()
+        if self._process.state() != QProcess.NotRunning:
+            self._process.kill()
+            self._process.waitForFinished(200)
         if self._player is not None:
             self._player.stop()
+
+    def _detect_external_player(self) -> tuple[str, list[str]] | None:
+        candidates = (
+            ("mpg123", ["-q"]),
+            ("mpg321", ["-q"]),
+            ("cvlc", ["--play-and-exit", "--quiet"]),
+            ("vlc", ["--intf", "dummy", "--play-and-exit", "--quiet"]),
+            ("ffplay", ["-nodisp", "-autoexit", "-loglevel", "quiet"]),
+            ("paplay", []),
+            ("aplay", []),
+        )
+        for command, base_args in candidates:
+            if shutil.which(command):
+                return command, base_args
+        return None
 
     def _is_busy(self) -> bool:
         if self._gap_timer.isActive():
             return True
-        if self._player is None:
-            return False
-        return self._player.state() != QMediaPlayer.StoppedState
+        if self._process.state() != QProcess.NotRunning:
+            return True
+        if self._player is not None and self._player.state() != QMediaPlayer.StoppedState:
+            return True
+        return False
+
+    def _handle_process_finished(self, _exit_code: int, _exit_status):
+        self._gap_timer.start(self._next_gap_ms)
+
+    def _handle_process_error(self, error):
+        if error == QProcess.UnknownError:
+            return
+        logger.warning("External audio playback error: %s", error)
+        self._gap_timer.start(0)
 
     def _handle_media_status(self, status):
         if status == QMediaPlayer.EndOfMedia:
@@ -67,13 +107,13 @@ class AudioManager(QObject):
             logger.warning("Invalid audio media")
             self._gap_timer.start(0)
 
-    def _handle_error(self, error):
+    def _handle_qt_error(self, error):
         if error == QMediaPlayer.NoError:
             return
-        logger.warning("Audio playback error: %s", self._player.errorString() if self._player else error)
+        logger.warning("Qt audio playback error: %s", self._player.errorString() if self._player else error)
 
     def _play_next(self):
-        if self._player is None or self._player.state() != QMediaPlayer.StoppedState or not self._queue:
+        if self._is_busy() or not self._queue:
             return
 
         name, gap_ms = self._queue.popleft()
@@ -92,5 +132,28 @@ class AudioManager(QObject):
             self._gap_timer.start(0)
             return
 
+        if self._play_with_external_player(file_path):
+            return
+        if self._play_with_qt(file_path):
+            return
+
+        logger.warning("No audio backend could play: %s", path)
+        self._gap_timer.start(0)
+
+    def _play_with_external_player(self, file_path: Path) -> bool:
+        if not self._external_player:
+            return False
+        command, base_args = self._external_player
+        args = [*base_args, str(file_path)]
+        self._process.start(command, args)
+        if not self._process.waitForStarted(500):
+            logger.warning("Failed to start external audio player: %s", command)
+            return False
+        return True
+
+    def _play_with_qt(self, file_path: Path) -> bool:
+        if self._player is None:
+            return False
         self._player.setMedia(QMediaContent(QUrl.fromLocalFile(str(file_path))))
         self._player.play()
+        return True
