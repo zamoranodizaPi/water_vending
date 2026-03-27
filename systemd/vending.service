@@ -8,6 +8,7 @@ Type=simple
 User=pi
 WorkingDirectory=/opt/water_vending
 Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 EnvironmentFile=-/opt/water_vending/deploy/vending_email.env
 ExecStart=/opt/water_vending/.venv/bin/python /opt/water_vending/main.py
 Restart=always
