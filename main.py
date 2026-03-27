@@ -3,11 +3,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from config import load_config
-from database.sales_db import SalesDatabase
-from hardware.valve_controller import ValveController
 from logging_setup import configure_logging
-from theme import apply_app_theme
+
 
 configure_logging(Path(__file__).resolve().parent)
 
@@ -15,6 +12,8 @@ configure_logging(Path(__file__).resolve().parent)
 def main() -> int:
     try:
         from PyQt5.QtWidgets import QApplication
+
+        from theme import apply_app_theme
         from ui.main_window import MainWindow
     except ModuleNotFoundError as exc:
         if exc.name and exc.name.startswith("PyQt5"):
@@ -30,22 +29,11 @@ def main() -> int:
             return 1
         raise
 
-    config = load_config()
-    db = SalesDatabase("database/sales.db")
-    valve = ValveController(config.fill_valve_gpio_pin, config.rinse_valve_gpio_pin)
-
     app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(True)
     apply_app_theme(app)
 
-    window = MainWindow(config=config, db=db, valve=valve)
-
-    if config.fullscreen:
-        window.showFullScreen()
-    else:
-        window.resize(800, 480)
-        window.show()
-
+    window = MainWindow()
+    window.show_startup()
     return app.exec_()
 
 
