@@ -22,6 +22,7 @@ class AudioManager(QObject):
         self._next_gap_ms = 250
         self._process: subprocess.Popen | None = None
         self._script_path = resource_root() / "play_audio.py"
+        self._muted = False
 
         self._gap_timer = QTimer(self)
         self._gap_timer.setSingleShot(True)
@@ -37,12 +38,29 @@ class AudioManager(QObject):
         self.queue([name], gap_ms=gap_ms, interrupt=interrupt)
 
     def queue(self, names: list[str], gap_ms: int = 250, interrupt: bool = False):
+        if self._muted:
+            logger.info("Audio muted; skipping queued audio: %s", ", ".join(names))
+            if interrupt:
+                self.stop()
+            return
         if interrupt:
             self.stop()
         for name in names:
             self._queue.append((name, gap_ms))
         if not self._is_busy():
             self._play_next()
+
+    def set_muted(self, muted: bool):
+        muted = bool(muted)
+        if self._muted == muted:
+            return
+        self._muted = muted
+        logger.info("Audio mute changed: %s", self._muted)
+        if self._muted:
+            self.stop()
+
+    def is_muted(self) -> bool:
+        return self._muted
 
     def stop(self):
         self._queue.clear()

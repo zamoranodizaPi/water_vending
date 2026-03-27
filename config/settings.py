@@ -110,6 +110,7 @@ DEFAULT_RUNTIME_CONFIG = {
     "codigo_auditoria": "2000",
     "tema": "sunset_energy",
     "modo": "light",
+    "audio_muted": False,
     "titulo": "Agua Purificada Lupita",
     "eslogan": "pureza y bendicion en cada gota",
     "nombre_sistema": "Vending 1",
@@ -157,6 +158,7 @@ AUDIT_CODE = DEFAULT_RUNTIME_CONFIG["codigo_auditoria"]
 AUDIT_RESET_CODE = "3000"
 UI_THEME = DEFAULT_RUNTIME_CONFIG["tema"]
 UI_MODE = DEFAULT_RUNTIME_CONFIG["modo"]
+AUDIO_MUTED = DEFAULT_RUNTIME_CONFIG["audio_muted"]
 BRAND_TITLE = DEFAULT_RUNTIME_CONFIG["titulo"]
 BRAND_TAGLINE = DEFAULT_RUNTIME_CONFIG["eslogan"]
 SYSTEM_NAME = DEFAULT_RUNTIME_CONFIG["nombre_sistema"]
@@ -238,6 +240,9 @@ def _sanitize_runtime_config(raw: dict | None) -> dict:
         cleaned = modo.strip().lower()
         if cleaned in AVAILABLE_MODES:
             config["modo"] = cleaned
+    audio_muted = raw.get("audio_muted")
+    if isinstance(audio_muted, bool):
+        config["audio_muted"] = audio_muted
     titulo = raw.get("titulo")
     if isinstance(titulo, str):
         cleaned = titulo.strip()
@@ -281,7 +286,7 @@ def save_runtime_config(config: dict) -> dict:
 
 
 def apply_runtime_config(config: dict) -> None:
-    global FILL_SECONDS_PER_LITER, RINSE_LITERS, RINSE_SECONDS, ACCESS_CODE, AUDIT_CODE, UI_THEME, UI_MODE, BRAND_TITLE, BRAND_TAGLINE, SYSTEM_NAME, CONTACT_EMAIL, CONTACT_PHONE
+    global FILL_SECONDS_PER_LITER, RINSE_LITERS, RINSE_SECONDS, ACCESS_CODE, AUDIT_CODE, UI_THEME, UI_MODE, AUDIO_MUTED, BRAND_TITLE, BRAND_TAGLINE, SYSTEM_NAME, CONTACT_EMAIL, CONTACT_PHONE
     sanitized = _sanitize_runtime_config(config)
     PRODUCTS[0]["price"] = sanitized["precios"]["garrafon"]
     PRODUCTS[1]["price"] = sanitized["precios"]["medio"]
@@ -299,6 +304,7 @@ def apply_runtime_config(config: dict) -> None:
     AUDIT_CODE = sanitized["codigo_auditoria"]
     UI_THEME = sanitized["tema"]
     UI_MODE = sanitized["modo"]
+    AUDIO_MUTED = sanitized["audio_muted"]
     BRAND_TITLE = sanitized["titulo"]
     BRAND_TAGLINE = sanitized["eslogan"]
     SYSTEM_NAME = sanitized["nombre_sistema"]
@@ -329,6 +335,7 @@ def get_runtime_config() -> dict:
         "codigo_auditoria": AUDIT_CODE,
         "tema": UI_THEME,
         "modo": UI_MODE,
+        "audio_muted": AUDIO_MUTED,
         "titulo": BRAND_TITLE,
         "eslogan": BRAND_TAGLINE,
         "nombre_sistema": SYSTEM_NAME,

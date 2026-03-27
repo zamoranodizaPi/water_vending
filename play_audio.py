@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -15,10 +16,11 @@ from config import settings
 
 def detect_player() -> tuple[str, list[str]] | None:
     forced_player = os.getenv("VENDING_AUDIO_PLAYER", "").strip()
+    forced_args = shlex.split(os.getenv("VENDING_AUDIO_ARGS", "").strip())
     if forced_player:
         forced_path = shutil.which(forced_player) or forced_player
         if Path(forced_path).exists():
-            return forced_path, []
+            return forced_path, forced_args
 
     candidates = (
         ("mpg123", ["-q"], ("/usr/bin/mpg123", "/usr/local/bin/mpg123")),
@@ -32,10 +34,10 @@ def detect_player() -> tuple[str, list[str]] | None:
     for command, base_args, absolute_candidates in candidates:
         resolved = shutil.which(command)
         if resolved:
-            return resolved, base_args
+            return resolved, forced_args or base_args
         for absolute_path in absolute_candidates:
             if Path(absolute_path).exists():
-                return absolute_path, base_args
+                return absolute_path, forced_args or base_args
     return None
 
 

@@ -106,6 +106,7 @@ class MainWindow(QMainWindow):
             "general": [
             "Cambiar tema",
             "Cambiar modo",
+            "Mute audio",
             "Cambiar nombre sistema",
             "Cambiar contacto",
             "Cambiar código",
@@ -138,6 +139,7 @@ class MainWindow(QMainWindow):
         self.sales_db = SalesDB(settings.DB_PATH)
         self.audit_email_service = AuditEmailService(self.sales_db, self)
         self.audio = AudioManager(settings.AUDIO_FILES, self)
+        self.audio.set_muted(settings.AUDIO_MUTED)
         self.gpio = GPIOController()
         self._setup_hardware()
         self._setup_ui()
@@ -533,6 +535,21 @@ class MainWindow(QMainWindow):
             "P1/P2:cambiar  OK:guardar  Cancelar:volver",
         )
 
+    def _open_audio_mute_screen(self):
+        self._set_config_return_menu()
+        self._config_mode = "audio_muted"
+        self._refresh_audio_mute_screen()
+        self.stack.setCurrentWidget(self.config_value_screen)
+
+    def _refresh_audio_mute_screen(self):
+        muted = bool(self._config_draft.get("audio_muted", settings.AUDIO_MUTED))
+        self.config_value_screen.configure(
+            "Mute audio",
+            "Pausar todos los audios de la interfaz",
+            "Silenciado" if muted else "Con audio",
+            "P1/P2:cambiar  OK:guardar  Cancelar:volver",
+        )
+
     def _refresh_price_screen(self):
         labels = [
             ("Garrafón", "garrafon"),
@@ -675,6 +692,7 @@ class MainWindow(QMainWindow):
         previous_tagline = settings.BRAND_TAGLINE
         saved = settings.save_runtime_config(self._config_draft)
         settings.apply_runtime_config(saved)
+        self.audio.set_muted(settings.AUDIO_MUTED)
         theme_changed = settings.UI_THEME != previous_theme or settings.UI_MODE != previous_mode
         if theme_changed:
             app = QApplication.instance()
@@ -727,6 +745,12 @@ class MainWindow(QMainWindow):
                 count = len(settings.AVAILABLE_MODES)
                 self._config_mode_index = (self._config_mode_index + step) % count
                 self._refresh_mode_screen()
+            return
+        if self._config_mode == "audio_muted":
+            if product_id in {"full_garrafon", "half_garrafon"}:
+                current = bool(self._config_draft.get("audio_muted", settings.AUDIO_MUTED))
+                self._config_draft["audio_muted"] = not current
+                self._refresh_audio_mute_screen()
             return
         if self._config_mode == "price":
             if product_id == "full_garrafon":
@@ -806,6 +830,8 @@ class MainWindow(QMainWindow):
                 self._open_theme_screen()
             elif option == "Cambiar modo":
                 self._open_mode_screen()
+            elif option == "Mute audio":
+                self._open_audio_mute_screen()
             elif option == "Ajustar precios":
                 self._open_price_screen()
             elif option == "Cambiar nombres":
@@ -840,6 +866,10 @@ class MainWindow(QMainWindow):
             return
         if self._config_mode == "theme_mode":
             self._config_draft["modo"] = list(settings.AVAILABLE_MODES)[self._config_mode_index]
+            self._return_to_config_menu()
+            return
+        if self._config_mode == "audio_muted":
+            self._config_draft["audio_muted"] = bool(self._config_draft.get("audio_muted", settings.AUDIO_MUTED))
             self._return_to_config_menu()
             return
         if self._config_mode == "price":
@@ -1474,7 +1504,7 @@ class MainWindow(QMainWindow):
         if self._config_mode in {"login", "menu"}:
             self._exit_config_to_home()
             return
-        if self._config_mode in {"theme", "theme_mode", "price", "name", "system_name", "contact_email", "contact_phone", "volume", "time", "rinse_liters", "code_new"}:
+        if self._config_mode in {"theme", "theme_mode", "audio_muted", "price", "name", "system_name", "contact_email", "contact_phone", "volume", "time", "rinse_liters", "code_new"}:
             self._return_to_config_menu()
             return
         if self._config_mode == "code_confirm":
