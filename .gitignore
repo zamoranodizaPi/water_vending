@@ -6,3 +6,5 @@ __pycache__/
 database/sales.db
 build/
 dist/
+logs/*.log
+water_vending.spec

@@ -9,4 +9,17 @@ if [[ ! -x ".venv/bin/python" ]]; then
   exit 1
 fi
 
-.venv/bin/python -m PyInstaller --clean -y water_vending.spec
+PYINSTALLER_CONFIG_DIR="${PYINSTALLER_CONFIG_DIR:-/tmp/pyinstaller}" \
+.venv/bin/python -m PyInstaller \
+  --clean \
+  -y \
+  --onefile \
+  --windowed \
+  --name water_vending \
+  --specpath /tmp/pyinstaller-spec \
+  --paths "$ROOT_DIR" \
+  --add-data "$ROOT_DIR/assets:assets" \
+  --add-data "$ROOT_DIR/config/runtime_settings.json:config" \
+  --add-data "$ROOT_DIR/config.json:." \
+  --add-data "$ROOT_DIR/VERSION.txt:." \
+  "$ROOT_DIR/main.py"

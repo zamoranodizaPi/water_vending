@@ -20,5 +20,22 @@
   "coin_pulse_value": 1.0,
   "fullscreen": true,
   "logo_path": "assets/images/logo.png",
-  "background_path": "assets/images/background.png"
+  "background_path": "assets/images/background.png",
+  "email": {
+    "smtp_host": "smtp.gmail.com",
+    "smtp_port": 587,
+    "imap_host": "imap.gmail.com",
+    "imap_port": 993,
+    "from": "",
+    "contact_email": ""
+  },
+  "gsm": {
+    "enabled": false,
+    "port": "",
+    "baudrate": 9600
+  },
+  "ui": {
+    "theme": "black_gold",
+    "mode": "light"
+  }
 }

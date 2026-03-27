@@ -3,7 +3,9 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict
 
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent / "config.json"
+from app.paths import data_root
+
+DEFAULT_CONFIG_PATH = data_root() / "config.json"
 
 
 @dataclass

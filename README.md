@@ -1,34 +1,38 @@
-# Water Vending (Raspberry Pi)
+# Water Vending
 
-Aplicación para máquina de llenado de agua en Raspberry Pi con interfaz táctil en PyQt5 y control por GPIO.
+Sistema comercial para vending de agua purificada en Raspberry Pi con interfaz PyQt5, control GPIO, auditoría local y por email, trazabilidad semanal y build reproducible.
 
-## Stack
-- Python 3
-- PyQt5
-- gpiozero
-- SQLite
+Versión estable actual: `v1.0.0`
 
 ## Estructura
 
 ```text
 water_vending/
-├── main.py
-├── config.py
-├── config.json
-├── requirements.txt
-├── ui/
-│   ├── main_window.py
-│   └── screens.py
+├── app/
 ├── hardware/
-│   ├── gpio_inputs.py
-│   └── valve_controller.py
-├── database/
-│   └── sales_db.py
-└── systemd/
-    └── water-vending.service
+├── ui/
+├── services/
+├── config/
+├── logs/
+├── docs/
+├── dist/
+├── main.py
+├── config.json
+├── install.sh
+└── systemd/vending.service
 ```
 
-## Mapeo GPIO
+## Funciones
+- Selección de producto por pantalla o botones físicos.
+- Monedero por pulsos.
+- Flujo de llenado con enjuague automático cuando aplica.
+- Auditoría local protegida por código.
+- Respuesta por correo para auditoría y logs.
+- Alertas automáticas por falta de agua.
+- Trazabilidad semanal en `logs/ui-YYYY-Www.log`.
+- Exportación de auditorías CSV y logs desde línea de comandos.
+
+## Mapa GPIO
 - GPIO 12: pulsos del monedero
 - GPIO 16: selección 1 galón
 - GPIO 20: selección medio garrafón
@@ -46,58 +50,34 @@ water_vending/
 - GPIO 26: lámpara UV
 - GPIO 6: ozono
 
-## Precios en pantalla inicial
-- Garrafón completo: **$12**
-- Medio garrafón: **$8**
-- 1 galón: **$5**
+## Comandos Rápidos
+- Ejecutar UI:
+  ```bash
+  python main.py
+  ```
+- Exportar auditorías CSV:
+  ```bash
+  python main.py --export-audit-csv ./exports
+  ```
+- Exportar logs:
+  ```bash
+  python main.py --export-logs ./exports/logs
+  ```
+- Exportar todo:
+  ```bash
+  python main.py --export-all ./exports
+  ```
+- Ver versión:
+  ```bash
+  python main.py --version
+  ```
 
-## Flujo operativo
-1. El monedero agrega crédito por pulsos en GPIO 12.
-2. El operador selecciona producto con botones físicos o pantalla.
-3. Al completar crédito, parpadea suavemente el LED del producto disponible de mayor precio.
-4. Al seleccionar producto, queda fijo su LED y parpadea el LED de OK cuando ya hay crédito suficiente.
-5. El garrafón completo siempre ejecuta enjuague antes del llenado. Medio garrafón y galón no enjuagan.
-6. Durante el llenado todos los LEDs se apagan, salvo el de paro de emergencia que parpadea.
-7. En estado idle, cada minuto corre una secuencia de LEDs de 5 segundos para llamar la atención.
-8. Tiempos de llenado:
-   - Garrafón completo: 20s
-   - Medio garrafón: 10s
-   - 1 galón: 5s
-9. Al finalizar, todos los LEDs hacen 3 parpadeos rápidos y la máquina vuelve a idle.
+## Instalación
+Ver [install.md](/Users/diza/Documents/water_vending/docs/install.md).
 
-## Resolución objetivo
-Interfaz adaptativa: escala automáticamente para la resolución de pantalla en uso (base recomendada 800 x 480).
+## Manuales
+- [user_manual.md](/Users/diza/Documents/water_vending/docs/user_manual.md)
+- [technical.md](/Users/diza/Documents/water_vending/docs/technical.md)
 
-## Imágenes de interfaz
-Coloca las imágenes en:
-- `assets/images/logo.png`
-- `assets/images/background.png`
-
-La UI usa `logo.png` en la esquina superior derecha y `background.png` como fondo principal.
-
-## Instalación rápida (Raspberry Pi OS)
-
-```bash
-sudo apt update
-sudo apt install -y python3-venv python3-pip python3-pyqt5
-cd /workspace/water_vending
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python main.py
-```
-
-## Configuración
-Editar `config.json` para precios, tiempos y pines.
-
-## Autostart (systemd)
-Archivo de ejemplo: `systemd/water-vending.service`
-
-## Troubleshooting
-Si aparece `No module named PyQt5`:
-```bash
-source .venv/bin/activate
-pip install -r requirements.txt
-# o
-sudo apt install -y python3-pyqt5
-```
+## Contacto
+- Correo configurado por defecto: `zamoranodiza@hotmail.com`

@@ -241,7 +241,7 @@ class AuditEmailService(QObject):
         if request_log:
             event_type = "log_report" if not request_audit else "audit_log_report"
             response_subject_parts.append("Log semanal")
-            log_path = current_weekly_log_path(settings.BASE_DIR)
+            log_path = current_weekly_log_path(settings.DATA_DIR)
             if log_path.exists():
                 attachments.append(str(log_path))
                 response_sections.append(

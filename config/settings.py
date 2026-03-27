@@ -6,12 +6,16 @@ import os
 from copy import deepcopy
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-LOG_DIR = BASE_DIR / "logs"
-ASSETS_DIR = BASE_DIR / "assets" / "images"
-AUDIO_DIR = BASE_DIR / "assets" / "audio"
-DB_PATH = BASE_DIR / "database" / "sales.db"
-RUNTIME_CONFIG_PATH = BASE_DIR / "config" / "runtime_settings.json"
+from app.paths import data_root, resource_root
+
+RESOURCE_DIR = resource_root()
+DATA_DIR = data_root()
+BASE_DIR = DATA_DIR
+LOG_DIR = DATA_DIR / "logs"
+ASSETS_DIR = RESOURCE_DIR / "assets" / "images"
+AUDIO_DIR = RESOURCE_DIR / "assets" / "audio"
+DB_PATH = DATA_DIR / "database" / "sales.db"
+RUNTIME_CONFIG_PATH = DATA_DIR / "config" / "runtime_settings.json"
 
 WINDOW_TITLE = "Agua Purificada Lupita"
 SCREEN_WIDTH = 1024

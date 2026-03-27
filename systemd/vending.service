@@ -1,6 +1,7 @@
 [Unit]
-Description=Water Vending Machine UI
-After=network.target
+Description=Water Vending Machine Production Service
+After=network.target pigpiod.service
+Requires=pigpiod.service
 
 [Service]
 Type=simple
