@@ -25,6 +25,7 @@ AVAILABLE_THEMES = (
     "green_nature",
     "sunset_energy",
     "purple_modern",
+    "black_gold",
 )
 AVAILABLE_MODES = ("light", "dark")
 LEGACY_THEME_ALIASES = {

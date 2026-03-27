@@ -225,6 +225,7 @@ class ProductCard(QFrame):
     def _apply_state(self):
         self.setProperty("selected", self._selected)
         self.setProperty("affordable", self._affordable)
+        self.setProperty("hovered", self._hovered and self._interactive and not self._selected)
         show_corner_price = self._has_active_selection and not self._selected and self._interactive
         self.price.setVisible(not show_corner_price)
         self.price_corner.setVisible(show_corner_price)

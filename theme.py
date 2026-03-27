@@ -170,6 +170,34 @@ class ThemeManager:
                 "glass_opacity": 0.26,
             },
         },
+        "black_gold": {
+            "light": {
+                "background": ("#0B0B0B", "#050505", "#1A1A1A"),
+                "card_color": "#1A1A1A",
+                "primary": "#D4AF37",
+                "secondary": "#C9A227",
+                "accent": "#F5D76E",
+                "text": "#E5E5E5",
+                "text_secondary": "#A3A3A3",
+                "price": "#FFD700",
+                "border": "rgba(212, 175, 55, 0.25)",
+                "button_gradient": ("#D4AF37", "#B8962E", "#F5D76E"),
+                "glass_opacity": 0.05,
+            },
+            "dark": {
+                "background": ("#050505", "#050505", "#1A1A1A"),
+                "card_color": "#121212",
+                "primary": "#FFD700",
+                "secondary": "#D4AF37",
+                "accent": "#FACC15",
+                "text": "#FAFAFA",
+                "text_secondary": "#9CA3AF",
+                "price": "#FFD700",
+                "border": "rgba(255, 215, 0, 0.3)",
+                "button_gradient": ("#FFD700", "#C9A227", "#B8962E"),
+                "glass_opacity": 0.03,
+            },
+        },
     }
 
     @classmethod
@@ -187,6 +215,13 @@ def rgba_from_rgb(rgb: tuple[int, int, int], opacity: float) -> str:
     return f"rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, {opacity:.3f})"
 
 
+def _rgb_tuple(color: str | tuple[int, int, int]) -> tuple[int, int, int]:
+    if isinstance(color, tuple):
+        return color
+    parsed = QColor(color)
+    return parsed.red(), parsed.green(), parsed.blue()
+
+
 def _mix(color_a: str, color_b: str, factor: float) -> str:
     left = QColor(color_a)
     right = QColor(color_b)
@@ -200,6 +235,8 @@ def _refresh_exports() -> dict:
     palette = ThemeManager.get_theme()
     card_text = _mix(palette["primary"], "#000000", 0.28) if ThemeManager.current_mode == "light" else _mix(palette["primary"], "#ffffff", 0.24)
     card_meta = _mix(palette["primary"], "#ffffff", 0.22) if ThemeManager.current_mode == "light" else _mix(palette["primary"], "#ffffff", 0.5)
+    card_rgb = _rgb_tuple(palette["card_color"])
+    border = palette.get("border") or rgba_from_rgb((255, 255, 255), 0.28 if ThemeManager.current_mode == "light" else 0.18)
     globals().update(
         {
             "PRIMARY": palette["primary"],
@@ -211,14 +248,14 @@ def _refresh_exports() -> dict:
             "ACCENT_ORANGE": palette["accent"],
             "ACCENT_PINK": palette["secondary"],
             "BACKGROUND": palette["background"][1],
-            "SURFACE": rgba_from_rgb(palette["card_color"], min(0.96, palette["glass_opacity"] + 0.18)),
+            "SURFACE": rgba_from_rgb(card_rgb, min(0.96, palette["glass_opacity"] + 0.18)),
             "TEXT_PRIMARY": palette["text"],
             "TEXT_SECONDARY": palette["text_secondary"],
             "SECONDARY": palette["text_secondary"],
-            "BORDER": rgba_from_rgb((255, 255, 255), 0.28 if ThemeManager.current_mode == "light" else 0.18),
+            "BORDER": border,
             "ERROR": "#ef4444",
             "ERROR_BG": "rgba(239, 68, 68, 0.14)",
-            "CREDIT_BG": rgba_from_rgb(palette["card_color"], min(0.9, palette["glass_opacity"] + 0.1)),
+            "CREDIT_BG": rgba_from_rgb(card_rgb, min(0.9, palette["glass_opacity"] + 0.1)),
             "CARD_TEXT_STRONG": card_text,
             "CARD_TEXT_META": card_meta,
         }
@@ -229,19 +266,20 @@ def _refresh_exports() -> dict:
 def build_stylesheet() -> str:
     palette = _refresh_exports()
     bg0, bg1, bg2 = palette["background"]
-    card_rgb = palette["card_color"]
+    card_rgb = _rgb_tuple(palette["card_color"])
     glass = rgba_from_rgb(card_rgb, palette["glass_opacity"])
     glass_high = rgba_from_rgb(card_rgb, min(0.92, palette["glass_opacity"] + 0.12))
     glass_soft = rgba_from_rgb(card_rgb, max(0.14, palette["glass_opacity"] - 0.22))
-    bright_border = "rgba(255, 255, 255, 0.42)" if ThemeManager.current_mode == "light" else "rgba(255, 255, 255, 0.18)"
-    dim_border = "rgba(255, 255, 255, 0.22)" if ThemeManager.current_mode == "light" else "rgba(255, 255, 255, 0.12)"
+    black_gold_mode = ThemeManager.current_theme == "black_gold"
+    bright_border = palette.get("border") or ("rgba(255, 255, 255, 0.42)" if ThemeManager.current_mode == "light" else "rgba(255, 255, 255, 0.18)")
+    dim_border = "rgba(212, 175, 55, 0.14)" if black_gold_mode else ("rgba(255, 255, 255, 0.22)" if ThemeManager.current_mode == "light" else "rgba(255, 255, 255, 0.12)")
     shadow = "rgba(15, 23, 42, 0.22)" if ThemeManager.current_mode == "light" else "rgba(2, 6, 23, 0.42)"
     hero_bg = rgba_from_rgb(card_rgb, min(0.84, palette["glass_opacity"] + 0.08))
     progress_bg = rgba_from_rgb(card_rgb, min(0.9, palette["glass_opacity"] + 0.14))
     button0, button1, button2 = palette["button_gradient"]
-    button_pressed0 = _mix(button0, "#000000", 0.12)
-    button_pressed1 = _mix(button1, "#000000", 0.12)
-    button_pressed2 = _mix(button2, "#000000", 0.12)
+    button_pressed0 = "#A16207" if black_gold_mode else _mix(button0, "#000000", 0.12)
+    button_pressed1 = "#A16207" if black_gold_mode else _mix(button1, "#000000", 0.12)
+    button_pressed2 = "#A16207" if black_gold_mode else _mix(button2, "#000000", 0.12)
     disabled_bg = rgba_from_rgb((148, 163, 184), 0.35)
     disabled_text = "rgba(255, 255, 255, 0.6)" if ThemeManager.current_mode == "dark" else "#94a3b8"
     arcade_mode = ThemeManager.current_theme == "arcade_mario"
@@ -249,6 +287,13 @@ def build_stylesheet() -> str:
     card_radius = 12 if arcade_mode else 24
     button_radius = 8 if arcade_mode else 16
     card_border = "rgba(255, 255, 255, 0.28)" if arcade_mode else bright_border
+    hover_border = "rgba(255, 215, 0, 0.46)" if black_gold_mode else bright_border
+    selected_border = "#FFD700" if black_gold_mode else "rgba(255, 255, 255, 0.68)"
+    attention_border = "#FFD700" if black_gold_mode else button2
+    button_text = "#050505" if black_gold_mode else "white"
+    alert_bg = "rgba(212, 175, 55, 0.12)" if black_gold_mode else "rgba(255, 255, 255, 0.28)"
+    credit_bg = "rgba(10, 10, 10, 0.92)" if black_gold_mode else glass
+    credit_flash_bg = "rgba(24, 24, 24, 0.96)" if black_gold_mode else rgba_from_rgb(card_rgb, min(0.96, palette["glass_opacity"] + 0.18))
     background_overlay = """
     background-image:
       linear-gradient(0deg, transparent 24%, rgba(255,255,255,0.12) 25%, rgba(255,255,255,0.12) 26%, transparent 27%, transparent 74%, rgba(255,255,255,0.12) 75%, rgba(255,255,255,0.12) 76%, transparent 77%, transparent),
@@ -286,36 +331,24 @@ QFrame#creditPill,
 QFrame#actionBox,
 QFrame#productCard,
 QFrame#card {{
-    background: qlineargradient(
-        x1:0, y1:0, x2:1, y2:1,
-        stop:0 {glass_high},
-        stop:1 {glass}
-    );
-    border: {3 if arcade_mode else 1}px solid {card_border};
-    border-radius: {panel_radius}px;
+    background: {"rgba(255, 255, 255, 0.03)" if black_gold_mode else f"qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {glass_high}, stop:1 {glass})"};
+    border: {3 if arcade_mode else (1 if black_gold_mode else 1)}px solid {card_border};
+    border-radius: {18 if black_gold_mode else panel_radius}px;
 }}
 
 QFrame#modernHeader {{
-    background: qlineargradient(
-        x1:0, y1:0, x2:1, y2:1,
-        stop:0 {button0},
-        stop:0.55 {button1},
-        stop:1 {button2}
-    );
-    border: {4 if arcade_mode else 1}px solid rgba(255, 255, 255, 0.32);
+    background: {"qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgba(255,255,255,0.04), stop:1 rgba(255,255,255,0.02))" if black_gold_mode else f"qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {button0}, stop:0.55 {button1}, stop:1 {button2})"};
+    border: {4 if arcade_mode else 1}px solid {"rgba(212, 175, 55, 0.22)" if black_gold_mode else "rgba(255, 255, 255, 0.32)"};
 }}
 
 QFrame#creditPill {{
-    border-radius: {panel_radius}px;
+    border-radius: {18 if black_gold_mode else panel_radius}px;
+    background: {credit_bg};
 }}
 
 QFrame#creditPill[flash="true"] {{
-    border: 2px solid {button2};
-    background: qlineargradient(
-        x1:0, y1:0, x2:1, y2:1,
-        stop:0 {glass_high},
-        stop:1 {rgba_from_rgb(card_rgb, min(0.96, palette["glass_opacity"] + 0.18))}
-    );
+    border: 2px solid {attention_border};
+    background: {credit_flash_bg};
 }}
 
 QFrame#contentPanel[thankyou="true"] {{
@@ -325,17 +358,23 @@ QFrame#contentPanel[thankyou="true"] {{
 
 QFrame#productCard,
 QFrame#card {{
-    border-radius: {card_radius}px;
+    border-radius: {18 if black_gold_mode else card_radius}px;
 }}
 
 QFrame#productCard[selected="true"],
 QFrame#card[selected="true"] {{
-    border: 2px solid rgba(255, 255, 255, 0.68);
+    border: 2px solid {selected_border};
 }}
 
 QFrame#productCard[attention="true"],
 QFrame#card[attention="true"] {{
-    border: 2px solid {button2};
+    border: 2px solid {attention_border};
+}}
+
+QFrame#productCard[hovered="true"],
+QFrame#card[hovered="true"] {{
+    border: 1px solid {hover_border};
+    background: {"rgba(255, 255, 255, 0.05)" if black_gold_mode else f"qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {glass_high}, stop:1 {glass})"};
 }}
 
 QFrame#productCard[affordable="false"],
@@ -350,13 +389,13 @@ QLabel {{
 }}
 
 QLabel#headerTitle {{
-    color: rgba(255, 255, 255, 0.98);
+    color: {"#FAFAFA" if black_gold_mode else "rgba(255, 255, 255, 0.98)"};
     font-size: 27px;
     font-weight: 800;
 }}
 
 QLabel#headerSubtitle {{
-    color: rgba(255, 255, 255, 0.82);
+    color: {"#A3A3A3" if black_gold_mode else "rgba(255, 255, 255, 0.82)"};
     font-size: 12px;
     font-weight: 600;
 }}
@@ -385,7 +424,7 @@ QLabel#sectionLabel[warning="true"] {{
 
 QLabel#alertLabel {{
     color: {TEXT_PRIMARY};
-    background: rgba(255, 255, 255, 0.28);
+    background: {alert_bg};
     border: 1px solid {bright_border};
     border-radius: 12px;
     font-size: 14px;
@@ -400,7 +439,7 @@ QLabel#selectionCountdown {{
 }}
 
 QLabel#creditText {{
-    color: {TEXT_PRIMARY};
+    color: {palette["price"] if black_gold_mode else TEXT_PRIMARY};
     font-size: 23px;
     font-weight: 800;
 }}
@@ -453,10 +492,10 @@ QLabel#imageFallback {{
 QPushButton[variant="primary"],
 QPushButton#confirmButton,
 QPushButton#buyButton {{
-    color: white;
+    color: {button_text};
     border: {4 if arcade_mode else 1}px solid rgba(255, 255, 255, 0.2);
-    border-radius: {button_radius}px;
-    padding: 10px 18px;
+    border-radius: {14 if black_gold_mode else button_radius}px;
+    padding: {12 if black_gold_mode else 10}px 18px;
     font-size: 18px;
     font-weight: 800;
     background: qlineargradient(
@@ -478,8 +517,8 @@ QPushButton#confirmButton:hover,
 QPushButton#buyButton:hover {{
     background: qlineargradient(
         x1:0, y1:0, x2:1, y2:1,
-        stop:0 {_mix(button0, "#ffffff", 0.08)},
-        stop:0.55 {_mix(button1, "#ffffff", 0.08)},
+        stop:0 {"#FACC15" if black_gold_mode else _mix(button0, "#ffffff", 0.08)},
+        stop:0.55 {"#D4AF37" if black_gold_mode else _mix(button1, "#ffffff", 0.08)},
         stop:1 {_mix(button2, "#ffffff", 0.08)}
     );
 }}
@@ -489,12 +528,7 @@ QPushButton#confirmButton:pressed,
 QPushButton#buyButton:pressed {{
     padding-top: 12px;
     padding-bottom: 8px;
-    background: qlineargradient(
-        x1:0, y1:0, x2:1, y2:1,
-        stop:0 {button_pressed0},
-        stop:0.55 {button_pressed1},
-        stop:1 {button_pressed2}
-    );
+    background: {"#A16207" if black_gold_mode else f"qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {button_pressed0}, stop:0.55 {button_pressed1}, stop:1 {button_pressed2})"};
 }}
 
 QPushButton[variant="primary"]:disabled,
