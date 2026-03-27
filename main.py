@@ -1,18 +1,15 @@
 from __future__ import annotations
 
-import logging
 import sys
+from pathlib import Path
 
 from config import load_config
 from database.sales_db import SalesDatabase
 from hardware.valve_controller import ValveController
+from logging_setup import configure_logging
 from theme import apply_app_theme
 
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-)
+configure_logging(Path(__file__).resolve().parent)
 
 
 def main() -> int:

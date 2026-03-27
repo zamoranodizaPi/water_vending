@@ -28,6 +28,7 @@ from ui.product_screen import ProductScreen
 from theme import apply_app_theme
 
 logger = logging.getLogger(__name__)
+ui_trace_logger = logging.getLogger("ui.trace")
 
 
 class InteractionFilter(QObject):
@@ -146,6 +147,15 @@ class MainWindow(QMainWindow):
         self.audit_email_service.start()
         self._refresh_product_enablement(initial=True)
         self._poll_service_level()
+        self._log_ui_event("ui_initialized", screen="product", system=settings.SYSTEM_NAME)
+
+    def _log_ui_event(self, event: str, **fields) -> None:
+        parts = [event]
+        for key, value in fields.items():
+            if value is None:
+                continue
+            parts.append(f"{key}={value}")
+        ui_trace_logger.info(" | ".join(parts))
 
     def _setup_hardware(self):
         pins = settings.PINS
@@ -256,6 +266,7 @@ class MainWindow(QMainWindow):
 
     def show_startup(self):
         self.audio.play("welcome")
+        self._log_ui_event("startup_shown", fullscreen=settings.FULLSCREEN)
         if settings.FULLSCREEN:
             self.showFullScreen()
         else:
@@ -373,6 +384,7 @@ class MainWindow(QMainWindow):
             "Motivo: sensor de nivel de agua en cero.\n"
         )
         timestamp = now.isoformat(timespec="seconds")
+        self._log_ui_event("out_of_service_email_queued", recipient=recipient, timestamp=timestamp)
         send_async_email(
             recipient=recipient,
             subject=subject,
@@ -391,6 +403,8 @@ class MainWindow(QMainWindow):
             if self.stack.currentWidget() != self.message_screen:
                 self.stack.setCurrentWidget(self.message_screen)
             return
+        previous_product = self.current_product["id"] if self.current_product else None
+        previous_step = self.flow_step
         self._service_lock_active = True
         self._config_mode = None
         self._config_hold_elapsed_ms = 0
@@ -427,6 +441,7 @@ class MainWindow(QMainWindow):
             image_size=(300, 260),
         )
         self.stack.setCurrentWidget(self.message_screen)
+        self._log_ui_event("out_of_service_activated", product=previous_product, flow_step=previous_step, screen="message")
         self.audio.play("out_of_service")
         self._send_out_of_service_email()
 
@@ -443,6 +458,7 @@ class MainWindow(QMainWindow):
         self._config_new_code = ""
         self.config_code_screen.configure("Ingrese código", "Código de acceso", "0000")
         self.stack.setCurrentWidget(self.config_code_screen)
+        self._log_ui_event("config_login_opened", screen="config_code")
 
     def _open_config_menu(self):
         self._config_mode = "menu"
@@ -680,6 +696,7 @@ class MainWindow(QMainWindow):
         self.config_hold_screen.set_progress(0)
         self.stack.setCurrentWidget(self.product_screen)
         self._refresh_product_enablement(initial=True)
+        self._log_ui_event("config_closed", screen="product")
 
     def _handle_config_product_button(self, product_id: str):
         if self._config_mode in {"login", "audit_login", "audit_reset_login", "code_new", "code_confirm"}:
@@ -882,6 +899,7 @@ class MainWindow(QMainWindow):
         self._config_mode = "audit_login"
         self.config_code_screen.configure("Auditoría", "Ingrese código", "0000")
         self.stack.setCurrentWidget(self.config_code_screen)
+        self._log_ui_event("audit_login_opened", screen="config_code")
 
     def _enter_audit_mode(self):
         self._audit_mode_active = True
@@ -892,6 +910,7 @@ class MainWindow(QMainWindow):
         self._audit_email_day_index = 0
         self._render_audit_view()
         self.stack.setCurrentWidget(self.audit_screen)
+        self._log_ui_event("audit_mode_entered", screen="audit")
 
     def _exit_audit_mode(self):
         self._audit_mode_active = False
@@ -901,6 +920,7 @@ class MainWindow(QMainWindow):
             self._config_mode = None
         self.stack.setCurrentWidget(self.product_screen)
         self._refresh_product_enablement(initial=True)
+        self._log_ui_event("audit_mode_exited", screen="product")
 
     def _handle_audit_product_button(self, product_id: str):
         if not self._audit_mode_active:
@@ -1136,6 +1156,7 @@ class MainWindow(QMainWindow):
         self._update_credit_displays()
         self._sync_selection_countdown()
         self._refresh_product_enablement()
+        self._log_ui_event("credit_added", source="coin", amount=amount, credit=f"{self.credit:.2f}")
         print(f"Pulso detectado. Crédito: {int(self.credit)}")
         self.audio.queue(["coin_received", "credit_updated"])
 
@@ -1159,6 +1180,7 @@ class MainWindow(QMainWindow):
         self._update_credit_displays()
         self._sync_selection_countdown()
         self._refresh_product_enablement()
+        self._log_ui_event("credit_added", source="service_hotspot", amount="1.00", credit=f"{self.credit:.2f}")
         self.audio.queue(["coin_received", "credit_updated"])
 
     def _add_credit_box_amount(self):
@@ -1172,6 +1194,7 @@ class MainWindow(QMainWindow):
         self._update_credit_displays()
         self._sync_selection_countdown()
         self._refresh_product_enablement()
+        self._log_ui_event("credit_added", source="credit_box", amount="2.00", credit=f"{self.credit:.2f}")
         self.audio.queue(["coin_received", "credit_updated"])
 
     def _update_credit_displays(self):
@@ -1284,6 +1307,7 @@ class MainWindow(QMainWindow):
         self.product_screen.set_section_message(None)
         self._update_credit_displays()
         self._refresh_product_enablement()
+        self._log_ui_event("selection_timeout_reset", screen="product", credit=f"{self.credit:.2f}")
 
     def _select_by_gpio(self, product_id: str):
         if self._service_lock_active:
@@ -1311,6 +1335,13 @@ class MainWindow(QMainWindow):
             self.current_product = product
             self.product_screen.set_selected(product_id)
             self._refresh_product_enablement()
+            self._log_ui_event(
+                "product_selected",
+                product=product_id,
+                mode="await_credit",
+                credit=f"{self.credit:.2f}",
+                price=f"{product['price']:.2f}",
+            )
             self._show_insert_credit_and_return_idle()
             return
 
@@ -1320,6 +1351,13 @@ class MainWindow(QMainWindow):
         self.current_product = product
         self.product_screen.set_selected(product_id)
         self._refresh_product_enablement()
+        self._log_ui_event(
+            "product_selected",
+            product=product_id,
+            mode="ready_for_prompt",
+            credit=f"{self.credit:.2f}",
+            price=f"{product['price']:.2f}",
+        )
         self.audio.queue(["select_product", "press_ok"])
         self._show_preparation_prompt()
 
@@ -1412,6 +1450,7 @@ class MainWindow(QMainWindow):
         self._update_credit_displays()
         self.stack.setCurrentWidget(self.product_screen)
         self._refresh_product_enablement(initial=True)
+        self._log_ui_event("interface_restarted", screen="product")
 
     def _cancel_to_idle(self):
         if self._service_lock_active:
@@ -1435,11 +1474,18 @@ class MainWindow(QMainWindow):
         self._update_credit_displays()
         self.stack.setCurrentWidget(self.product_screen)
         self._refresh_product_enablement()
+        self._log_ui_event("flow_cancelled", screen="product")
 
     def _on_ok_home(self):
         if self._service_lock_active:
             return
         self._touch_interaction()
+        self._log_ui_event(
+            "ok_pressed_home",
+            has_product=bool(self.current_product),
+            credit=f"{self.credit:.2f}",
+            screen="product",
+        )
         if not self.current_product:
             if any(self.credit >= p["price"] for p in settings.PRODUCTS):
                 self.product_screen.blink_enabled_products()
@@ -1480,6 +1526,7 @@ class MainWindow(QMainWindow):
                 image_offset_y=0,
             )
         self.stack.setCurrentWidget(self.prompt_screen)
+        self._log_ui_event("prompt_shown", screen="prompt", flow_step=self.flow_step, product=self.current_product["id"])
 
     def _show_upright_prompt(self):
         self._start_prompt_countdown()
@@ -1498,6 +1545,7 @@ class MainWindow(QMainWindow):
             image_offset_y=0,
         )
         self.stack.setCurrentWidget(self.prompt_screen)
+        self._log_ui_event("prompt_shown", screen="prompt", flow_step=self.flow_step, product=self.current_product["id"])
         self.audio.play("press_ok")
 
     def _on_prompt_ok(self):
@@ -1510,6 +1558,7 @@ class MainWindow(QMainWindow):
         if self.flow_step == "await_rinse_position":
             self.flow_step = "rinsing"
             self.button_leds.set_processing()
+            self._log_ui_event("prompt_confirmed", action="start_rinse", product=self.current_product["id"])
             try:
                 self.valves.rinse_start()
             except GPIOControllerError as exc:
@@ -1518,6 +1567,7 @@ class MainWindow(QMainWindow):
                 self._reset_to_home()
                 return
             self.stack.setCurrentWidget(self.progress_screen)
+            self._log_ui_event("progress_shown", screen="progress", flow_step="rinsing", seconds=settings.RINSE_SECONDS)
             self.progress_screen.start(
                 "Enjuagando",
                 settings.RINSE_SECONDS,
@@ -1544,6 +1594,13 @@ class MainWindow(QMainWindow):
         self.button_leds.set_processing()
         self.stack.setCurrentWidget(self.progress_screen)
         total_s = self.current_product["volume_l"] * settings.FILL_SECONDS_PER_LITER
+        self._log_ui_event(
+            "fill_started",
+            product=self.current_product["id"],
+            seconds=f"{total_s:.2f}",
+            volume_l=f"{self.current_product['volume_l']:.2f}",
+            credit=f"{self.credit:.2f}",
+        )
         try:
             self.valves.start_dispense()
             self.progress_screen.start(
@@ -1575,6 +1632,11 @@ class MainWindow(QMainWindow):
             return
         if self.flow_step != "filling":
             return
+        self._log_ui_event(
+            "emergency_stop_during_fill",
+            product=self.current_product["id"] if self.current_product else None,
+            progress=self.current_fill_percent,
+        )
         self.progress_screen.stop_now()
         try:
             self.valves.finish_dispense()
@@ -1587,6 +1649,7 @@ class MainWindow(QMainWindow):
         if self._service_lock_active:
             return
         if self.flow_step == "rinsing":
+            self._log_ui_event("rinse_completed", product=self.current_product["id"] if self.current_product else None)
             try:
                 self.valves.rinse_stop()
             except GPIOControllerError as exc:
@@ -1602,6 +1665,7 @@ class MainWindow(QMainWindow):
             return
 
         if self.flow_step == "filling":
+            self._log_ui_event("fill_completed", product=self.current_product["id"] if self.current_product else None)
             try:
                 self.valves.finish_dispense()
             except GPIOControllerError as exc:
@@ -1632,6 +1696,15 @@ class MainWindow(QMainWindow):
         self.sales_db.log_sale(sale)
 
         change = max(0.0, round(self.credit - price_to_charge, 2))
+        self._log_ui_event(
+            "sale_recorded",
+            product=self.current_product["id"] if self.current_product else None,
+            emergency=emergency,
+            served_liters=f"{served_liters:.2f}",
+            charged=f"{price_to_charge:.2f}",
+            received=f"{self.credit:.2f}",
+            change=f"{change:.2f}",
+        )
 
         if emergency:
             self.message_screen.set_message(
@@ -1646,6 +1719,7 @@ class MainWindow(QMainWindow):
     def _process_change(self, change: float):
         if self._service_lock_active:
             return
+        self._log_ui_event("change_processed", change=f"{change:.2f}")
         if change > 0:
             self.message_screen.set_message(
                 f"Recoja su cambio\nTotal a reembolsar: ${change:.2f}",
@@ -1670,6 +1744,7 @@ class MainWindow(QMainWindow):
             hide_header=True,
         )
         self.stack.setCurrentWidget(self.message_screen)
+        self._log_ui_event("thanks_screen_shown", screen="message")
         self.audio.play("thanks")
         QTimer.singleShot(3000, self._reset_to_home)
 
@@ -1689,6 +1764,7 @@ class MainWindow(QMainWindow):
         self._refresh_product_enablement()
         self.stack.setCurrentWidget(self.product_screen)
         self.button_leds.set_completion_flash()
+        self._log_ui_event("returned_home", screen="product")
 
     def _handle_prompt_timeout(self):
         if self._service_lock_active:

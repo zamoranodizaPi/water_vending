@@ -1,7 +1,12 @@
 """Application entry point."""
 import argparse
-import logging
 import sys
+from pathlib import Path
+
+from logging_setup import configure_logging
+
+
+configure_logging(Path(__file__).resolve().parent)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -16,7 +21,6 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main():
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     parser = _build_parser()
     args = parser.parse_args()
 

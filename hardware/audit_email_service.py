@@ -4,6 +4,7 @@ from __future__ import annotations
 import email
 import imaplib
 import logging
+import re
 import threading
 import unicodedata
 from datetime import datetime
@@ -15,6 +16,7 @@ from PyQt5.QtCore import QObject, QTimer
 from config import settings
 from database.sales_db import SalesDB
 from hardware.email_notifier import send_email
+from logging_setup import current_weekly_log_path
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +46,14 @@ def _body_requests_audit(body: str) -> bool:
     if "auditoria" in compact_body:
         return True
     return normalized_body in {"a", "auditoria", "auditorias"}
+
+
+def _body_requests_log(body: str) -> bool:
+    normalized_body = _normalize_text(body)
+    compact_body = _compact_text(body)
+    if compact_body in {"log", "logs"}:
+        return True
+    return re.search(r"\blog(s)?\b", normalized_body) is not None
 
 
 def generate_audit_report(sales_db: SalesDB) -> str:
@@ -198,7 +208,9 @@ class AuditEmailService(QObject):
             logger.info("Ignoring audit email from %s due to subject mismatch: %s", sender, subject)
             self.sales_db.log_email_event(timestamp, "audit_request", sender, subject, "ignored_subject")
             return
-        if not _body_requests_audit(body):
+        request_audit = _body_requests_audit(body)
+        request_log = _body_requests_log(body)
+        if not request_audit and not request_log:
             logger.info("Ignoring audit email from %s due to missing body keyword", sender)
             self.sales_db.log_email_event(timestamp, "audit_request", sender, subject, "ignored_body")
             return
@@ -209,22 +221,63 @@ class AuditEmailService(QObject):
             self.sales_db.log_email_event(timestamp, "audit_request", sender, subject, "unauthorized")
             return
 
-        logger.info("Audit email request received from %s", sender)
-        self.sales_db.log_email_event(timestamp, "audit_request", sender, subject, "received")
-        report = generate_audit_report(self.sales_db)
+        request_labels: list[str] = []
+        if request_audit:
+            request_labels.append("audit")
+        if request_log:
+            request_labels.append("log")
+        logger.info("Audit email request received from %s for %s", sender, ",".join(request_labels))
+        self.sales_db.log_email_event(timestamp, "audit_request", sender, subject, f"received_{'_'.join(request_labels)}")
+
+        response_subject_parts: list[str] = []
+        response_sections: list[str] = []
+        attachments: list[str] = []
+        event_type = "audit_report"
+
+        if request_audit:
+            response_subject_parts.append("Auditoria")
+            response_sections.append(generate_audit_report(self.sales_db))
+
+        if request_log:
+            event_type = "log_report" if not request_audit else "audit_log_report"
+            response_subject_parts.append("Log semanal")
+            log_path = current_weekly_log_path(settings.BASE_DIR)
+            if log_path.exists():
+                attachments.append(str(log_path))
+                response_sections.append(
+                    "\n".join(
+                        [
+                            "Log semanal adjunto",
+                            f"Sistema: {settings.SYSTEM_NAME}",
+                            f"Archivo: {log_path.name}",
+                        ]
+                    )
+                )
+            else:
+                response_sections.append(
+                    "\n".join(
+                        [
+                            "Log semanal no disponible",
+                            f"Sistema: {settings.SYSTEM_NAME}",
+                            "Aun no existe un archivo de log para la semana actual.",
+                        ]
+                    )
+                )
+
         sent = False
         try:
             sent = send_email(
                 recipient=sender,
-                subject=f"Reporte de Auditoría - {settings.SYSTEM_NAME}",
-                body=report,
+                subject=f"{' y '.join(response_subject_parts)} - {settings.SYSTEM_NAME}",
+                body="\n\n".join(response_sections),
+                attachments=tuple(attachments),
             )
         except Exception:
-            logger.exception("Failed to send audit report to %s", sender)
+            logger.exception("Failed to send email response to %s", sender)
         self.sales_db.log_email_event(
             timestamp,
-            "audit_report",
+            event_type,
             sender,
-            "Reporte de Auditoría",
+            " / ".join(response_subject_parts),
             "sent" if sent else "failed",
         )

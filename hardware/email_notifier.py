@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
 import smtplib
 import ssl
 import threading
 from email.message import EmailMessage
+from pathlib import Path
 from typing import Callable
 
 from config import settings
@@ -18,6 +20,7 @@ def send_email(
     recipient: str,
     subject: str,
     body: str,
+    attachments: tuple[str | Path, ...] = (),
 ) -> bool:
     recipient = (recipient or "").strip()
     if not recipient:
@@ -32,6 +35,21 @@ def send_email(
     message["To"] = recipient
     message["Subject"] = subject
     message.set_content(body)
+    for attachment in attachments:
+        path = Path(attachment)
+        if not path.exists() or not path.is_file():
+            logger.warning("Attachment not found for email: %s", path)
+            continue
+        mime_type, _ = mimetypes.guess_type(str(path))
+        maintype, subtype = ("application", "octet-stream")
+        if mime_type:
+            maintype, subtype = mime_type.split("/", 1)
+        message.add_attachment(
+            path.read_bytes(),
+            maintype=maintype,
+            subtype=subtype,
+            filename=path.name,
+        )
 
     if settings.SMTP_USE_TLS:
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
@@ -52,6 +70,7 @@ def send_async_email(
     recipient: str,
     subject: str,
     body: str,
+    attachments: tuple[str | Path, ...] = (),
     on_result: Callable[[bool], None] | None = None,
 ) -> bool:
     recipient = (recipient or "").strip()
@@ -72,6 +91,7 @@ def send_async_email(
             "recipient": recipient,
             "subject": subject,
             "body": body,
+            "attachments": attachments,
             "on_result": on_result,
         },
         daemon=True,
@@ -86,10 +106,11 @@ def _send_email(
     recipient: str,
     subject: str,
     body: str,
+    attachments: tuple[str | Path, ...] = (),
     on_result: Callable[[bool], None] | None = None,
 ) -> None:
     try:
-        send_email(recipient=recipient, subject=subject, body=body)
+        send_email(recipient=recipient, subject=subject, body=body, attachments=attachments)
         logger.info("Email sent to %s with subject %s", recipient, subject)
         if on_result:
             on_result(True)
