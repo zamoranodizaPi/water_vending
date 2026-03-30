@@ -1530,7 +1530,7 @@ class MainWindow(QMainWindow):
         if self._service_lock_active:
             return
         min_price = min(p["price"] for p in settings.PRODUCTS)
-        if self.credit < min_price:
+        if self.credit < min_price and not initial:
             self.product_screen.pulse_credit_attention()
 
         for product in settings.PRODUCTS:
@@ -2101,10 +2101,13 @@ class MainWindow(QMainWindow):
         self._rinse_charge_pending = False
         if self.credit <= 0:
             self._last_announced_credit_amount = 0
-        self.product_screen.set_selected(None)
-        self._refresh_product_enablement()
+        self.product_screen.set_selected(None, animated=False)
+        self._refresh_product_enablement(initial=True)
         self.stack.setCurrentWidget(self.product_screen)
-        self.button_leds.set_completion_flash()
+        self.button_leds.update_home(
+            self.credit,
+            None,
+        )
         self._log_ui_event("returned_home", screen="product")
 
     def _handle_prompt_timeout(self):

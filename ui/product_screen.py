@@ -179,7 +179,11 @@ class ProductCard(QFrame):
     def is_affordable(self) -> bool:
         return True
 
-    def set_visual_scale(self, scale: float):
+    def set_visual_scale(self, scale: float, animated: bool = True):
+        if not animated:
+            self._scale_animation.stop()
+            self.set_card_scale(scale)
+            return
         self._scale_animation.stop()
         self._scale_animation.setStartValue(self._card_scale)
         self._scale_animation.setEndValue(scale)
@@ -508,20 +512,20 @@ class ProductScreen(QWidget):
         self.alert_label.clear()
         self.alert_label.setVisible(False)
 
-    def set_selected(self, product_id: str | None):
+    def set_selected(self, product_id: str | None, animated: bool = True):
         has_selection = bool(product_id)
         for pid, card in self.cards.items():
             selected = pid == product_id
             card.set_selection_state(selected, has_selection)
             if not has_selection:
                 card.setEnabled(True)
-                card.set_visual_scale(1.0)
+                card.set_visual_scale(1.0, animated=animated)
             elif selected:
                 card.setEnabled(True)
-                card.set_visual_scale(CARD_SELECTED_SCALE)
+                card.set_visual_scale(CARD_SELECTED_SCALE, animated=animated)
             else:
                 card.setEnabled(False)
-                card.set_visual_scale(1.0)
+                card.set_visual_scale(1.0, animated=animated)
 
     def set_product_enabled(self, product_id: str, enabled: bool):
         self.cards[product_id].set_affordable(enabled)
