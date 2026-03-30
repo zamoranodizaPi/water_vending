@@ -70,6 +70,7 @@ PRODUCTS = [
         "name": "Garrafón Completo",
         "volume_l": 19.0,
         "price": 12.0,
+        "fill_time_s": round(19.0 * FILL_SECONDS_PER_LITER, 2),
         "image": ASSETS_DIR / "garrafon_full.png",
     },
     {
@@ -77,6 +78,7 @@ PRODUCTS = [
         "name": "Medio Garrafón",
         "volume_l": 10.0,
         "price": 8.0,
+        "fill_time_s": round(10.0 * FILL_SECONDS_PER_LITER, 2),
         "image": ASSETS_DIR / "garrafon_half.png",
     },
     {
@@ -84,6 +86,7 @@ PRODUCTS = [
         "name": "Galón",
         "volume_l": 3.8,
         "price": 5.0,
+        "fill_time_s": round(3.8 * FILL_SECONDS_PER_LITER, 2),
         "image": ASSETS_DIR / "gallon.png",
     },
 ]
@@ -103,6 +106,11 @@ DEFAULT_RUNTIME_CONFIG = {
         "garrafon": 19.0,
         "medio": 10.0,
         "galon": 3.8,
+    },
+    "tiempos_llenado": {
+        "garrafon": round(19.0 * FILL_SECONDS_PER_LITER, 2),
+        "medio": round(10.0 * FILL_SECONDS_PER_LITER, 2),
+        "galon": round(3.8 * FILL_SECONDS_PER_LITER, 2),
     },
     "tiempo_por_litro": 1.6,
     "litros_por_enjuague": round(RINSE_SECONDS / FILL_SECONDS_PER_LITER, 2),
@@ -197,6 +205,7 @@ def authorized_audit_emails() -> tuple[str, ...]:
 
 def _sanitize_runtime_config(raw: dict | None) -> dict:
     config = deepcopy(DEFAULT_RUNTIME_CONFIG)
+    manual_fill_keys: set[str] = set()
     if not isinstance(raw, dict):
         return config
     precios = raw.get("precios", {})
@@ -219,6 +228,13 @@ def _sanitize_runtime_config(raw: dict | None) -> dict:
             value = volumenes.get(key)
             if isinstance(value, (int, float)):
                 config["volumenes"][key] = round(max(0.1, float(value)), 2)
+    tiempos_llenado = raw.get("tiempos_llenado", {})
+    if isinstance(tiempos_llenado, dict):
+        for key in ("garrafon", "medio", "galon"):
+            value = tiempos_llenado.get(key)
+            if isinstance(value, (int, float)):
+                config["tiempos_llenado"][key] = round(max(0.1, float(value)), 2)
+                manual_fill_keys.add(key)
     tiempo = raw.get("tiempo_por_litro")
     if isinstance(tiempo, (int, float)):
         config["tiempo_por_litro"] = round(max(0.01, float(tiempo)), 2)
@@ -267,6 +283,13 @@ def _sanitize_runtime_config(raw: dict | None) -> dict:
         telefono = contacto.get("telefono")
         if isinstance(telefono, str):
             config["contacto"]["telefono"] = telefono.strip()[:20]
+    for key in ("garrafon", "medio", "galon"):
+        if key in manual_fill_keys:
+            continue
+        config["tiempos_llenado"][key] = round(
+            max(0.1, float(config["volumenes"][key]) * float(config["tiempo_por_litro"])),
+            2,
+        )
     return config
 
 
@@ -298,6 +321,9 @@ def apply_runtime_config(config: dict) -> None:
     PRODUCTS[0]["volume_l"] = sanitized["volumenes"]["garrafon"]
     PRODUCTS[1]["volume_l"] = sanitized["volumenes"]["medio"]
     PRODUCTS[2]["volume_l"] = sanitized["volumenes"]["galon"]
+    PRODUCTS[0]["fill_time_s"] = sanitized["tiempos_llenado"]["garrafon"]
+    PRODUCTS[1]["fill_time_s"] = sanitized["tiempos_llenado"]["medio"]
+    PRODUCTS[2]["fill_time_s"] = sanitized["tiempos_llenado"]["galon"]
     FILL_SECONDS_PER_LITER = sanitized["tiempo_por_litro"]
     RINSE_LITERS = sanitized["litros_por_enjuague"]
     RINSE_SECONDS = round(RINSE_LITERS * FILL_SECONDS_PER_LITER, 2)
@@ -329,6 +355,11 @@ def get_runtime_config() -> dict:
             "garrafon": float(PRODUCTS[0]["volume_l"]),
             "medio": float(PRODUCTS[1]["volume_l"]),
             "galon": float(PRODUCTS[2]["volume_l"]),
+        },
+        "tiempos_llenado": {
+            "garrafon": float(PRODUCTS[0].get("fill_time_s", PRODUCTS[0]["volume_l"] * FILL_SECONDS_PER_LITER)),
+            "medio": float(PRODUCTS[1].get("fill_time_s", PRODUCTS[1]["volume_l"] * FILL_SECONDS_PER_LITER)),
+            "galon": float(PRODUCTS[2].get("fill_time_s", PRODUCTS[2]["volume_l"] * FILL_SECONDS_PER_LITER)),
         },
         "tiempo_por_litro": float(FILL_SECONDS_PER_LITER),
         "litros_por_enjuague": float(RINSE_LITERS),

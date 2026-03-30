@@ -43,6 +43,7 @@ class InteractionFilter(QObject):
 class MainWindow(QMainWindow):
     coin_inserted = pyqtSignal(int)
     hardware_product_selected = pyqtSignal(str)
+    hardware_product_released = pyqtSignal(str)
     hardware_ok_pressed = pyqtSignal()
     hardware_emergency_pressed = pyqtSignal()
     hardware_emergency_held = pyqtSignal()
@@ -90,18 +91,32 @@ class MainWindow(QMainWindow):
         self._service_level_timer = QTimer(self)
         self._service_level_timer.setInterval(150)
         self._service_level_timer.timeout.connect(self._poll_service_level)
+        self._manual_fill_timer = QTimer(self)
+        self._manual_fill_timer.setInterval(100)
+        self._manual_fill_timer.timeout.connect(self._tick_manual_fill_timer)
         self._config_mode: str | None = None
         self._config_draft = settings.get_runtime_config()
         self._config_menu_options = {
             "root": [
-            "Ajustar precios",
+            "Ajustes",
             "Cambiar nombres",
             "Cambiar volúmenes",
-            "Ajustar tiempo por litro",
-            "Ajustar litros por enjuague",
             "Configuración general",
             "Guardar y salir",
             "Cancelar",
+            ],
+            "adjustments": [
+            "Ajustar precios",
+            "Ajustar tiempo por litro",
+            "Ajustar litros por enjuague",
+            "Ajuste manual de volumen",
+            "Volver",
+            ],
+            "manual_fill": [
+            "Configurar tiempo garrafón",
+            "Configurar tiempo medio",
+            "Configurar tiempo galón",
+            "Volver",
             ],
             "general": [
             "Cambiar tema",
@@ -117,6 +132,8 @@ class MainWindow(QMainWindow):
         self._config_return_menu = "root"
         self._config_menu_indices = {
             "root": 0,
+            "adjustments": 0,
+            "manual_fill": 0,
             "general": 0,
         }
         self._config_price_index = 0
@@ -128,6 +145,9 @@ class MainWindow(QMainWindow):
         self._config_new_code = ""
         self._config_edit_value = 0.0
         self._config_rinse_edit_value = 0.0
+        self._manual_fill_product_id: str | None = None
+        self._manual_fill_started_at: float | None = None
+        self._manual_fill_elapsed_s = 0.0
         self._audit_mode_active = False
         self._audit_page_index = 0
         self._audit_product_index = 0
@@ -191,6 +211,9 @@ class MainWindow(QMainWindow):
         self.select_full.when_pressed = lambda: self.hardware_product_selected.emit("full_garrafon")
         self.select_half.when_pressed = lambda: self.hardware_product_selected.emit("half_garrafon")
         self.select_gallon.when_pressed = lambda: self.hardware_product_selected.emit("gallon")
+        self.select_full.when_released = lambda: self.hardware_product_released.emit("full_garrafon")
+        self.select_half.when_released = lambda: self.hardware_product_released.emit("half_garrafon")
+        self.select_gallon.when_released = lambda: self.hardware_product_released.emit("gallon")
 
         self.ok_input = self.gpio.setup_input(pins["ok_input"], "ok input", pull_up=True)
         self.emergency_input = self.gpio.setup_input(pins["emergency_stop"], "emergency stop", pull_up=True)
@@ -257,6 +280,7 @@ class MainWindow(QMainWindow):
         self.progress_screen.emergency_pressed.connect(self._on_emergency_stop)
         self.button_leds.attention_started.connect(self._on_idle_attention_started)
         self.hardware_product_selected.connect(self._select_by_gpio)
+        self.hardware_product_released.connect(self._release_by_gpio)
         self.hardware_ok_pressed.connect(self._handle_ok_input)
         self.hardware_emergency_pressed.connect(self._handle_emergency_input)
         self.hardware_emergency_held.connect(self._handle_emergency_hold)
@@ -418,6 +442,7 @@ class MainWindow(QMainWindow):
         self._prompt_timeout_timer.stop()
         self._prompt_countdown_timer.stop()
         self._prompt_countdown_remaining = 0
+        self._manual_fill_timer.stop()
         self.product_screen.clear_alert()
         self.product_screen.set_selected(None)
         self.product_screen.set_countdown(None)
@@ -456,6 +481,8 @@ class MainWindow(QMainWindow):
         )
 
     def _start_config_login(self):
+        self._config_menu_scope = "root"
+        self._config_return_menu = "root"
         self._config_mode = "login"
         self._config_draft = settings.get_runtime_config()
         self._config_new_code = ""
@@ -466,23 +493,39 @@ class MainWindow(QMainWindow):
     def _open_config_menu(self):
         self._config_mode = "menu"
         options = self._config_menu_options[self._config_menu_scope]
-        self._config_menu_indices[self._config_menu_scope] = 0
+        index = self._config_menu_indices[self._config_menu_scope]
+        index = max(0, min(index, len(options) - 1))
+        self._config_menu_indices[self._config_menu_scope] = index
         if self._config_menu_scope == "general":
             title = "◆ Configuración general"
             subtitle = "Tema, sistema, contacto y código"
+        elif self._config_menu_scope == "adjustments":
+            title = "◆ Ajustes"
+            subtitle = "Precios, tiempos y calibración"
+        elif self._config_menu_scope == "manual_fill":
+            title = "◆ Ajuste manual"
+            subtitle = "Calibración de volumen por producto"
         else:
             title = "◆ Configuración"
-            subtitle = "Ajustes operativos del vending"
+            subtitle = "Opciones principales del vending"
         self.config_menu_screen.configure(
             title,
             subtitle,
             options,
-            0,
+            index,
         )
         self.stack.setCurrentWidget(self.config_menu_screen)
 
     def _open_general_config_menu(self):
         self._config_menu_scope = "general"
+        self._open_config_menu()
+
+    def _open_adjustments_menu(self):
+        self._config_menu_scope = "adjustments"
+        self._open_config_menu()
+
+    def _open_manual_fill_menu(self):
+        self._config_menu_scope = "manual_fill"
         self._open_config_menu()
 
     def _set_config_return_menu(self):
@@ -491,6 +534,39 @@ class MainWindow(QMainWindow):
     def _return_to_config_menu(self):
         self._config_menu_scope = self._config_return_menu
         self._open_config_menu()
+
+    def _config_product_keys(self) -> list[tuple[str, str, str]]:
+        return [
+            ("full_garrafon", "garrafon", "Garrafón"),
+            ("half_garrafon", "medio", "Medio"),
+            ("gallon", "galon", "Galón"),
+        ]
+
+    def _config_key_for_product(self, product_id: str) -> str | None:
+        for current_product_id, config_key, _label in self._config_product_keys():
+            if current_product_id == product_id:
+                return config_key
+        return None
+
+    def _product_label(self, product_id: str) -> str:
+        for current_product_id, _config_key, label in self._config_product_keys():
+            if current_product_id == product_id:
+                return label
+        return product_id
+
+    def _sync_fill_times_from_time_per_liter(self):
+        seconds_per_liter = float(self._config_draft["tiempo_por_litro"])
+        for product_id, config_key, _label in self._config_product_keys():
+            volume_l = float(self._config_draft["volumenes"][config_key])
+            self._config_draft["tiempos_llenado"][config_key] = round(max(0.1, volume_l * seconds_per_liter), 2)
+
+    def _sync_fill_time_for_product(self, product_id: str):
+        config_key = self._config_key_for_product(product_id)
+        if not config_key:
+            return
+        seconds_per_liter = float(self._config_draft["tiempo_por_litro"])
+        volume_l = float(self._config_draft["volumenes"][config_key])
+        self._config_draft["tiempos_llenado"][config_key] = round(max(0.1, volume_l * seconds_per_liter), 2)
 
     def _open_price_screen(self):
         self._set_config_return_menu()
@@ -679,6 +755,94 @@ class MainWindow(QMainWindow):
             "P1:+0.05  P2:-0.05  OK:guardar  Cancelar:volver",
         )
 
+    def _open_manual_fill_screen(self, product_id: str):
+        self._set_config_return_menu()
+        self._config_mode = "manual_fill_ready"
+        self._manual_fill_product_id = product_id
+        self._manual_fill_started_at = None
+        self._manual_fill_elapsed_s = 0.0
+        self._manual_fill_timer.stop()
+        self._refresh_manual_fill_screen()
+        self.stack.setCurrentWidget(self.config_value_screen)
+
+    def _refresh_manual_fill_screen(self, message: str | None = None):
+        if not self._manual_fill_product_id:
+            return
+        config_key = self._config_key_for_product(self._manual_fill_product_id)
+        if not config_key:
+            return
+        saved_seconds = float(self._config_draft["tiempos_llenado"][config_key])
+        label = self._product_label(self._manual_fill_product_id)
+        if self._config_mode == "manual_fill_running":
+            subtitle = f"{label} - suelte el botón para guardar el tiempo"
+            value = f"{self._manual_fill_elapsed_s:.2f} s"
+            help_text = "Mantenga el botón del producto presionado"
+        else:
+            subtitle = f"{label} - mantenga presionado su botón para iniciar"
+            value = message or f"Guardado: {saved_seconds:.2f} s"
+            help_text = "Botón producto: medir  OK/Cancelar:volver"
+        self.config_value_screen.configure(
+            "Ajuste manual de volumen",
+            subtitle,
+            value,
+            help_text,
+        )
+
+    def _start_manual_fill_adjustment(self, product_id: str):
+        if self._config_mode != "manual_fill_ready":
+            return
+        if product_id != self._manual_fill_product_id:
+            self._refresh_manual_fill_screen("Use el botón del producto indicado")
+            return
+        self._manual_fill_started_at = time.monotonic()
+        self._manual_fill_elapsed_s = 0.0
+        self._config_mode = "manual_fill_running"
+        self._refresh_manual_fill_screen()
+        self.button_leds.set_processing()
+        try:
+            self.valves.start_dispense()
+        except GPIOControllerError as exc:
+            logger.error(str(exc))
+            self.audio.play("error")
+            self._config_mode = "manual_fill_ready"
+            self._manual_fill_started_at = None
+            self._refresh_manual_fill_screen("No fue posible abrir la válvula")
+            return
+        self._manual_fill_timer.start()
+        self._log_ui_event("manual_fill_started", product=product_id)
+
+    def _finish_manual_fill_adjustment(self, save: bool):
+        was_running = self._config_mode == "manual_fill_running"
+        self._manual_fill_timer.stop()
+        try:
+            self.valves.finish_dispense()
+        except GPIOControllerError as exc:
+            logger.error(str(exc))
+            self.audio.play("error")
+        measured_s = self._manual_fill_elapsed_s
+        if self._manual_fill_started_at is not None:
+            measured_s = max(0.1, round(time.monotonic() - self._manual_fill_started_at, 2))
+        self._manual_fill_started_at = None
+        self._manual_fill_elapsed_s = measured_s
+        self._config_mode = "manual_fill_ready"
+        self.button_leds.update_home(self.credit, self.current_product["id"] if self.current_product else None)
+        if save and was_running and self._manual_fill_product_id:
+            config_key = self._config_key_for_product(self._manual_fill_product_id)
+            if config_key:
+                self._config_draft["tiempos_llenado"][config_key] = measured_s
+                self._log_ui_event("manual_fill_saved", product=self._manual_fill_product_id, seconds=f"{measured_s:.2f}")
+            self._refresh_manual_fill_screen(f"Guardado: {measured_s:.2f} s")
+            QTimer.singleShot(900, self._return_to_config_menu)
+            return
+        self._refresh_manual_fill_screen()
+
+    def _tick_manual_fill_timer(self):
+        if self._manual_fill_started_at is None:
+            self._manual_fill_timer.stop()
+            return
+        self._manual_fill_elapsed_s = round(time.monotonic() - self._manual_fill_started_at, 2)
+        self._refresh_manual_fill_screen()
+
     def _open_code_change(self):
         self._set_config_return_menu()
         self._config_mode = "code_new"
@@ -710,6 +874,14 @@ class MainWindow(QMainWindow):
         return theme_changed, branding_changed
 
     def _exit_config_to_home(self):
+        if self._config_mode == "manual_fill_running":
+            self._finish_manual_fill_adjustment(save=False)
+        self._manual_fill_timer.stop()
+        self._manual_fill_product_id = None
+        self._manual_fill_started_at = None
+        self._manual_fill_elapsed_s = 0.0
+        self._config_menu_scope = "root"
+        self._config_return_menu = "root"
         self._config_mode = None
         self._config_hold_elapsed_ms = 0
         self.config_hold_screen.set_progress(0)
@@ -787,6 +959,16 @@ class MainWindow(QMainWindow):
             elif product_id == "half_garrafon":
                 self._config_rinse_edit_value = round(max(0.1, self._config_rinse_edit_value - 0.05), 2)
             self._refresh_rinse_liters_screen()
+            return
+        if self._config_mode == "manual_fill_ready":
+            self._start_manual_fill_adjustment(product_id)
+
+    def _handle_config_product_release(self, product_id: str):
+        if self._config_mode != "manual_fill_running":
+            return
+        if product_id != self._manual_fill_product_id:
+            return
+        self._finish_manual_fill_adjustment(save=True)
 
     def _handle_config_ok(self):
         if self._config_mode == "login":
@@ -819,11 +1001,22 @@ class MainWindow(QMainWindow):
         if self._config_mode == "menu":
             option = self.config_menu_screen.current_option()
             self._config_menu_indices[self._config_menu_scope] = self.config_menu_screen.index
-            if option == "Configuración general":
+            if option == "Ajustes":
+                self._open_adjustments_menu()
+                return
+            elif option == "Ajuste manual de volumen":
+                self._open_manual_fill_menu()
+                return
+            elif option == "Configuración general":
                 self._open_general_config_menu()
                 return
             elif option == "Volver":
-                self._config_menu_scope = "root"
+                if self._config_menu_scope == "general" or self._config_menu_scope == "adjustments":
+                    self._config_menu_scope = "root"
+                elif self._config_menu_scope == "manual_fill":
+                    self._config_menu_scope = "adjustments"
+                else:
+                    self._config_menu_scope = "root"
                 self._open_config_menu()
                 return
             if option == "Cambiar tema":
@@ -846,6 +1039,12 @@ class MainWindow(QMainWindow):
                 self._open_time_screen()
             elif option == "Ajustar litros por enjuague":
                 self._open_rinse_liters_screen()
+            elif option == "Configurar tiempo garrafón":
+                self._open_manual_fill_screen("full_garrafon")
+            elif option == "Configurar tiempo medio":
+                self._open_manual_fill_screen("half_garrafon")
+            elif option == "Configurar tiempo galón":
+                self._open_manual_fill_screen("gallon")
             elif option == "Cambiar código":
                 self._open_code_change()
             elif option == "Guardar y salir":
@@ -898,6 +1097,8 @@ class MainWindow(QMainWindow):
         if self._config_mode == "volume":
             volume_keys = ["garrafon", "medio", "galon"]
             self._config_draft["volumenes"][volume_keys[self._config_volume_index]] = self._config_edit_value
+            product_ids = ["full_garrafon", "half_garrafon", "gallon"]
+            self._sync_fill_time_for_product(product_ids[self._config_volume_index])
             if self._config_volume_index < 2:
                 self._config_volume_index += 1
                 next_key = volume_keys[self._config_volume_index]
@@ -908,11 +1109,17 @@ class MainWindow(QMainWindow):
             return
         if self._config_mode == "time":
             self._config_draft["tiempo_por_litro"] = self._config_edit_value
+            self._sync_fill_times_from_time_per_liter()
             self._return_to_config_menu()
             return
         if self._config_mode == "rinse_liters":
             self._config_draft["litros_por_enjuague"] = self._config_rinse_edit_value
             self._return_to_config_menu()
+            return
+        if self._config_mode == "manual_fill_ready":
+            self._return_to_config_menu()
+            return
+        if self._config_mode == "manual_fill_running":
             return
         if self._config_mode == "code_new":
             self._config_new_code = self.config_code_screen.code()
@@ -1407,6 +1614,12 @@ class MainWindow(QMainWindow):
         self._touch_interaction()
         self._set_selected_product(product_id)
 
+    def _release_by_gpio(self, product_id: str):
+        if self._service_lock_active:
+            return
+        if self._in_config_flow():
+            self._handle_config_product_release(product_id)
+
     def _set_selected_product(self, product_id: str):
         if self._service_lock_active:
             return
@@ -1504,7 +1717,11 @@ class MainWindow(QMainWindow):
         if self._config_mode in {"login", "menu"}:
             self._exit_config_to_home()
             return
-        if self._config_mode in {"theme", "theme_mode", "audio_muted", "price", "name", "system_name", "contact_email", "contact_phone", "volume", "time", "rinse_liters", "code_new"}:
+        if self._config_mode == "manual_fill_running":
+            self._finish_manual_fill_adjustment(save=False)
+            self._return_to_config_menu()
+            return
+        if self._config_mode in {"theme", "theme_mode", "audio_muted", "price", "name", "system_name", "contact_email", "contact_phone", "volume", "time", "rinse_liters", "manual_fill_ready", "code_new"}:
             self._return_to_config_menu()
             return
         if self._config_mode == "code_confirm":
@@ -1679,7 +1896,7 @@ class MainWindow(QMainWindow):
         self._played_75_audio = False
         self.button_leds.set_processing()
         self.stack.setCurrentWidget(self.progress_screen)
-        total_s = self.current_product["volume_l"] * settings.FILL_SECONDS_PER_LITER
+        total_s = float(self.current_product.get("fill_time_s", self.current_product["volume_l"] * settings.FILL_SECONDS_PER_LITER))
         self._log_ui_event(
             "fill_started",
             product=self.current_product["id"],
@@ -1892,6 +2109,9 @@ class MainWindow(QMainWindow):
         self.prompt_screen.set_prompt_countdown(self._prompt_countdown_remaining)
 
     def closeEvent(self, event):
+        if self._config_mode == "manual_fill_running":
+            self._finish_manual_fill_adjustment(save=False)
+        self._manual_fill_timer.stop()
         self._audit_hold_timer.stop()
         self._audit_reset_hold_timer.stop()
         self._service_level_timer.stop()
