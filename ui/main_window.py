@@ -91,6 +91,9 @@ class MainWindow(QMainWindow):
         self._service_level_timer = QTimer(self)
         self._service_level_timer.setInterval(150)
         self._service_level_timer.timeout.connect(self._poll_service_level)
+        self._config_idle_timer = QTimer(self)
+        self._config_idle_timer.setSingleShot(True)
+        self._config_idle_timer.timeout.connect(self._handle_config_idle_timeout)
         self._manual_fill_timer = QTimer(self)
         self._manual_fill_timer.setInterval(100)
         self._manual_fill_timer.timeout.connect(self._tick_manual_fill_timer)
@@ -488,6 +491,7 @@ class MainWindow(QMainWindow):
         self._config_new_code = ""
         self.config_code_screen.configure("Ingrese código", "Código de acceso", "0000")
         self.stack.setCurrentWidget(self.config_code_screen)
+        self._restart_config_idle_timer()
         self._log_ui_event("config_login_opened", screen="config_code")
 
     def _open_config_menu(self):
@@ -515,6 +519,26 @@ class MainWindow(QMainWindow):
             index,
         )
         self.stack.setCurrentWidget(self.config_menu_screen)
+        self._restart_config_idle_timer()
+
+    def _restart_config_idle_timer(self):
+        if self._config_mode is None:
+            return
+        self._config_idle_timer.start(30000)
+
+    def _stop_config_idle_timer(self):
+        self._config_idle_timer.stop()
+
+    def _handle_config_idle_timeout(self):
+        if self._config_mode is None:
+            return
+        if self._audit_mode_active:
+            self._audit_mode_active = False
+            self._audit_hold_elapsed_ms = 0
+            self._audit_reset_hold_elapsed_ms = 0
+        self._exit_config_to_home()
+        self.product_screen.show_alert("Tiempo agotado", ms=2500)
+        self._log_ui_event("config_timeout", screen="product")
 
     def _open_general_config_menu(self):
         self._config_menu_scope = "general"
@@ -764,6 +788,7 @@ class MainWindow(QMainWindow):
         self._manual_fill_timer.stop()
         self._refresh_manual_fill_screen()
         self.stack.setCurrentWidget(self.config_value_screen)
+        self._restart_config_idle_timer()
 
     def _refresh_manual_fill_screen(self, message: str | None = None):
         if not self._manual_fill_product_id:
@@ -848,6 +873,7 @@ class MainWindow(QMainWindow):
         self._config_mode = "code_new"
         self.config_code_screen.configure("Nuevo código", "Ingrese nuevo código", "0000")
         self.stack.setCurrentWidget(self.config_code_screen)
+        self._restart_config_idle_timer()
 
     def _save_runtime_settings(self) -> tuple[bool, bool]:
         previous_theme = settings.UI_THEME
@@ -874,6 +900,7 @@ class MainWindow(QMainWindow):
         return theme_changed, branding_changed
 
     def _exit_config_to_home(self):
+        self._stop_config_idle_timer()
         if self._config_mode == "manual_fill_running":
             self._finish_manual_fill_adjustment(save=False)
         self._manual_fill_timer.stop()
@@ -890,6 +917,7 @@ class MainWindow(QMainWindow):
         self._log_ui_event("config_closed", screen="product")
 
     def _handle_config_product_button(self, product_id: str):
+        self._restart_config_idle_timer()
         if self._config_mode in {"login", "audit_login", "audit_reset_login", "code_new", "code_confirm"}:
             if product_id == "full_garrafon":
                 self.config_code_screen.increment_digit()
@@ -968,9 +996,11 @@ class MainWindow(QMainWindow):
             return
         if product_id != self._manual_fill_product_id:
             return
+        self._restart_config_idle_timer()
         self._finish_manual_fill_adjustment(save=True)
 
     def _handle_config_ok(self):
+        self._restart_config_idle_timer()
         if self._config_mode == "login":
             if self.config_code_screen.code() == settings.ACCESS_CODE:
                 self._open_config_menu()
@@ -980,6 +1010,7 @@ class MainWindow(QMainWindow):
         if self._config_mode == "audit_login":
             if self.config_code_screen.code() == settings.AUDIT_CODE:
                 self._config_mode = None
+                self._stop_config_idle_timer()
                 self._enter_audit_mode()
             else:
                 self.config_code_screen.show_error("Código incorrecto")
@@ -988,6 +1019,7 @@ class MainWindow(QMainWindow):
             if self.config_code_screen.code() == settings.AUDIT_RESET_CODE:
                 self.sales_db.clear_audit_data()
                 self._config_mode = None
+                self._stop_config_idle_timer()
                 self._audit_page_index = 0
                 self._audit_product_index = 0
                 self._audit_coin_day_index = 0
@@ -1137,6 +1169,7 @@ class MainWindow(QMainWindow):
         self._config_mode = "audit_login"
         self.config_code_screen.configure("Auditoría", "Ingrese código", "0000")
         self.stack.setCurrentWidget(self.config_code_screen)
+        self._restart_config_idle_timer()
         self._log_ui_event("audit_login_opened", screen="config_code")
 
     def _enter_audit_mode(self):
@@ -1705,13 +1738,16 @@ class MainWindow(QMainWindow):
         self._cancel_to_idle()
 
     def _handle_config_cancel(self):
+        self._restart_config_idle_timer()
         if self._config_mode == "audit_reset_login":
             self._config_mode = None
+            self._stop_config_idle_timer()
             self.stack.setCurrentWidget(self.audit_screen)
             self._audit_reset_hold_elapsed_ms = 0
             return
         if self._config_mode == "audit_login":
             self._config_mode = None
+            self._stop_config_idle_timer()
             self._exit_audit_mode()
             return
         if self._config_mode in {"login", "menu"}:
@@ -1727,6 +1763,7 @@ class MainWindow(QMainWindow):
         if self._config_mode == "code_confirm":
             self._config_mode = "code_new"
             self.config_code_screen.configure("Nuevo código", "Ingrese nuevo código", self._config_new_code or "0000")
+            self._restart_config_idle_timer()
 
     def _handle_emergency_hold(self):
         if self._service_lock_active:
@@ -2111,6 +2148,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         if self._config_mode == "manual_fill_running":
             self._finish_manual_fill_adjustment(save=False)
+        self._stop_config_idle_timer()
         self._manual_fill_timer.stop()
         self._audit_hold_timer.stop()
         self._audit_reset_hold_timer.stop()
